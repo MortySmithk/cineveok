@@ -12,6 +12,7 @@ import SearchIcon from './icons/SearchIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
 import HistoryIcon from './icons/HistoryIcon';
 import XIcon from './icons/XIcon';
+import VoiceSearchOverlay from './VoiceSearchOverlay'; // Importado
 
 // Definindo a interface para a API de Reconhecimento de Fala do navegador
 declare global {
@@ -34,6 +35,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false); // Novo estado
   const router = useRouter();
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
 
@@ -87,13 +89,19 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsVoiceOverlayOpen(true); // Abre o overlay de voz
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsVoiceOverlayOpen(false); // Fecha o overlay
+    };
     recognition.onerror = (event: any) => {
       console.error("Erro no reconhecimento de voz:", event.error);
       setIsListening(false);
+      setIsVoiceOverlayOpen(false); // Fecha em caso de erro
     };
-
     recognition.onresult = (event: any) => {
       const speechResult = event.results[0][0].transcript;
       setQuery(speechResult);
@@ -139,25 +147,29 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
   );
 
   return (
-    <div className="search-container">
-      <form onSubmit={handleSearch} className="search-form">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setIsActive(true)}
-          onBlur={() => setTimeout(() => setIsActive(false), 200)}
-          placeholder="Pesquisar..."
-          className="search-input"
-        />
-        <button type="button" className={`voice-search-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceSearch}>
-          <MicrophoneIcon width={20} height={20} />
-        </button>
-        <button type="submit" className="search-button">
-          <SearchIcon width={18} height={18} />
-        </button>
-      </form>
-      {isActive && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
-    </div>
+    <>
+      <VoiceSearchOverlay isOpen={isVoiceOverlayOpen} onClose={() => setIsVoiceOverlayOpen(false)} />
+      <div className="search-container">
+        <form onSubmit={handleSearch} className="search-form">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setIsActive(true)}
+            onBlur={() => setTimeout(() => setIsActive(false), 200)}
+            placeholder="Pesquisar..."
+            className="search-input"
+            autoFocus={isMobile} // Foco automático no mobile
+          />
+          <button type="button" className={`voice-search-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceSearch}>
+            <MicrophoneIcon width={20} height={20} />
+          </button>
+          <button type="submit" className="search-button">
+            <SearchIcon width={18} height={18} />
+          </button>
+        </form>
+        {isActive && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
+      </div>
+    </>
   );
 }
