@@ -9,8 +9,8 @@ import { AuthProvider } from "./components/AuthProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CineVEO - Filmes e Séries",
-  description: "Descubra filmes e séries com uma experiência minimalista, rápida e envolvente.",
+  title: "CineVEO - Assista a Séries de TV e Filmes Online Grátis",
+  description: "Se o site não abrir instale uma VPN Gratis e Confiavel, Baixe Acessando: https://1.1.1.1/ - Assista Filmes, Séries, Animes, Novelas, Doramas, Documentários e Muito Mais Somente no CineVEO!",
 };
 
 export default function RootLayout({
