@@ -27,6 +27,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLogoVisible, setIsLogoVisible] = useState(false); // Estado para a animação da logo
   
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'backward' | null>(null);
   
@@ -58,6 +59,33 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
       thumbnailVideoRef.current.src = src;
     }
   }, [src]);
+  
+  // Efeito para a animação da logo
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    // Reseta a visibilidade da logo se o vídeo mudar
+    setIsLogoVisible(false);
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= 5 && !isLogoVisible) {
+        setIsLogoVisible(true);
+        video.removeEventListener('timeupdate', handleTimeUpdate); // Remove o listener para performance
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    // Também verifica no início, caso o vídeo já comece depois dos 5s
+    if (video.currentTime >= 5) {
+        setIsLogoVisible(true);
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+    }
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [src, isLogoVisible]); // Depende do src para resetar
 
   const toggleFullscreen = useCallback(async () => {
     const container = playerContainerRef.current;
@@ -66,12 +94,10 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     try {
         if (!document.fullscreenElement) {
             await container.requestFullscreen();
-            // CORREÇÃO AQUI: Adicionado "(as any)" para contornar o erro de tipo do TypeScript
             if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
                 await (screen.orientation as any).lock('landscape');
             }
         } else {
-            // CORREÇÃO AQUI: Adicionado "(as any)" para contornar o erro de tipo do TypeScript
             if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
                 (screen.orientation as any).unlock();
             }
@@ -149,7 +175,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     return () => {
       video.removeEventListener('play', updateState);
       video.removeEventListener('pause', updateState);
-      //... (outros removeEventListeners)
       playerContainer.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
     };
@@ -196,6 +221,14 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
       
       {isLoading && <div className={styles.loadingSpinner}></div>}
       
+      {/* Logo movida para fora dos controles */}
+      <img 
+        src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" 
+        alt="Logo" 
+        className={`${styles.logoWatermark} ${isLogoVisible ? styles.visible : ''}`}
+        style={{ objectFit: 'contain' }}
+      />
+
       <div className={`${styles.feedbackOverlay} ${seekFeedback === 'backward' && styles.show}`}>
         <div className={styles.feedbackContent}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
@@ -246,13 +279,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
               </div>
             </div>
             
-            <img 
-              src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" 
-              alt="Logo" 
-              className={styles.logoWatermark} 
-              style={{ objectFit: 'contain' }}
-            />
-
             <div className={styles.controlsGroup}>
               <div className="relative" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => setShowSettings(!showSettings)} className={styles.controlButton}>

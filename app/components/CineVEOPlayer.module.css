@@ -300,16 +300,24 @@
     font-weight: bold;
 }
 
-/* --- MODIFICAÇÕES AQUI --- */
+/* --- ESTILOS DA LOGO MODIFICADOS --- */
 .logoWatermark {
     position: absolute;
-    bottom: 80px; /* Distância do fundo */
-    left: 20px;   /* Distância da esquerda */
-    width: 140px; /* Tamanho aumentado */
+    bottom: 20px; /* Encostado no chão */
+    left: 20px;   /* Encostado na parede */
+    width: 130px; /* Tamanho */
     height: auto;
-    opacity: 1;   /* Sem transparência */
+    opacity: 0; /* Começa invisível */
+    transform: translateY(10px); /* Começa um pouco abaixo */
     pointer-events: none;
-    z-index: 1;
+    z-index: 15; /* Acima do vídeo, abaixo dos controles */
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out; /* Transição suave */
+}
+
+/* Classe para ativar a animação */
+.logoWatermark.visible {
+    opacity: 1; /* Fica 100% visível */
+    transform: translateY(0); /* Sobe para a posição final */
 }
 
 .hidden {
