@@ -259,7 +259,6 @@
                     episodesList.appendChild(div);
                 });
                 
-                // Preenche com os dados da importação em massa se existirem
                 populateFromBulkData(seasonNumber);
 
             } catch (error) {
@@ -280,7 +279,7 @@
             saveBtn.disabled = true;
             bulkImportTextarea.classList.add('hidden');
             bulkImportTextarea.value = '';
-            bulkImportData = {}; // Limpa os dados da importação
+            bulkImportData = {};
         };
         
         const addMovieResolutionUI = (quality = '', url = '') => {
@@ -305,35 +304,50 @@
             saveBtn.querySelector('.loader').classList.remove('hidden');
             saveBtn.disabled = true;
 
-            const mediaData = { type: type === 'tv' ? 'series' : 'movie' };
+            const docRef = doc(firestore, "media", id);
 
-            if (type === 'movie') {
-                const urls = [];
-                document.querySelectorAll('#movie-urls-list > div').forEach(div => {
-                    const quality = div.querySelector('.movie-quality').value.trim();
-                    const url = div.querySelector('.movie-url').value.trim();
-                    if (quality && url) urls.push({ quality, url });
-                });
-                mediaData.urls = urls;
-            } else if (type === 'tv') {
-                const seasons = {};
-                const seasonNumber = seasonSelector.value;
-                seasons[seasonNumber] = { episodes: [] };
-
-                document.querySelectorAll('.episode-url').forEach(input => {
-                    const url = input.value.trim();
-                    if (url) {
-                        seasons[seasonNumber].episodes.push({
-                            episode_number: parseInt(input.dataset.episodeNumber),
-                            urls: [{ quality: 'HD', url: url }]
-                        });
-                    }
-                });
-                mediaData.seasons = seasons;
-            }
-            
             try {
-                await setDoc(doc(firestore, "media", id), mediaData, { merge: true });
+                // *** INÍCIO DA CORREÇÃO ***
+                const docSnap = await getDoc(docRef);
+                const existingData = docSnap.exists() ? docSnap.data() : {};
+                const mediaData = { 
+                    ...existingData, // Mantém os dados existentes
+                    type: type === 'tv' ? 'series' : 'movie' 
+                };
+
+                if (type === 'movie') {
+                    const urls = [];
+                    document.querySelectorAll('#movie-urls-list > div').forEach(div => {
+                        const quality = div.querySelector('.movie-quality').value.trim();
+                        const url = div.querySelector('.movie-url').value.trim();
+                        if (quality && url) urls.push({ quality, url });
+                    });
+                    mediaData.urls = urls;
+                } else if (type === 'tv') {
+                    const seasonNumber = seasonSelector.value;
+                    const newEpisodes = [];
+                    document.querySelectorAll('.episode-url').forEach(input => {
+                        const url = input.value.trim();
+                        if (url) {
+                            newEpisodes.push({
+                                episode_number: parseInt(input.dataset.episodeNumber),
+                                urls: [{ quality: 'HD', url: url }]
+                            });
+                        }
+                    });
+
+                    // Garante que a estrutura 'seasons' exista
+                    if (!mediaData.seasons) {
+                        mediaData.seasons = {};
+                    }
+                    
+                    // Atualiza apenas a temporada atual, preservando as outras
+                    mediaData.seasons[seasonNumber] = { episodes: newEpisodes };
+                }
+                
+                await setDoc(docRef, mediaData); // Salva o objeto completo, sem merge
+                // *** FIM DA CORREÇÃO ***
+                
                 alert('Dados salvos com sucesso!');
                 resetForm();
             } catch (error) {
@@ -353,22 +367,20 @@
                 return;
             }
 
-            bulkImportData = {}; // Limpa dados anteriores
+            bulkImportData = {};
             let currentSeason = -1;
 
             const lines = text.split('\n').filter(line => line.trim() !== '');
             lines.forEach(line => {
-                // Tenta encontrar "Temporada X"
                 const seasonMatch = line.match(/Temporada\s+(\d+)/i);
                 if (seasonMatch) {
                     currentSeason = parseInt(seasonMatch[1], 10);
                     if (!bulkImportData[currentSeason]) {
                         bulkImportData[currentSeason] = {};
                     }
-                    return; // Pula para a próxima linha
+                    return;
                 }
 
-                // Tenta encontrar "EP##: URL"
                 const episodeMatch = line.match(/EP(\d+):\s*(https?:\/\/\S+)/i);
                 if (episodeMatch && currentSeason !== -1) {
                     const episodeNumber = parseInt(episodeMatch[1], 10);
