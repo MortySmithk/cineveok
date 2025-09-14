@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from 'next/script';
@@ -11,6 +12,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CineVEO - Assista a Séries de TV e Filmes Online Grátis",
   description: "Se o site não abrir instale uma VPN Gratis e Confiavel, Baixe Acessando: https://1.1.1.1/ - Assista Filmes, Séries, Animes, Novelas, Doramas, Documentários e Muito Mais Somente no CineVEO!",
+  icons: {
+    icon: "https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png",
+    apple: "https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png",
+  },
 };
 
 export default function RootLayout({
@@ -21,9 +26,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* LINHA ADICIONADA PARA O ÍCONE */}
-        <link rel="icon" href="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" type="image/png" sizes="any" />
-
         <Script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest" strategy="beforeInteractive" />
         <Script id="disable-devtool-init" strategy="beforeInteractive">
           {`
@@ -46,11 +48,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <Header />
-          <div style={{ minHeight: 'calc(100vh - 280px)' }}> {/* Empurra o rodapé para baixo */}
+          <div style={{ minHeight: 'calc(100vh - 280px)' }}>
             {children}
           </div>
           
-          {/* INÍCIO DO NOVO RODAPÉ */}
           <footer className="site-footer">
             <div className="main-container">
               <div className="aviso-legal">
@@ -77,6 +78,7 @@ export default function RootLayout({
                     <li><Link href="/filmes">Filmes</Link></li>
                     <li><Link href="/series">Séries</Link></li>
                     <li><Link href="/animacoes">Animações</Link></li>
+                    <li><Link href="/api-docs">API</Link></li> {/* LINHA ADICIONADA */}
                   </ul>
                 </div>
               </div>
@@ -86,7 +88,6 @@ export default function RootLayout({
               </div>
             </div>
           </footer>
-          {/* FIM DO NOVO RODAPÉ */}
 
         </AuthProvider>
       </body>
