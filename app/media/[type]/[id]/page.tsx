@@ -43,7 +43,7 @@ interface ProcessedStream { type: 'Dublado' | 'Legendado' | 'Outro'; url: string
 export default function MediaPage() {
   const params = useParams();
   const type = params.type as 'movie' | 'tv';
-  const id = params.id as string;
+  const id = params.id as string; // Este 'id' é o TMDB ID
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,24 +66,21 @@ export default function MediaPage() {
     if (!id || !type) return;
     const fetchData = async () => {
       setIsLoading(true);
-      const appendToResponse = 'credits';
+      const appendToResponse = 'credits,external_ids'; // Puxa os IDs externos junto
       try {
-        const [detailsResponse, externalIdsResponse] = await Promise.all([
-          axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=${appendToResponse}`),
-          axios.get(`https://api.themoviedb.org/3/${type}/${id}/external_ids?api_key=${API_KEY}`)
-        ]);
+        const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=${appendToResponse}`);
 
         const data = detailsResponse.data;
         const mediaDetails = {
           ...data,
           title: data.title || data.name,
           release_date: data.release_date || data.first_air_date,
-          imdb_id: externalIdsResponse.data.imdb_id,
+          imdb_id: data.external_ids?.imdb_id,
         };
         setDetails(mediaDetails);
 
-        if (type === 'movie' && mediaDetails.imdb_id) {
-          handleStreamFetch({ imdbId: mediaDetails.imdb_id });
+        if (type === 'movie' && mediaDetails.id) {
+          handleStreamFetch({ tmdbId: mediaDetails.id.toString() });
         }
       } catch (error) {
         setStatus("Não foi possível carregar os detalhes.");
@@ -99,11 +96,10 @@ export default function MediaPage() {
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
     
-    // Se a temporada selecionada não existe, define para a primeira disponível
     const availableSeasons = details.seasons.filter(s => s.season_number > 0);
     if (availableSeasons.length > 0 && !availableSeasons.some(s => s.season_number === selectedSeason)) {
       setSelectedSeason(availableSeasons[0].season_number);
-      return; // O useEffect será re-acionado com a nova temporada
+      return;
     }
 
     const fetchSeasonData = async () => {
@@ -120,11 +116,11 @@ export default function MediaPage() {
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  const handleStreamFetch = async (params: { imdbId: string; season?: number; episode?: number }) => {
+  const handleStreamFetch = async (params: { tmdbId: string; season?: number; episode?: number }) => {
     setIsFetchingStreams(true);
     setAvailableStreams([]);
-    const { imdbId, season, episode } = params;
-    const apiUrl = type === 'movie' ? `/api/stream/movie/${imdbId}` : `/api/stream/series/${imdbId}/${season}/${episode}`;
+    const { tmdbId, season, episode } = params;
+    const apiUrl = type === 'movie' ? `/api/stream/movie/${tmdbId}` : `/api/stream/series/${tmdbId}/${season}/${episode}`;
     try {
       const response = await axios.get(apiUrl);
       const streams: Stream[] = response.data.streams || [];
@@ -155,8 +151,8 @@ export default function MediaPage() {
   const handleEpisodeExpand = (episodeNumber: number) => {
     const newExpandedEpisode = expandedEpisode === episodeNumber ? null : episodeNumber;
     setExpandedEpisode(newExpandedEpisode);
-    if (newExpandedEpisode !== null && details?.imdb_id) {
-      handleStreamFetch({ imdbId: details.imdb_id, season: selectedSeason, episode: episodeNumber });
+    if (newExpandedEpisode !== null && details?.id) {
+      handleStreamFetch({ tmdbId: details.id.toString(), season: selectedSeason, episode: episodeNumber });
     }
   };
 
@@ -190,14 +186,12 @@ export default function MediaPage() {
     return <div className="loading-container">{status}</div>;
   }
 
-  // --- Renderização do Conteúdo Principal ---
   return (
     <>
       <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={modalStreamUrl} title={modalTitle} />
       <main style={{ paddingTop: '80px', paddingBottom: '40px' }}>
         <div className="main-container">
 
-          {/* --- Bloco de Detalhes Superior (Comum para Filmes e Séries) --- */}
           <div className="details-grid">
             <div className="details-poster">
               <Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/>
@@ -211,7 +205,7 @@ export default function MediaPage() {
                 {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
               </div>
               <div className="action-buttons">
-                <button className='btn-primary' onClick={() => handleWatchClick(type === 'movie' ? availableStreams[0]?.url : undefined, details.title)}>
+                <button className='btn-primary' onClick={() => handleWatchClick(availableStreams[0]?.url, details.title)}>
                   <PlayIcon width={20} height={20} /> Assistir
                 </button>
                 <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary'>IMDb</a>
@@ -226,7 +220,6 @@ export default function MediaPage() {
             </div>
           </div>
 
-          {/* --- Seção de Assistir (Filme) --- */}
           {type === 'movie' && (
             <section className='watch-section'>
               <h2>Assistir</h2>
@@ -246,7 +239,6 @@ export default function MediaPage() {
             </section>
           )}
 
-          {/* --- Seção de Episódios (Série) --- */}
           {type === 'tv' && (
             <section className="episodes-section">
               <div className="episodes-header">
@@ -292,7 +284,6 @@ export default function MediaPage() {
             </section>
           )}
 
-          {/* --- Seção de Elenco (Comum para Filmes e Séries) --- */}
           <section className="cast-section">
             <h2>Elenco Principal</h2>
             <div className="cast-grid">
