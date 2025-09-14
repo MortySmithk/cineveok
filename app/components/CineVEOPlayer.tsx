@@ -156,7 +156,8 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
           
           <div className={styles.bottomControls}>
             <div className={styles.controlsGroup}>
-              <button onClick={togglePlay} className={styles.controlButton} title={isPlaying ? 'Pausar' : 'Assistir'}><_config-1_ /></button>
+              {/* --- LINHA CORRIGIDA ABAIXO --- */}
+              <button onClick={togglePlay} className={styles.controlButton} title={isPlaying ? 'Pausar' : 'Assistir'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
               <button onClick={() => {if(videoRef.current) videoRef.current.currentTime -=10; triggerFeedback('backward');}} className={styles.controlButton} title="Voltar 10 Segundos"><Rewind10Icon /></button>
               <button onClick={() => {if(videoRef.current) videoRef.current.currentTime +=10; triggerFeedback('forward');}} className={styles.controlButton} title="Avançar 10 Segundos"><Forward10Icon /></button>
               <div className={styles.volumeContainer}>
