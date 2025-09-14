@@ -19,30 +19,7 @@ export async function GET(
     return NextResponse.json({ error: "TMDB ID é necessário." }, { status: 400 });
   }
 
-  // --- ETAPA 1: Verificar no Firestore por links manuais usando o TMDB ID ---
-  try {
-    const docRef = doc(db, "media", tmdbId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
-        console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${tmdbId}`);
-        const streams = data.urls.map((u: { quality: string; url: string }) => ({
-          name: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
-          description: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
-          url: u.url,
-        }));
-        return NextResponse.json({ streams });
-      }
-    }
-  } catch (error) {
-    console.error(`[API/Stream/Movie] Erro ao buscar do Firestore para ${tmdbId}:`, error);
-  }
-
-  // --- ETAPA 2: Fallback para APIs externas ---
-  console.log(`[API/Stream/Movie] Fonte não encontrada no Firestore. Buscando em APIs externas para ${tmdbId}`);
-  
+  // --- ETAPA 1: Tentar buscar nas APIs externas primeiro ---
   let imdbId: string | null = null;
   try {
     const externalIdsResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`);
@@ -54,23 +31,49 @@ export async function GET(
     console.error(`[API/Stream/Movie] Falha ao buscar IMDb ID para ${tmdbId}:`, e);
   }
 
-  if (!imdbId) {
-    return NextResponse.json({ streams: [], error: "Não foi possível encontrar o IMDb ID para este título." }, { status: 404 });
-  }
+  if (imdbId) {
+    console.log(`[API/Stream/Movie] Buscando em APIs externas para IMDb ID: ${imdbId}`);
+    for (const baseUrl of STREAM_API_URLS) {
+      try {
+        const fullUrl = `${baseUrl}/${imdbId}.json`;
+        const response = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
 
-  for (const baseUrl of STREAM_API_URLS) {
-    try {
-      const fullUrl = `${baseUrl}/${imdbId}.json`;
-      const response = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
-
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
+        if (response.ok) {
+          const data = await response.json();
+          // Se encontrou streams, retorna imediatamente
+          if (data && data.streams && data.streams.length > 0) {
+            console.log(`[API/Stream/Movie] Fonte encontrada em ${baseUrl}`);
+            return NextResponse.json(data);
+          }
+        }
+      } catch (error) {
+        console.error(`[API/Stream/Movie] Erro ao buscar de ${baseUrl}:`, error);
       }
-    } catch (error) {
-      console.error(`[API/Stream/Movie] Erro ao buscar de ${baseUrl}:`, error);
     }
   }
 
+  // --- ETAPA 2: Fallback para o Firestore se as APIs externas falharem ---
+  console.log(`[API/Stream/Movie] Nenhuma fonte externa encontrada. Verificando Firestore para ${tmdbId}`);
+  try {
+    const docRef = doc(db, "media", tmdbId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
+        console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${tmdbId}`);
+        const streams = data.urls.map((u: { quality: string; url: string }) => ({
+          name: `CineVEO - ${u.quality || 'HD'} Dublado`,
+          description: `CineVEO - ${u.quality || 'HD'} Dublado`,
+          url: u.url,
+        }));
+        return NextResponse.json({ streams });
+      }
+    }
+  } catch (error) {
+    console.error(`[API/Stream/Movie] Erro ao buscar do Firestore para ${tmdbId}:`, error);
+  }
+
+  // Se nada for encontrado em nenhuma fonte
   return NextResponse.json({ streams: [], error: "Nenhum stream disponível no momento" }, { status: 404 });
 }

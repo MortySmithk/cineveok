@@ -19,7 +19,41 @@ export async function GET(
     return NextResponse.json({ error: "TMDB ID, temporada e episódio são necessários." }, { status: 400 });
   }
 
-  // --- ETAPA 1: Verificar no Firestore por links manuais ---
+  // --- ETAPA 1: Tentar buscar nas APIs externas primeiro ---
+  let imdbId: string | null = null;
+  try {
+    const externalIdsResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`);
+    if (externalIdsResponse.ok) {
+      const externalIdsData = await externalIdsResponse.json();
+      imdbId = externalIdsData.imdb_id;
+    }
+  } catch (e) {
+    console.error(`[API/Stream/Series] Falha ao buscar IMDb ID para ${tmdbId}:`, e);
+  }
+
+  if (imdbId) {
+    const streamId = `${imdbId}:${season}:${episode}`;
+    console.log(`[API/Stream/Series] Buscando em APIs externas para ${streamId}`);
+    for (const baseUrl of STREAM_API_URLS) {
+      try {
+        const fullUrl = `${baseUrl}/${streamId}.json`;
+        const response = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.streams && data.streams.length > 0) {
+            console.log(`[API/Stream/Series] Fonte encontrada em ${baseUrl}`);
+            return NextResponse.json(data);
+          }
+        }
+      } catch (error) {
+        console.error(`[API/Stream/Series] Erro ao buscar de ${baseUrl}:`, error);
+      }
+    }
+  }
+
+  // --- ETAPA 2: Fallback para o Firestore ---
+  console.log(`[API/Stream/Series] Nenhuma fonte externa encontrada. Verificando Firestore para ${tmdbId} S${season}E${episode}`);
   try {
     const docRef = doc(db, "media", tmdbId);
     const docSnap = await getDoc(docRef);
@@ -32,51 +66,19 @@ export async function GET(
       );
       
       if (episodeData && Array.isArray(episodeData.urls) && episodeData.urls.length > 0) {
-        console.log(`[API/Stream/Series] Fonte manual encontrada no Firestore para ${tmdbId} S${season}E${episode}`);
+        console.log(`[API/Stream/Series] Fonte manual encontrada no Firestore.`);
         const streams = episodeData.urls.map((u: { quality: string; url: string }) => ({
-          name: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
-          description: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
+          name: `CineVEO - ${u.quality || 'HD'} Dublado`,
+          description: `CineVEO - ${u.quality || 'HD'} Dublado`,
           url: u.url,
         }));
         return NextResponse.json({ streams });
       }
     }
   } catch (error) {
-    console.error(`[API/Stream/Series] Erro ao buscar do Firestore para ${tmdbId}:`, error);
+    console.error(`[API/Stream/Series] Erro ao buscar do Firestore:`, error);
   }
-
-  // --- ETAPA 2: Fallback para as APIs externas ---
-  console.log(`[API/Stream/Series] Fonte não encontrada no Firestore. Buscando em APIs externas para ${tmdbId} S${season}E${episode}`);
-
-  let imdbId: string | null = null;
-  try {
-    const externalIdsResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`);
-    if (externalIdsResponse.ok) {
-      const externalIdsData = await externalIdsResponse.json();
-      imdbId = externalIdsData.imdb_id;
-    }
-  } catch (e) {
-    console.error(`[API/Stream/Series] Falha ao buscar IMDb ID para ${tmdbId}:`, e);
-  }
-
-  if (!imdbId) {
-    return NextResponse.json({ streams: [], error: "Não foi possível encontrar o IMDb ID para este título." }, { status: 404 });
-  }
-
-  const streamId = `${imdbId}:${season}:${episode}`;
-  for (const baseUrl of STREAM_API_URLS) {
-    try {
-      const fullUrl = `${baseUrl}/${streamId}.json`;
-      const response = await fetch(fullUrl, { signal: AbortSignal.timeout(15000) });
-
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
-      }
-    } catch (error) {
-      console.error(`[API/Stream/Series] Erro ao buscar de ${baseUrl}:`, error);
-    }
-  }
-
+  
+  // Se nada for encontrado
   return NextResponse.json({ streams: [], error: "Nenhum stream disponível no momento" }, { status: 404 });
 }
