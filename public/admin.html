@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administrador - CineVEO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ca8a04;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        input:focus, select:focus, textarea:focus {
+             box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
+        }
+        #episodes-list::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div id="login-screen" class="min-h-screen flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
+            <h2 class="text-2xl font-bold text-center text-white mb-6">Acesso Restrito</h2>
+            <form id="login-form" class="space-y-4">
+                <input id="email" type="email" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
+                <input id="password" type="password" placeholder="Senha" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
+                <button type="submit" class="w-full bg-yellow-500 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-600 transition-colors">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="hidden">
+        <header class="bg-gray-800 shadow-md">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-32">
+                <div>
+                    <span id="user-email" class="text-sm text-gray-400 mr-4"></span>
+                    <button id="logout-button" class="bg-red-600 text-white font-semibold px-4 py-2 rounded-md text-sm hover:bg-red-700 transition">Sair</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-bold text-white mb-4">Buscar no TMDB</h2>
+                    <div class="flex gap-2">
+                        <input id="catalog-search-input" type="text" placeholder="Nome do filme ou série..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                        <button id="catalog-search-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-600 transition">Buscar</button>
+                    </div>
+                    <div id="catalog-list" class="mt-4 space-y-3 max-h-96 overflow-y-auto">
+                        </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-bold text-white mb-4">Adicionar/Editar Links (Servidor 3)</h2>
+                    <form id="media-form" class="space-y-4">
+                        <input type="hidden" id="tmdb-id">
+                        <input type="hidden" id="media-type">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400">Título</label>
+                            <p id="media-title" class="text-lg font-semibold text-white mt-1">-</p>
+                        </div>
+
+                        <div id="movie-section" class="hidden space-y-3">
+                            <h3 class="text-md font-semibold border-b border-gray-700 pb-2">Links do Filme</h3>
+                            <div id="movie-urls-list" class="space-y-2">
+                                </div>
+                            <button type="button" id="add-movie-url-btn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded-md transition">+ Adicionar Resolução</button>
+                        </div>
+
+                        <div id="series-section" class="hidden space-y-3">
+                            <h3 class="text-md font-semibold border-b border-gray-700 pb-2">Episódios da Série</h3>
+                            <div class="flex items-end gap-2">
+                                <div class="flex-grow">
+                                    <label for="season-selector" class="text-sm font-medium text-gray-400">Selecione a Temporada:</label>
+                                    <select id="season-selector" class="w-full mt-1 bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:border-yellow-500"></select>
+                                </div>
+                                <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
+                            </div>
+                            <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="6" placeholder="Cole os links aqui no formato EP##: URL..."></textarea>
+                            <div id="episodes-list" class="space-y-3 max-h-96 overflow-y-auto p-2 bg-gray-900 rounded-md">
+                                </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-4 pt-4">
+                            <button type="button" id="cancel-edit-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-md transition">Cancelar</button>
+                            <button type="submit" id="save-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-md transition flex items-center justify-center" disabled>
+                                <span class="btn-text">Salvar</span>
+                                <div class="loader hidden ml-2"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNEGDpDLuWYrxTkoONy4oQujnatx6KIS8",
+            authDomain: "cineveok.firebaseapp.com",
+            projectId: "cineveok",
+            storageBucket: "cineveok.appspot.com",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const firestore = getFirestore(app);
+
+        const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
+        const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
+
+        // Elementos da UI
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const loginForm = document.getElementById('login-form');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const userEmailSpan = document.getElementById('user-email');
+        const catalogSearchInput = document.getElementById('catalog-search-input');
+        const catalogSearchBtn = document.getElementById('catalog-search-btn');
+        const catalogList = document.getElementById('catalog-list');
+        const mediaForm = document.getElementById('media-form');
+        const tmdbIdInput = document.getElementById('tmdb-id');
+        const mediaTypeInput = document.getElementById('media-type');
+        const mediaTitle = document.getElementById('media-title');
+        const movieSection = document.getElementById('movie-section');
+        const seriesSection = document.getElementById('series-section');
+        const seasonSelector = document.getElementById('season-selector');
+        const episodesList = document.getElementById('episodes-list');
+        const movieUrlsList = document.getElementById('movie-urls-list');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const bulkImportBtn = document.getElementById('bulk-import-btn');
+        const bulkImportTextarea = document.getElementById('bulk-import-textarea');
+
+        // Funções
+        const showPanel = (user) => {
+            userEmailSpan.textContent = user.email;
+            loginScreen.classList.add('hidden');
+            adminPanel.classList.remove('hidden');
+        };
+
+        const showLogin = () => {
+            loginScreen.classList.remove('hidden');
+            adminPanel.classList.add('hidden');
+        };
+        
+        const performSearch = async () => {
+            const query = catalogSearchInput.value.trim();
+            if (!query) return;
+            catalogList.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=pt-BR&query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                displaySearchResults(data.results);
+            } catch (error) {
+                catalogList.innerHTML = '<p class="text-red-400">Erro ao buscar.</p>';
+            }
+        };
+        
+        const displaySearchResults = (results) => {
+            catalogList.innerHTML = '';
+            results
+                .filter(r => r.media_type === 'movie' || r.media_type === 'tv')
+                .forEach(item => {
+                    const title = item.title || item.name;
+                    const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+                    const typeLabel = item.media_type === 'tv' ? 'Série' : 'Filme';
+                    catalogList.innerHTML += `
+                        <div class="bg-gray-700 p-3 rounded-md flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-white">${title} (${year})</p>
+                                <p class="text-xs text-gray-400">${typeLabel}</p>
+                            </div>
+                            <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" data-tmdb-id="${item.id}" data-tmdb-type="${item.media_type}">
+                                Gerenciar
+                            </button>
+                        </div>
+                    `;
+                });
+        };
+        
+        const prepareFormForEditing = async (id, type) => {
+            resetForm();
+            tmdbIdInput.value = id;
+            mediaTypeInput.value = type;
+            saveBtn.disabled = false;
+
+            try {
+                const tmdbResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                const tmdbData = await tmdbResponse.json();
+                mediaTitle.textContent = tmdbData.title || tmdbData.name;
+
+                const firestoreDocRef = doc(firestore, "media", id.toString());
+                const docSnap = await getDoc(firestoreDocRef);
+                const firestoreData = docSnap.exists() ? docSnap.data() : {};
+
+                if (type === 'movie') {
+                    movieSection.classList.remove('hidden');
+                    if (firestoreData.urls) {
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.quality, urlData.url));
+                    }
+                } else if (type === 'tv') {
+                    seriesSection.classList.remove('hidden');
+                    seasonSelector.innerHTML = tmdbData.seasons
+                        .filter(s => s.season_number > 0)
+                        .map(s => `<option value="${s.season_number}">${s.name}</option>`).join('');
+                    
+                    await loadEpisodesForSeason(id, seasonSelector.value, firestoreData);
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert('Erro ao carregar detalhes do item.');
+            }
+        };
+
+        const loadEpisodesForSeason = async (seriesId, seasonNumber, firestoreData) => {
+            episodesList.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                const seasonData = await response.json();
+                episodesList.innerHTML = '';
+
+                seasonData.episodes.forEach(ep => {
+                    const existingUrl = firestoreData.seasons?.[seasonNumber]?.episodes?.find(e => e.episode_number == ep.episode_number)?.urls?.[0]?.url || '';
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded';
+                    div.innerHTML = `
+                        <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
+                        <span class="flex-grow text-sm text-gray-300 truncate">${ep.name}</span>
+                        <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
+                    `;
+                    episodesList.appendChild(div);
+                });
+            } catch (error) {
+                episodesList.innerHTML = '<p class="text-red-400">Erro ao carregar episódios.</p>';
+            }
+        };
+        
+        const resetForm = () => {
+            mediaForm.reset();
+            mediaTitle.textContent = '-';
+            tmdbIdInput.value = '';
+            mediaTypeInput.value = '';
+            movieSection.classList.add('hidden');
+            seriesSection.classList.add('hidden');
+            movieUrlsList.innerHTML = '';
+            episodesList.innerHTML = '';
+            seasonSelector.innerHTML = '';
+            saveBtn.disabled = true;
+            bulkImportTextarea.classList.add('hidden');
+        };
+        
+        const addMovieResolutionUI = (quality = '', url = '') => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-1/4" placeholder="Qualidade (ex: 720p)">
+                <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
+                <button type="button" class="remove-btn text-red-500 hover:text-red-400">X</button>
+            `;
+            movieUrlsList.appendChild(div);
+        };
+        
+        const handleMediaFormSubmit = async (e) => {
+            e.preventDefault();
+            const id = tmdbIdInput.value;
+            const type = mediaTypeInput.value;
+
+            if (!id || !type) return alert('Nenhum item selecionado.');
+
+            saveBtn.querySelector('.btn-text').textContent = 'Salvando...';
+            saveBtn.querySelector('.loader').classList.remove('hidden');
+            saveBtn.disabled = true;
+
+            const mediaData = { type: type === 'tv' ? 'series' : 'movie' };
+
+            if (type === 'movie') {
+                const urls = [];
+                document.querySelectorAll('#movie-urls-list > div').forEach(div => {
+                    const quality = div.querySelector('.movie-quality').value.trim();
+                    const url = div.querySelector('.movie-url').value.trim();
+                    if (quality && url) urls.push({ quality, url });
+                });
+                mediaData.urls = urls;
+            } else if (type === 'tv') {
+                const seasons = {};
+                const seasonNumber = seasonSelector.value;
+                seasons[seasonNumber] = { episodes: [] };
+
+                document.querySelectorAll('.episode-url').forEach(input => {
+                    const url = input.value.trim();
+                    if (url) {
+                        seasons[seasonNumber].episodes.push({
+                            episode_number: parseInt(input.dataset.episodeNumber),
+                            urls: [{ quality: 'HD', url: url }]
+                        });
+                    }
+                });
+                mediaData.seasons = seasons;
+            }
+            
+            try {
+                await setDoc(doc(firestore, "media", id), mediaData, { merge: true });
+                alert('Dados salvos com sucesso!');
+                resetForm();
+            } catch (error) {
+                alert('Erro ao salvar os dados.');
+                console.error("Erro: ", error);
+            } finally {
+                saveBtn.querySelector('.btn-text').textContent = 'Salvar';
+                saveBtn.querySelector('.loader').classList.add('hidden');
+                saveBtn.disabled = false;
+            }
+        };
+
+        const handleBulkImport = () => {
+            const text = bulkImportTextarea.value.trim();
+            if (!text) {
+                alert('A área de texto está vazia.');
+                return;
+            }
+
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            lines.forEach(line => {
+                const match = line.match(/EP(\d+):\s*(.*)/i);
+                if (match) {
+                    const episodeNumber = parseInt(match[1], 10);
+                    const url = match[2].trim();
+                    
+                    if (url) {
+                        const episodeInput = document.querySelector(`.episode-url[data-episode-number="${episodeNumber}"]`);
+                        if (episodeInput) {
+                            episodeInput.value = url;
+                        }
+                    }
+                }
+            });
+            alert('Links importados. Agora clique em Salvar para atualizar.');
+        };
+
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user && ADMIN_UIDS.includes(user.uid)) {
+                    showPanel(user);
+                } else {
+                    if (user) { signOut(auth); }
+                    showLogin();
+                }
+            });
+
+            loginForm.addEventListener('submit', (e) => { e.preventDefault(); signInWithEmailAndPassword(auth, email.value, password.value).catch(() => alert('Credenciais inválidas.')); });
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+            
+            catalogSearchBtn.addEventListener('click', performSearch);
+            catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+            
+            catalogList.addEventListener('click', (e) => {
+                const button = e.target.closest('.manage-btn');
+                if (button) {
+                    prepareFormForEditing(button.dataset.tmdbId, button.dataset.tmdbType);
+                }
+            });
+            
+            mediaForm.addEventListener('submit', handleMediaFormSubmit);
+            cancelEditBtn.addEventListener('click', resetForm);
+            document.getElementById('add-movie-url-btn').addEventListener('click', () => addMovieResolutionUI());
+            movieUrlsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove();
+            });
+            seasonSelector.addEventListener('change', async (e) => {
+                const seriesId = tmdbIdInput.value;
+                const docRef = doc(firestore, "media", seriesId.toString());
+                const docSnap = await getDoc(docRef);
+                const firestoreData = docSnap.exists() ? docSnap.data() : {};
+                await loadEpisodesForSeason(seriesId, e.target.value, firestoreData);
+            });
+
+            bulkImportBtn.addEventListener('click', () => {
+                bulkImportTextarea.classList.toggle('hidden');
+                if (!bulkImportTextarea.classList.contains('hidden')) {
+                    bulkImportTextarea.focus();
+                } else {
+                    handleBulkImport();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

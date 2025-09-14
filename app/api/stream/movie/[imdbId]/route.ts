@@ -1,12 +1,13 @@
-// app/api/stream/movie/[imdbId]/route.ts - CORRIGIDO COM SUA LÓGICA ORIGINAL
+// app/api/stream/movie/[imdbId]/route.ts
 import { NextResponse } from "next/server";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/app/firebase";
 
 const STREAM_API_URLS = [
   "https://baby-beamup.club/stream/movie",
   "https://da5f663b4690-skyflixfork.baby-beamup.club/stream/movie",
 ];
 
-// AQUI ESTÁ A CORREÇÃO DA TIPAGEM, MANTENDO SEU CÓDIGO
 export async function GET(
   request: Request,
   { params }: { params: { imdbId: string } }
@@ -17,6 +18,31 @@ export async function GET(
     return NextResponse.json({ error: "IMDb ID é necessário." }, { status: 400 });
   }
 
+  // --- ETAPA 1: Verificar no Firestore por links manuais ---
+  try {
+    const docRef = doc(db, "media", imdbId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      // Verifica se existem URLs cadastradas para este filme
+      if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
+        console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${imdbId}`);
+        // Mapeia os dados do Firestore para o formato que o player espera
+        const streams = data.urls.map((u: { quality: string; url: string }) => ({
+          name: `Fonte Manual - ${u.quality || 'HD'}`,
+          description: `Fonte Manual - ${u.quality || 'HD'} Dublado`,
+          url: u.url,
+        }));
+        return NextResponse.json({ streams });
+      }
+    }
+  } catch (error) {
+    console.error(`[API/Stream/Movie] Erro ao buscar do Firestore para ${imdbId}:`, error);
+  }
+
+  // --- ETAPA 2: Fallback para as APIs externas se não encontrar no Firestore ---
+  console.log(`[API/Stream/Movie] Fonte não encontrada no Firestore. Buscando em APIs externas para ${imdbId}`);
   for (const baseUrl of STREAM_API_URLS) {
     try {
       const fullUrl = `${baseUrl}/${imdbId}.json`;
@@ -31,7 +57,6 @@ export async function GET(
 
       if (response.ok) {
         const data = await response.json();
-        // Se encontrou dados, retorna e para o loop
         return NextResponse.json(data);
       }
     } catch (error) {
@@ -39,7 +64,7 @@ export async function GET(
     }
   }
 
-  // Se o loop terminar sem sucesso
+  // Se nada for encontrado
   return NextResponse.json(
     { streams: [], error: "Nenhum stream disponível no momento" },
     { status: 404 }
