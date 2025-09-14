@@ -22,9 +22,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose }) => {
           <SearchComponent isMobile={true} onSearch={onClose} />
         </div>
       </div>
-      <div className="search-overlay-content">
-        {/* O conteúdo do histórico e sugestões será mostrado pelo próprio SearchComponent */}
-      </div>
+      {/* A lista de sugestões será posicionada de forma absoluta pelo CSS,
+          renderizada dentro do SearchComponent */}
     </div>
   );
 };

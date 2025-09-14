@@ -12,7 +12,7 @@ import SearchIcon from './icons/SearchIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
 import HistoryIcon from './icons/HistoryIcon';
 import XIcon from './icons/XIcon';
-import VoiceSearchOverlay from './VoiceSearchOverlay'; // Importado
+import VoiceSearchOverlay from './VoiceSearchOverlay';
 
 // Definindo a interface para a API de Reconhecimento de Fala do navegador
 declare global {
@@ -35,7 +35,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false); // Novo estado
+  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false);
   const router = useRouter();
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
 
@@ -91,22 +91,20 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
 
     recognition.onstart = () => {
       setIsListening(true);
-      setIsVoiceOverlayOpen(true); // Abre o overlay de voz
+      setIsVoiceOverlayOpen(true);
     };
     recognition.onend = () => {
       setIsListening(false);
-      setIsVoiceOverlayOpen(false); // Fecha o overlay
+      setIsVoiceOverlayOpen(false);
     };
     recognition.onerror = (event: any) => {
       console.error("Erro no reconhecimento de voz:", event.error);
       setIsListening(false);
-      setIsVoiceOverlayOpen(false); // Fecha em caso de erro
+      setIsVoiceOverlayOpen(false);
     };
     recognition.onresult = (event: any) => {
       const speechResult = event.results[0][0].transcript;
       setQuery(speechResult);
-      // Opcional: Pesquisar automaticamente após a fala
-      // handleSearch(new Event('submit') as any, speechResult);
     };
     
     recognition.start();
