@@ -1,95 +1,127 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+// app/page.tsx - A NOVA PÁGINA INICIAL
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import Link from 'next/link';
+import Image from 'next/image';
+import StarIcon from './components/icons/StarIcon';
+import PlayIcon from './components/icons/PlayIcon';
+import BookmarkIcon from './components/icons/BookmarkIcon';
+
+interface Media { id: number; title?: string; name?: string; poster_path: string; backdrop_path: string; release_date?: string; first_air_date?: string; vote_average: number; overview: string; media_type: 'movie' | 'tv'; }
+
+const API_KEY = "860b66ade580bacae581f4228fad49fc";
+
+export default function HomePage() {
+  const [trending, setTrending] = useState<Media[]>([]);
+  const [latestMovies, setLatestMovies] = useState<Media[]>([]);
+  const [popularSeries, setPopularSeries] = useState<Media[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMedia = async () => {
+      setIsLoading(true);
+      try {
+        const trendingPromise = axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`);
+        const latestMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR`);
+        const popularSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
+        
+        const [trendingResponse, latestMoviesResponse, popularSeriesResponse] = await Promise.all([trendingPromise, latestMoviesPromise, popularSeriesPromise]);
+
+        setTrending(trendingResponse.data.results.slice(0, 5));
+        setLatestMovies(latestMoviesResponse.data.results);
+        setPopularSeries(popularSeriesResponse.data.results);
+      } catch (error) { console.error("Erro ao buscar mídia:", error);
+      } finally { setIsLoading(false); }
+    };
+    fetchMedia();
+  }, []);
+
+  useEffect(() => {
+    if (trending.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveSlide((current) => (current === trending.length - 1 ? 0 : current + 1));
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [trending]);
+
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} />
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+    <main>
+      <div className="hero-slider">
+        {trending.map((item, index) => (
+          <div key={item.id} className={`slide ${index === activeSlide ? 'active' : ''}`}>
+            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="slide-bg" />
+            <div className="slide-overlay"></div>
+            <div className="slide-content">
+              <h1 className="slide-title">{item.title || item.name}</h1>
+              <div className="slide-meta">
+                <span>{(item.release_date || item.first_air_date)?.substring(0, 4)}</span>
+                <span className="stars">★★★★★</span>
+              </div>
+              <p className="slide-overview">{item.overview}</p>
+              <div className="slide-actions">
+                <Link href={`/media/${item.media_type}/${item.id}`} className="btn-primary slide-btn"><PlayIcon /> Assistir</Link>
+                <button className="btn-secondary slide-btn">+ Minha Lista</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div className="slide-dots">
+          {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={index === activeSlide ? 'active' : ''}></button>))}
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      <div className="main-container" style={{ marginTop: '-80px', position: 'relative', zIndex: 10 }}>
+        {/* Lançamentos */}
+        <section className="movie-section">
+          <div className="section-header">
+            <h2 className="section-title">Filmes Lançamento no CineVEO</h2>
+          </div>
+          <div className="movie-carousel">
+            {latestMovies.map((movie) => (
+              <Link href={`/media/movie/${movie.id}`} key={movie.id} className="movie-card">
+                 <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                 <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
+                 <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{movie.title}</h3>
+                   <div className="movie-card-meta"><span>{movie.release_date?.substring(0, 4)}</span><span><StarIcon /> {movie.vote_average.toFixed(1)}</span></div>
+                 </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Séries Populares */}
+         <section className="movie-section">
+          <div className="section-header">
+            <h2 className="section-title">Séries Populares</h2>
+          </div>
+          <div className="movie-carousel">
+            {popularSeries.map((series) => (
+              <Link href={`/media/tv/${series.id}`} key={series.id} className="movie-card">
+                 <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                 <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }} /></div>
+                 <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{series.name}</h3>
+                   <div className="movie-card-meta"><span>{series.first_air_date?.substring(0, 4)}</span><span><StarIcon /> {series.vote_average.toFixed(1)}</span></div>
+                 </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
