@@ -64,6 +64,7 @@ export default function Header() {
               <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
               <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
               <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
+              <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
             </nav>
           </div>
 
@@ -105,7 +106,7 @@ export default function Header() {
             <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
             <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
             <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
-            <Link href="/api-docs" style={getLinkStyle('/api-docs')}>API</Link> {/* LINHA ADICIONADA */}
+            <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
         </nav>
         <div className="mobile-auth">
             {user ? (

@@ -10,7 +10,7 @@ const ApiDocsPage = () => {
   return (
     <main style={{ paddingTop: '100px', paddingBottom: '40px' }}>
       <div className="main-container">
-        <h1 className="page-title">API de Player Embed</h1>
+        <h1 className="page-title">API de Filmes e Séries</h1>
         <div className="api-docs-content">
           <p>
             Bem-vindo à documentação da API de Player Embed do CineVEO. Você pode usar nossos players em seu site ou aplicação
