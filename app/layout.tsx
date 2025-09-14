@@ -21,6 +21,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* LINHA ADICIONADA PARA O ÍCONE */}
+        <link rel="icon" href="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" type="image/png" sizes="any" />
+
         <Script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest" strategy="beforeInteractive" />
         <Script id="disable-devtool-init" strategy="beforeInteractive">
           {`

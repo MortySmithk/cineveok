@@ -118,8 +118,11 @@ a { text-decoration: none; color: inherit; }
   transition: all 0.4s ease; display: flex; align-items: center; justify-content: center;
 }
 .play-button-overlay {
-  width: 60px; height: 60px; opacity: 0;
-  transform: scale(0.8); transition: all 0.3s ease;
+  width: 80px; /* Aumentado de 60px para 80px */
+  height: 80px; /* Aumentado de 60px para 80px */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
 }
 .movie-card:hover .movie-card-poster { transform: scale(1.1); filter: brightness(0.7); }
 .movie-card:hover .movie-card-overlay { background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
