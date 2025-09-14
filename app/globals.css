@@ -117,37 +117,32 @@ main { padding-top: 68px; }
 .mobile-auth { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1.5rem;}
 .mobile-auth span { flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* --- SEARCH OVERLAY --- */
+/* --- SEARCH OVERLAY (CORREÇÃO AQUI) --- */
 .search-overlay {
   position: fixed; inset: 0; background-color: var(--background-color); z-index: 1100;
+  display: flex; flex-direction: column; /* Organiza header e conteúdo */
 }
-.search-overlay-header { 
-  position: relative; z-index: 2;
+.search-overlay-header {
   display: flex; align-items: center; gap: 0.5rem; height: 60px;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem 1rem; flex-shrink: 0; /* Impede que o header encolha */
   background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
 }
 .search-overlay-back-btn { background: none; border: none; color: white; padding: 0.5rem;}
 .search-overlay-input-wrapper { flex-grow: 1; }
 .search-overlay .search-input { height: 44px; }
 .search-overlay .search-button, .search-overlay .voice-search-btn { height: 44px; }
 
-/* CORREÇÃO AQUI: Posicionamento absoluto para o dropdown */
+/* As sugestões agora são um container separado com scroll */
 .search-overlay .search-container { position: static; }
 .search-overlay .suggestions-dropdown {
-  position: absolute;
-  top: 60px; /* Altura do header */
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 0;
-  border: none;
-  background-color: var(--background-color);
-  max-height: none;
-  overflow-y: auto;
+  position: static; /* Remove posicionamento absoluto */
+  border: none; background: transparent; max-height: none;
+  overflow-y: auto; /* Permite rolar apenas as sugestões */
+  flex-grow: 1; /* Ocupa o espaço restante */
   padding: 1rem;
 }
+
 
 /* --- VOICE SEARCH OVERLAY --- */
 .voice-search-overlay {
@@ -175,7 +170,7 @@ main { padding-top: 68px; }
   padding: 0.5rem 1.5rem; border-radius: 20px; cursor: pointer;
 }
 
-/* --- O RESTO DO CSS CONTINUA IGUAL... --- */
+
 /* --- CARD DE FILME E GRID RESPONSIVA --- */
 .responsive-grid {
     display: grid;
@@ -462,6 +457,8 @@ main { padding-top: 68px; }
 
   .footer-grid { text-align: center; }
 }
+
+/* --- ESTILOS ADICIONADOS NO FINAL DO ARQUIVO --- */
 /* --- PÁGINA DE DOCUMENTAÇÃO DA API --- */
 .api-docs-content section {
   margin-bottom: 2.5rem;

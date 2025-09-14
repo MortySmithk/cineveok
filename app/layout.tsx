@@ -78,7 +78,7 @@ export default function RootLayout({
                     <li><Link href="/filmes">Filmes</Link></li>
                     <li><Link href="/series">Séries</Link></li>
                     <li><Link href="/animacoes">Animações</Link></li>
-                    <li><Link href="/api-docs">API</Link></li> {/* LINHA ADICIONADA */}
+                    <li><Link href="/api-docs">API</Link></li>
                   </ul>
                 </div>
               </div>

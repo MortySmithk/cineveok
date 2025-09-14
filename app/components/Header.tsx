@@ -50,8 +50,8 @@ export default function Header() {
                 <Image
                   src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
                   alt="CineVEO Logo"
-                  width={160} // MODIFICADO
-                  height={40} // MODIFICADO
+                  width={160}
+                  height={40}
                   priority
                   style={{ objectFit: 'contain' }}
                 />
@@ -105,6 +105,7 @@ export default function Header() {
             <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
             <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
             <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
+            <Link href="/api-docs" style={getLinkStyle('/api-docs')}>API</Link> {/* LINHA ADICIONADA */}
         </nav>
         <div className="mobile-auth">
             {user ? (
