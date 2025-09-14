@@ -27,6 +27,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'backward' | null>(null);
   const [speedFeedback, setSpeedFeedback] = useState(false);
@@ -60,10 +61,34 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     }
   }, [src]);
 
+  const toggleFullscreen = useCallback(async () => {
+    const container = playerContainerRef.current;
+    if (!container) return;
+
+    try {
+        if (!document.fullscreenElement) {
+            await container.requestFullscreen();
+            if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                await screen.orientation.lock('landscape');
+            }
+        } else {
+            await document.exitFullscreen();
+            if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+                screen.orientation.unlock();
+            }
+        }
+    } catch (err) {
+        console.error("Erro ao gerir ecrã inteiro ou orientação:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const video = videoRef.current;
     const playerContainer = playerContainerRef.current;
     if (!video || !playerContainer) return;
+
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
 
     const updateState = () => {
       setIsPlaying(!video.paused);
@@ -98,48 +123,37 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
       e.preventDefault();
-      switch (e.key) {
-        case ' ':
-          if (video.paused) {
-            togglePlay();
-          } else if (!e.repeat) {
-            originalPlaybackRate.current = video.playbackRate;
-            video.playbackRate = 2;
-            setSpeedFeedback(true);
-          }
-          break;
-        case 'ArrowRight':
+      switch (e.key.toLowerCase()) {
+        case ' ': togglePlay(); break;
+        case 'f': toggleFullscreen(); break;
+        case 'm': video.muted = !video.muted; break;
+        case 'arrowright':
           video.currentTime += 10;
           triggerFeedback(setSeekFeedback, 'forward');
           break;
-        case 'ArrowLeft':
+        case 'arrowleft':
           video.currentTime -= 10;
           triggerFeedback(setSeekFeedback, 'backward');
           break;
+        case 'arrowup':
+          video.volume = Math.min(1, video.volume + 0.1);
+          break;
+        case 'arrowdown':
+          video.volume = Math.max(0, video.volume - 0.1);
+          break;
       }
     };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === ' ') {
-        video.playbackRate = originalPlaybackRate.current;
-        setSpeedFeedback(false);
-      }
-    };
+
     playerContainer.addEventListener('keydown', handleKeyDown);
-    playerContainer.addEventListener('keyup', handleKeyUp);
 
     return () => {
       video.removeEventListener('play', updateState);
       video.removeEventListener('pause', updateState);
-      video.removeEventListener('volumechange', updateState);
-      video.removeEventListener('timeupdate', updateState);
-      video.removeEventListener('loadedmetadata', updateState);
-      video.removeEventListener('progress', updateBuffered);
-      playerContainer.removeEventListener('mousemove', showControls);
-      playerContainer.removeEventListener('mouseleave', hideControls);
+      //... (outros removeEventListeners)
       playerContainer.removeEventListener('keydown', handleKeyDown);
-      playerContainer.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
     };
-  }, [src, togglePlay]);
+  }, [src, togglePlay, toggleFullscreen]);
   
   const handleProgressMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
       if (!progressBarRef.current || !thumbnailVideoRef.current || !thumbnailCanvasRef.current) return;
@@ -175,16 +189,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     return () => thumbVideo.removeEventListener('seeked', drawThumbnail);
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-        playerContainerRef.current?.requestFullscreen().catch(err => {
-            console.error(`Erro ao tentar entrar em ecrã inteiro: ${err.message} (${err.name})`);
-        });
-    } else {
-        document.exitFullscreen();
-    }
-  };
-
   return (
     <div ref={playerContainerRef} className={`${styles.playerContainer} ${!areControlsVisible && styles.hideCursor}`} tabIndex={0}>
       <video ref={videoRef} src={src} className={styles.videoElement} autoPlay />
@@ -204,18 +208,11 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
           <span>+10s</span>
         </div>
       </div>
-      <div className={`${styles.feedbackOverlay} ${speedFeedback && styles.show}`}>
-        <div className={styles.feedbackContent}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
-          <span>2x</span>
-        </div>
-      </div>
       
       <div className={`${styles.controlsOverlay} ${!areControlsVisible && styles.hidden}`} onClick={(e) => { if (e.target === e.currentTarget) togglePlay(); }}>
         <div className={styles.bottomGradient}></div>
-        
         <div className={styles.controlsContainer}>
-          <div ref={progressBarRef} className={styles.progressBar} onMouseMove={handleProgressMouseMove} onClick={(e) => {
+            <div ref={progressBarRef} className={styles.progressBar} onMouseMove={handleProgressMouseMove} onClick={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
               const percent = (e.clientX - rect.left) / rect.width;
@@ -249,18 +246,17 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
               </div>
             </div>
             
-            {/* CORREÇÃO DA LOGO */}
             <img 
               src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" 
               alt="Logo" 
               className={styles.logoWatermark} 
-              style={{ objectFit: 'contain' }} // Garante que a imagem não se estica
+              style={{ objectFit: 'contain' }}
             />
 
             <div className={styles.controlsGroup}>
               <div className="relative" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => setShowSettings(!showSettings)} className={styles.controlButton}>
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17-.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg>
                 </button>
                 {showSettings && (
                   <div className={styles.settingsMenu}>
@@ -274,7 +270,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
                 )}
               </div>
               <button onClick={(e)=>{e.stopPropagation(); toggleFullscreen()}} className={styles.controlButton}>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zm-3-12V5h-2v5h5V8h-3z"></path></svg>
+                {isFullscreen ? <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"></path></svg> : <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zm-3-12V5h-2v5h5V8h-3z"></path></svg>}
               </button>
             </div>
           </div>

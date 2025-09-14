@@ -4,17 +4,27 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { CSSProperties, useState } from 'react';
+import { CSSProperties, useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import SearchComponent from './SearchComponent'; // Importa o novo componente
+
+import SearchComponent from './SearchComponent';
+import SearchOverlay from './SearchOverlay';
+import SearchIcon from './icons/SearchIcon';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Fecha os menus quando a rota muda
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setIsSearchOpen(false);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -29,74 +39,86 @@ export default function Header() {
       transition: 'color 0.2s ease',
     };
   };
-  
-  const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="site-header-main">
-      <div className="header-content">
-        <div className="header-left">
-          <Link href="/">
-            <Image
-              src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
-              alt="CineVEO Logo"
-              width={140}
-              height={35}
-              priority
-              style={{ objectFit: 'contain' }}
-            />
-          </Link>
-          <nav className="header-nav-desktop">
+    <>
+      <header className="site-header-main">
+        <div className="header-content">
+          <div className="header-left">
+            {!isMenuOpen && (
+              <Link href="/">
+                <Image
+                  src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
+                  alt="CineVEO Logo"
+                  width={140}
+                  height={35}
+                  priority
+                  style={{ objectFit: 'contain' }}
+                />
+              </Link>
+            )}
+            <nav className="header-nav-desktop">
+              <Link href="/" style={getLinkStyle('/')}>Início</Link>
+              <Link href="/filmes" style={getLinkStyle('/filmes')}>Filmes</Link>
+              <Link href="/series" style={getLinkStyle('/series')}>Séries</Link>
+              <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
+              <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
+              <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
+            </nav>
+          </div>
+
+          <div className="header-right">
+            <div className="header-search-desktop">
+              <SearchComponent />
+            </div>
+            <button className="header-search-mobile-btn" onClick={() => setIsSearchOpen(true)}>
+              <SearchIcon width={22} height={22} />
+            </button>
+            
+            <div className="header-auth-desktop">
+              {user ? (
+                  <>
+                      <span className="user-greeting">Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
+                      <button onClick={handleSignOut} className="btn-secondary-small">Sair</button>
+                  </>
+              ) : (
+                  <Link href="/login" className="btn-primary-small">Entrar</Link>
+              )}
+            </div>
+            
+            <button className="hamburger-menu" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? 
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> : 
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              }
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Overlays */}
+      <div className={`mobile-menu-overlay ${isMenuOpen ? 'open' : ''}`}>
+        <nav className="mobile-nav-links">
             <Link href="/" style={getLinkStyle('/')}>Início</Link>
             <Link href="/filmes" style={getLinkStyle('/filmes')}>Filmes</Link>
             <Link href="/series" style={getLinkStyle('/series')}>Séries</Link>
             <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
             <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
             <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
-          </nav>
-        </div>
-
-        <div className="header-right">
-          <SearchComponent />
-          <div className="header-auth-desktop">
+        </nav>
+        <div className="mobile-auth">
             {user ? (
                 <>
-                    <span className="user-greeting">Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
+                    <span>Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
                     <button onClick={handleSignOut} className="btn-secondary-small">Sair</button>
                 </>
             ) : (
                 <Link href="/login" className="btn-primary-small">Entrar</Link>
             )}
-          </div>
-          <button className="hamburger-menu" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            &#9776; {/* Ícone de hambúrguer */}
-          </button>
         </div>
       </div>
-      
-      {/* Menu Mobile */}
-      {isMenuOpen && (
-        <div className="mobile-menu">
-            <nav className="mobile-nav-links">
-                <Link href="/" style={getLinkStyle('/')} onClick={closeMenu}>Início</Link>
-                <Link href="/filmes" style={getLinkStyle('/filmes')} onClick={closeMenu}>Filmes</Link>
-                <Link href="/series" style={getLinkStyle('/series')} onClick={closeMenu}>Séries</Link>
-                <Link href="/animacoes" style={getLinkStyle('/animacoes')} onClick={closeMenu}>Animações</Link>
-                <Link href="/novelas" style={getLinkStyle('/novelas')} onClick={closeMenu}>Novelas</Link>
-                <Link href="/animes" style={getLinkStyle('/animes')} onClick={closeMenu}>Animes</Link>
-            </nav>
-            <div className="mobile-auth">
-                {user ? (
-                    <>
-                        <span>Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
-                        <button onClick={() => { handleSignOut(); closeMenu(); }} className="btn-secondary-small">Sair</button>
-                    </>
-                ) : (
-                    <Link href="/login" className="btn-primary-small" onClick={closeMenu}>Entrar</Link>
-                )}
-            </div>
-        </div>
-      )}
-    </header>
+
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+    </>
   );
 }
