@@ -300,13 +300,14 @@
     font-weight: bold;
 }
 
+/* --- MODIFICAÇÕES AQUI --- */
 .logoWatermark {
     position: absolute;
-    bottom: 1rem;
-    left: 1.5rem;
-    width: 100px; /* Tamanho original */
+    bottom: 80px; /* Distância do fundo */
+    left: 20px;   /* Distância da esquerda */
+    width: 140px; /* Tamanho aumentado */
     height: auto;
-    opacity: 0.5;
+    opacity: 1;   /* Sem transparência */
     pointer-events: none;
     z-index: 1;
 }

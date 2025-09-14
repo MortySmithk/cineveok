@@ -34,8 +34,8 @@ export async function GET(
       if (episodeData && Array.isArray(episodeData.urls) && episodeData.urls.length > 0) {
         console.log(`[API/Stream/Series] Fonte manual encontrada no Firestore para ${tmdbId} S${season}E${episode}`);
         const streams = episodeData.urls.map((u: { quality: string; url: string }) => ({
-          name: `Fonte Manual - ${u.quality || 'HD'}`,
-          description: `Fonte Manual - ${u.quality || 'HD'} Dublado`,
+          name: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
+          description: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
           url: u.url,
         }));
         return NextResponse.json({ streams });

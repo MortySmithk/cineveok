@@ -50,8 +50,8 @@ export default function Header() {
                 <Image
                   src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
                   alt="CineVEO Logo"
-                  width={140}
-                  height={35}
+                  width={160} // MODIFICADO
+                  height={40} // MODIFICADO
                   priority
                   style={{ objectFit: 'contain' }}
                 />

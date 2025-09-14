@@ -29,8 +29,8 @@ export async function GET(
       if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
         console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${tmdbId}`);
         const streams = data.urls.map((u: { quality: string; url: string }) => ({
-          name: `Fonte Manual - ${u.quality || 'HD'}`,
-          description: `Fonte Manual - ${u.quality || 'HD'} Dublado`,
+          name: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
+          description: `CineVEO - ${u.quality || 'HD'} Dublado`, // MODIFICADO
           url: u.url,
         }));
         return NextResponse.json({ streams });
@@ -43,7 +43,6 @@ export async function GET(
   // --- ETAPA 2: Fallback para APIs externas ---
   console.log(`[API/Stream/Movie] Fonte não encontrada no Firestore. Buscando em APIs externas para ${tmdbId}`);
   
-  // Primeiro, precisamos do IMDb ID para as APIs externas
   let imdbId: string | null = null;
   try {
     const externalIdsResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`);
@@ -59,7 +58,6 @@ export async function GET(
     return NextResponse.json({ streams: [], error: "Não foi possível encontrar o IMDb ID para este título." }, { status: 404 });
   }
 
-  // Agora, busca nas APIs de stream com o IMDb ID
   for (const baseUrl of STREAM_API_URLS) {
     try {
       const fullUrl = `${baseUrl}/${imdbId}.json`;
