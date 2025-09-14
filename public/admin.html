@@ -94,7 +94,7 @@
                                 </div>
                                 <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
                             </div>
-                            <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="6" placeholder="Cole os links aqui no formato EP##: URL..."></textarea>
+                            <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links aqui no formato:&#10;Temporada 1&#10;EP01: https://...&#10;EP02: https://...&#10;Temporada 2&#10;EP01: https://..."></textarea>
                             <div id="episodes-list" class="space-y-3 max-h-96 overflow-y-auto p-2 bg-gray-900 rounded-md">
                                 </div>
                         </div>
@@ -130,6 +130,9 @@
 
         const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
+
+        // --- Variável para armazenar os dados da importação em massa ---
+        let bulkImportData = {};
 
         // Elementos da UI
         const loginScreen = document.getElementById('login-screen');
@@ -255,6 +258,10 @@
                     `;
                     episodesList.appendChild(div);
                 });
+                
+                // Preenche com os dados da importação em massa se existirem
+                populateFromBulkData(seasonNumber);
+
             } catch (error) {
                 episodesList.innerHTML = '<p class="text-red-400">Erro ao carregar episódios.</p>';
             }
@@ -272,6 +279,8 @@
             seasonSelector.innerHTML = '';
             saveBtn.disabled = true;
             bulkImportTextarea.classList.add('hidden');
+            bulkImportTextarea.value = '';
+            bulkImportData = {}; // Limpa os dados da importação
         };
         
         const addMovieResolutionUI = (quality = '', url = '') => {
@@ -344,24 +353,46 @@
                 return;
             }
 
+            bulkImportData = {}; // Limpa dados anteriores
+            let currentSeason = -1;
+
             const lines = text.split('\n').filter(line => line.trim() !== '');
             lines.forEach(line => {
-                const match = line.match(/EP(\d+):\s*(.*)/i);
-                if (match) {
-                    const episodeNumber = parseInt(match[1], 10);
-                    const url = match[2].trim();
-                    
-                    if (url) {
-                        const episodeInput = document.querySelector(`.episode-url[data-episode-number="${episodeNumber}"]`);
-                        if (episodeInput) {
-                            episodeInput.value = url;
-                        }
+                // Tenta encontrar "Temporada X"
+                const seasonMatch = line.match(/Temporada\s+(\d+)/i);
+                if (seasonMatch) {
+                    currentSeason = parseInt(seasonMatch[1], 10);
+                    if (!bulkImportData[currentSeason]) {
+                        bulkImportData[currentSeason] = {};
                     }
+                    return; // Pula para a próxima linha
+                }
+
+                // Tenta encontrar "EP##: URL"
+                const episodeMatch = line.match(/EP(\d+):\s*(https?:\/\/\S+)/i);
+                if (episodeMatch && currentSeason !== -1) {
+                    const episodeNumber = parseInt(episodeMatch[1], 10);
+                    const url = episodeMatch[2].trim();
+                    bulkImportData[currentSeason][episodeNumber] = url;
                 }
             });
-            alert('Links importados. Agora clique em Salvar para atualizar.');
+            
+            const selectedSeason = seasonSelector.value;
+            populateFromBulkData(selectedSeason);
+            alert('Links processados. Verifique os campos e salve. Mude de temporada para ver os outros links importados.');
         };
 
+        const populateFromBulkData = (seasonNumber) => {
+            const seasonData = bulkImportData[seasonNumber];
+            if (seasonData) {
+                for (const [epNumber, url] of Object.entries(seasonData)) {
+                    const episodeInput = document.querySelector(`.episode-url[data-episode-number="${epNumber}"]`);
+                    if (episodeInput) {
+                        episodeInput.value = url;
+                    }
+                }
+            }
+        };
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -402,11 +433,13 @@
             });
 
             bulkImportBtn.addEventListener('click', () => {
-                bulkImportTextarea.classList.toggle('hidden');
-                if (!bulkImportTextarea.classList.contains('hidden')) {
+                const isHidden = bulkImportTextarea.classList.toggle('hidden');
+                if (!isHidden) {
                     bulkImportTextarea.focus();
+                    bulkImportBtn.textContent = 'Aplicar Links';
                 } else {
                     handleBulkImport();
+                    bulkImportBtn.textContent = 'Importar em Massa';
                 }
             });
         });
