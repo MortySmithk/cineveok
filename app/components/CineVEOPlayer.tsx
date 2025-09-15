@@ -38,7 +38,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   const [isLogoVisible, setIsLogoVisible] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'backward' | null>(null);
 
-  // *** INÍCIO DA CORREÇÃO: VERIFICA SE A FONTE É UM IFRAME ***
   const isIframeSource = src.includes('roxanoplay');
 
   const togglePlay = useCallback(() => {
@@ -51,12 +50,17 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     date.setSeconds(time || 0);
     return date.toISOString().substr(14, 5);
   };
-  
-  // O resto do código permanece o mesmo até a parte de renderização...
-  // ... (código dos hooks useEffect e outras funções omitido para brevidade) ...
+
+  // *** INÍCIO DA CORREÇÃO: FUNÇÃO REINSERIDA ***
+  const triggerFeedback = (type: 'forward' | 'backward') => {
+    if (isIframeSource) return;
+    setSeekFeedback(type);
+    setTimeout(() => setSeekFeedback(null), 500);
+  };
+  // *** FIM DA CORREÇÃO ***
 
   useEffect(() => {
-    if (isIframeSource) return; // Não executa hooks de vídeo se for iframe
+    if (isIframeSource) return;
     const video = videoRef.current;
     if (video) video.autoplay = true;
     
@@ -79,7 +83,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   }, []);
 
   useEffect(() => {
-    if (isIframeSource) return; // Não executa hooks de vídeo se for iframe
+    if (isIframeSource) return;
     const video = videoRef.current;
     const playerContainer = playerContainerRef.current;
     if (!video || !playerContainer) return;
@@ -111,7 +115,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     document.addEventListener('fullscreenchange', onFullscreenChange);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
+      if (e.target instanceof HTMLInputElement || !video) return;
       e.preventDefault();
       switch (e.key.toLowerCase()) {
         case ' ': togglePlay(); break; case 'f': toggleFullscreen(); break; case 'm': video.muted = !video.muted; break;
@@ -129,7 +133,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     };
   }, [src, togglePlay, toggleFullscreen, isIframeSource]);
 
-  // --- RENDERIZAÇÃO CONDICIONAL ---
   if (isIframeSource) {
     return (
       <iframe
