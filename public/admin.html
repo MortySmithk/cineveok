@@ -282,11 +282,11 @@
             bulkImportData = {};
         };
         
+        // CORREÇÃO: Removendo o campo de "qualidade" para filmes
         const addMovieResolutionUI = (quality = '', url = '') => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
-                <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-1/4" placeholder="Qualidade (ex: 720p)">
                 <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
                 <button type="button" class="remove-btn text-red-500 hover:text-red-400">X</button>
             `;
@@ -307,20 +307,18 @@
             const docRef = doc(firestore, "media", id);
 
             try {
-                // *** INÍCIO DA CORREÇÃO ***
                 const docSnap = await getDoc(docRef);
                 const existingData = docSnap.exists() ? docSnap.data() : {};
                 const mediaData = { 
-                    ...existingData, // Mantém os dados existentes
+                    ...existingData, 
                     type: type === 'tv' ? 'series' : 'movie' 
                 };
 
                 if (type === 'movie') {
                     const urls = [];
                     document.querySelectorAll('#movie-urls-list > div').forEach(div => {
-                        const quality = div.querySelector('.movie-quality').value.trim();
                         const url = div.querySelector('.movie-url').value.trim();
-                        if (quality && url) urls.push({ quality, url });
+                        if (url) urls.push({ quality: 'HD', url: url });
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
@@ -336,17 +334,14 @@
                         }
                     });
 
-                    // Garante que a estrutura 'seasons' exista
                     if (!mediaData.seasons) {
                         mediaData.seasons = {};
                     }
                     
-                    // Atualiza apenas a temporada atual, preservando as outras
                     mediaData.seasons[seasonNumber] = { episodes: newEpisodes };
                 }
                 
-                await setDoc(docRef, mediaData); // Salva o objeto completo, sem merge
-                // *** FIM DA CORREÇÃO ***
+                await setDoc(docRef, mediaData); 
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
@@ -368,13 +363,13 @@
             }
 
             bulkImportData = {};
-            let currentSeason = -1;
+            let currentSeason = seasonSelector.value; // CORREÇÃO: Use a temporada atualmente selecionada como padrão
 
             const lines = text.split('\n').filter(line => line.trim() !== '');
             lines.forEach(line => {
                 const seasonMatch = line.match(/Temporada\s+(\d+)/i);
                 if (seasonMatch) {
-                    currentSeason = parseInt(seasonMatch[1], 10);
+                    currentSeason = parseInt(seasonMatch[1], 10).toString(); // CORREÇÃO: Armazena como string para coincidir com a chave
                     if (!bulkImportData[currentSeason]) {
                         bulkImportData[currentSeason] = {};
                     }
@@ -385,6 +380,9 @@
                 if (episodeMatch && currentSeason !== -1) {
                     const episodeNumber = parseInt(episodeMatch[1], 10);
                     const url = episodeMatch[2].trim();
+                    if (!bulkImportData[currentSeason]) {
+                        bulkImportData[currentSeason] = {};
+                    }
                     bulkImportData[currentSeason][episodeNumber] = url;
                 }
             });
@@ -444,12 +442,15 @@
                 await loadEpisodesForSeason(seriesId, e.target.value, firestoreData);
             });
 
+            // CORREÇÃO: Lógica do botão de importação em massa
             bulkImportBtn.addEventListener('click', () => {
-                const isHidden = bulkImportTextarea.classList.toggle('hidden');
-                if (!isHidden) {
+                const isHidden = bulkImportTextarea.classList.contains('hidden');
+                if (isHidden) {
+                    bulkImportTextarea.classList.remove('hidden');
                     bulkImportTextarea.focus();
                     bulkImportBtn.textContent = 'Aplicar Links';
                 } else {
+                    bulkImportTextarea.classList.add('hidden');
                     handleBulkImport();
                     bulkImportBtn.textContent = 'Importar em Massa';
                 }
