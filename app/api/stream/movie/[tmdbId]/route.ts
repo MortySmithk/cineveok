@@ -14,7 +14,6 @@ interface Stream {
   name: string;
   description: string;
   url: string;
-  // Adicione quaisquer outros campos que possam vir das APIs
   [key: string]: any; 
 }
 
@@ -27,10 +26,9 @@ export async function GET(
     return NextResponse.json({ error: "TMDB ID é necessário." }, { status: 400 });
   }
 
-  const allStreams: Stream[] = [];
   let imdbId: string | null = null;
-
-  // --- ETAPA 1: Obter IMDb ID ---
+  
+  // --- Obter IMDb ID (necessário para APIs externas) ---
   try {
     const externalIdsResponse = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`);
     if (externalIdsResponse.ok) {
@@ -41,9 +39,7 @@ export async function GET(
     console.error(`[API/Stream/Movie] Falha ao buscar IMDb ID para ${tmdbId}:`, e);
   }
 
-  // --- ETAPA 2: Buscar em todas as fontes ---
-
-  // 2a: APIs Externas Principais
+  // --- Prioridade 1: APIs Externas (Dublado) ---
   if (imdbId) {
     console.log(`[API/Stream/Movie] Buscando em APIs externas para IMDb ID: ${imdbId}`);
     for (const baseUrl of STREAM_API_URLS) {
@@ -51,9 +47,10 @@ export async function GET(
         const response = await fetch(`${baseUrl}/${imdbId}.json`, { signal: AbortSignal.timeout(8000) });
         if (response.ok) {
           const data = await response.json();
-          if (data && data.streams && data.streams.length > 0) {
-            console.log(`[API/Stream/Movie] Fonte encontrada em ${baseUrl}`);
-            allStreams.push(...data.streams);
+          const dubbedStreams = data.streams?.filter((s: Stream) => s.description && s.description.toLowerCase().includes('dublado'));
+          if (dubbedStreams && dubbedStreams.length > 0) {
+            console.log(`[API/Stream/Movie] Fonte DUAL/DUB encontrada em ${baseUrl}. Retornando...`);
+            return NextResponse.json({ streams: dubbedStreams });
           }
         }
       } catch (error) {
@@ -62,60 +59,40 @@ export async function GET(
     }
   }
 
-  // 2b: Firestore
+  // --- Prioridade 2: Firestore ---
   try {
     const docRef = doc(db, "media", tmdbId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
       if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
-        console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${tmdbId}`);
+        console.log(`[API/Stream/Movie] Fonte manual encontrada no Firestore para ${tmdbId}. Retornando...`);
         const firestoreStreams = data.urls.map((u: { quality: string; url: string }) => ({
           name: `CineVEO - Player HD`,
           description: `Qualidade ${u.quality || 'HD'}`,
           url: u.url,
         }));
-        allStreams.push(...firestoreStreams);
+        return NextResponse.json({ streams: firestoreStreams });
       }
     }
   } catch (error) {
     console.error(`[API/Stream/Movie] Erro ao buscar do Firestore para ${tmdbId}:`, error);
   }
 
-  // 2c: Roxano Play API
-  if (imdbId) {
-    console.log(`[API/Stream/Movie] Adicionando fonte da Roxano Play para ${imdbId}`);
-    allStreams.push({
+  // --- Prioridade 3: Roxano Play API (usa TMDB ID) ---
+  console.log(`[API/Stream/Movie] Verificando fonte da Roxano Play para TMDB ID: ${tmdbId}`);
+  const roxanoStream = {
       name: 'CineVEO - Player HD',
       description: 'Fonte alternativa',
-      url: `https://roxanoplay.bb-bet.top/pages/hostmov.php?id=${imdbId}`,
-    });
-  }
+      // CORREÇÃO: Usando tmdbId ao invés de imdbId
+      url: `https://roxanoplay.bb-bet.top/pages/hostmov.php?id=${tmdbId}`,
+  };
+  // Como não podemos verificar se o link é válido aqui, vamos retorná-lo para o cliente tentar.
+  // Poderíamos adicionar um HEAD request aqui no futuro, se necessário.
+  return NextResponse.json({ streams: [roxanoStream] });
+  
+  // Nenhuma das fontes prioritárias foi encontrada, aqui poderíamos adicionar um fallback para streams legendados, mas a lógica atual já retorna a Roxano.
+  // Caso a Roxano falhe no cliente, a página de mídia mostrará "Nenhuma fonte encontrada".
 
-  // --- ETAPA 3: Priorizar e Filtrar ---
-  if (allStreams.length > 0) {
-    // Prioridade 1: Streams Dublados da API Principal
-    const dubbedStreams = allStreams.filter(s => s.description && s.description.toLowerCase().includes('dublado'));
-    if (dubbedStreams.length > 0) {
-      console.log(`[API/Stream/Movie] Priorizando ${dubbedStreams.length} stream(s) dublado(s).`);
-      return NextResponse.json({ streams: dubbedStreams });
-    }
-
-    // Prioridade 2: Streams manuais (Firestore, Roxano)
-    const manualStreams = allStreams.filter(s => s.name === 'CineVEO - Player HD');
-    if (manualStreams.length > 0) {
-        console.log(`[API/Stream/Movie] Priorizando ${manualStreams.length} stream(s) manuai(s).`);
-        return NextResponse.json({ streams: manualStreams });
-    }
-
-    // Fallback: Retorna todos os outros streams
-    const otherStreams = allStreams.filter(s => !s.description?.toLowerCase().includes('dublado') && s.name !== 'CineVEO - Player HD');
-    if (otherStreams.length > 0) {
-        console.log(`[API/Stream/Movie] Usando ${otherStreams.length} stream(s) de fallback.`);
-        return NextResponse.json({ streams: otherStreams });
-    }
-  }
-
-  // Se nada for encontrado
-  return NextResponse.json({ streams: [], error: "Nenhum stream disponível no momento" }, { status: 404 });
+  // return NextResponse.json({ streams: [], error: "Nenhum stream disponível no momento" }, { status: 404 });
 }

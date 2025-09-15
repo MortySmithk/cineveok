@@ -38,6 +38,9 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   const [isLogoVisible, setIsLogoVisible] = useState(false);
   const [seekFeedback, setSeekFeedback] = useState<'forward' | 'backward' | null>(null);
 
+  // *** INÍCIO DA CORREÇÃO: VERIFICA SE A FONTE É UM IFRAME ***
+  const isIframeSource = src.includes('roxanoplay');
+
   const togglePlay = useCallback(() => {
     if (videoRef.current?.paused) videoRef.current?.play();
     else videoRef.current?.pause();
@@ -48,13 +51,12 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     date.setSeconds(time || 0);
     return date.toISOString().substr(14, 5);
   };
-
-  const triggerFeedback = (type: 'forward' | 'backward') => {
-    setSeekFeedback(type);
-    setTimeout(() => setSeekFeedback(null), 500);
-  };
+  
+  // O resto do código permanece o mesmo até a parte de renderização...
+  // ... (código dos hooks useEffect e outras funções omitido para brevidade) ...
 
   useEffect(() => {
+    if (isIframeSource) return; // Não executa hooks de vídeo se for iframe
     const video = videoRef.current;
     if (video) video.autoplay = true;
     
@@ -67,7 +69,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
     };
     video?.addEventListener('timeupdate', handleTimeUpdate);
     return () => video?.removeEventListener('timeupdate', handleTimeUpdate);
-  }, [src, isLogoVisible]);
+  }, [src, isLogoVisible, isIframeSource]);
 
   const toggleFullscreen = useCallback(() => {
     const container = playerContainerRef.current;
@@ -77,6 +79,7 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
   }, []);
 
   useEffect(() => {
+    if (isIframeSource) return; // Não executa hooks de vídeo se for iframe
     const video = videoRef.current;
     const playerContainer = playerContainerRef.current;
     if (!video || !playerContainer) return;
@@ -124,7 +127,20 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
       video.removeEventListener('play', updateState); video.removeEventListener('pause', updateState);
       playerContainer.removeEventListener('keydown', handleKeyDown); document.removeEventListener('fullscreenchange', onFullscreenChange);
     };
-  }, [src, togglePlay, toggleFullscreen]);
+  }, [src, togglePlay, toggleFullscreen, isIframeSource]);
+
+  // --- RENDERIZAÇÃO CONDICIONAL ---
+  if (isIframeSource) {
+    return (
+      <iframe
+        src={src}
+        className={styles.iframePlayer}
+        allowFullScreen
+        allow="autoplay; encrypted-media"
+        style={{ width: '100%', height: '100%', border: 'none' }}
+      ></iframe>
+    );
+  }
 
   return (
     <div ref={playerContainerRef} className={`${styles.playerContainer} ${!areControlsVisible && styles.hideCursor}`} tabIndex={0}>
@@ -156,7 +172,6 @@ const CineVEOPlayer: React.FC<CineVEOPlayerProps> = ({ src }) => {
           
           <div className={styles.bottomControls}>
             <div className={styles.controlsGroup}>
-              {/* --- LINHA CORRIGIDA ABAIXO --- */}
               <button onClick={togglePlay} className={styles.controlButton} title={isPlaying ? 'Pausar' : 'Assistir'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
               <button onClick={() => {if(videoRef.current) videoRef.current.currentTime -=10; triggerFeedback('backward');}} className={styles.controlButton} title="Voltar 10 Segundos"><Rewind10Icon /></button>
               <button onClick={() => {if(videoRef.current) videoRef.current.currentTime +=10; triggerFeedback('forward');}} className={styles.controlButton} title="Avançar 10 Segundos"><Forward10Icon /></button>
