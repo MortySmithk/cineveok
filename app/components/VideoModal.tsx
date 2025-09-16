@@ -33,6 +33,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
               frameBorder="0"
               allow="autoplay; encrypted-media"
               allowFullScreen
+              referrerPolicy="no-referrer" // <-- CORREÇÃO ADICIONADA AQUI
               title="CineVEO Player"
             ></iframe>
           ) : (
