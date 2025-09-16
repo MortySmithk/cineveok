@@ -24,24 +24,24 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
             &times;
           </button>
         </div>
-        <div className="w-full aspect-video bg-black">
-          {src ? (
-            <iframe
-              src={src}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              referrerPolicy="no-referrer" // <-- CORREÇÃO ADICIONADA AQUI
-              title="CineVEO Player"
-            ></iframe>
-          ) : (
-            <div style={{ color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              Carregando stream...
-            </div>
-          )}
-        </div>
+        
+        {/* O wrapper <div> foi removido e o estilo aplicado diretamente no iframe */}
+        {src ? (
+          <iframe
+            src={src}
+            width="100%"
+            style={{ aspectRatio: '16 / 9', border: 'none' }} // Estilo que você pediu
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            referrerPolicy="no-referrer" // Essencial para o player carregar
+            title="CineVEO Player"
+          ></iframe>
+        ) : (
+          // Placeholder de carregamento que também respeita a proporção
+          <div style={{ aspectRatio: '16 / 9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+            Carregando stream...
+          </div>
+        )}
       </div>
     </div>
   );
