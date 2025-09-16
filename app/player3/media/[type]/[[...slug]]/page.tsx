@@ -3,13 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import axios from 'axios';
-import CineVEOPlayer from '@/app/components/CineVEOPlayer';
 import Image from 'next/image';
-
-interface Stream {
-  url: string;
-}
 
 const PlayerEmbedPage = () => {
   const params = useParams();
@@ -21,38 +15,27 @@ const PlayerEmbedPage = () => {
 
   useEffect(() => {
     if (!type || !slug || !Array.isArray(slug) || slug.length === 0) {
-      setError("Parâmetros inválidos.");
+      setError("Parâmetros inválidos na URL.");
       setIsLoading(false);
       return;
     }
 
-    const fetchStream = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      const path = slug.join('/');
-      const apiUrl = `/api/stream/${type}/${path}`;
+    let url = '';
+    if (type === 'movie') {
+      const [tmdbId] = slug;
+      url = `https://primevicio.vercel.app/embed/movie/${tmdbId}`;
+    } else if (type === 'tv') {
+      const [tmdbId, season, episode] = slug;
+      url = `https://primevicio.vercel.app/embed/tv/${tmdbId}/${season}/${episode}`;
+    }
 
-      try {
-        const response = await axios.get(apiUrl);
-        const streams: Stream[] = response.data.streams || [];
-        
-        // Pega a primeira URL disponível
-        if (streams.length > 0 && streams[0].url) {
-          const proxyUrl = `/api/video-proxy?videoUrl=${encodeURIComponent(streams[0].url)}`;
-          setStreamUrl(proxyUrl);
-        } else {
-          setError("Nenhuma fonte de vídeo encontrada para este conteúdo.");
-        }
-      } catch (err) {
-        setError("Não foi possível carregar a fonte de vídeo.");
-        console.error("Erro ao buscar stream:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (url) {
+      setStreamUrl(url);
+    } else {
+      setError("Tipo de mídia não suportado.");
+    }
+    setIsLoading(false);
 
-    fetchStream();
   }, [type, slug]);
 
   return (
@@ -66,7 +49,15 @@ const PlayerEmbedPage = () => {
         <p style={{ color: 'white', fontFamily: 'sans-serif' }}>{error}</p>
       )}
       {streamUrl && !isLoading && (
-        <CineVEOPlayer src={streamUrl} />
+        <iframe
+            src={streamUrl}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            title="CineVEO Player Embed"
+        ></iframe>
       )}
     </div>
   );

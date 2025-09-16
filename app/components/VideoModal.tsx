@@ -2,7 +2,6 @@
 "use client";
 
 import React from 'react';
-import CineVEOPlayer from './CineVEOPlayer'; // Garante que está a importar o novo player
 
 interface VideoModalProps {
   src: string;
@@ -26,7 +25,21 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
           </button>
         </div>
         <div className="w-full aspect-video bg-black">
-            {src && <CineVEOPlayer src={src} />}
+          {src ? (
+            <iframe
+              src={src}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              title="CineVEO Player"
+            ></iframe>
+          ) : (
+            <div style={{ color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              Carregando stream...
+            </div>
+          )}
         </div>
       </div>
     </div>
