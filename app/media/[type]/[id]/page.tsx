@@ -33,9 +33,8 @@ interface MediaDetails {
 }
 interface StreamFromApi {
   url: string;
-  name: string; // Título principal da fonte (ex: CineVEO - Player HD)
-  description: string; // Descrição secundária (ex: Qualidade 1080p)
-  behaviorHints?: { proxyHeaders?: object }
+  name: string;
+  description: string;
 }
 interface ProcessedStream { url: string; title: string; description: string; }
 
@@ -119,18 +118,8 @@ export default function MediaPage() {
       const streams: StreamFromApi[] = response.data.streams || [];
       if (streams.length > 0) {
         const processed = streams
-          .filter(s => s && s.name && s.url) // Apenas streams com nome e url
-          .map(s => {
-            let finalUrl = s.url;
-            // Se não for uma URL de iframe, aplica o proxy
-            if (!s.url.includes('roxanoplay')) {
-                finalUrl = `/api/video-proxy?videoUrl=${encodeURIComponent(s.url)}`;
-                if (s.behaviorHints?.proxyHeaders) {
-                    finalUrl += `&headers=${encodeURIComponent(JSON.stringify(s.behaviorHints.proxyHeaders))}`;
-                }
-            }
-            return { title: s.name, description: s.description, url: finalUrl };
-          });
+          .filter(s => s && s.name && s.url)
+          .map(s => ({ title: s.name, description: s.description, url: s.url }));
         setAvailableStreams(processed);
       }
     } catch (error) { console.error("Erro ao buscar streams", error);
