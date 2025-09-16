@@ -15,6 +15,16 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
     return null;
   }
 
+  // Estilos para o iframe, convertidos para objeto React
+  const iframeStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    border: 'none' // Adicionado para garantir que não haja bordas
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -24,21 +34,23 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
             &times;
           </button>
         </div>
-        <div className="w-full aspect-video bg-black">
+        
+        {/* Estrutura de aspect-ratio que você forneceu */}
+        <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
           {src ? (
             <iframe
               src={src}
-              width="100%"
-              height="100%"
-              frameBorder="0"
+              style={iframeStyle}
               allow="autoplay; encrypted-media"
               allowFullScreen
-              referrerPolicy="no-referrer" // <-- CORREÇÃO ADICIONADA AQUI
+              referrerPolicy="no-referrer" // Essencial para o player carregar
               title="CineVEO Player"
             ></iframe>
           ) : (
-            <div style={{ color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              Carregando stream...
+            <div style={iframeStyle}>
+              <div style={{ width: '100%', height: '100%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+                Carregando stream...
+              </div>
             </div>
           )}
         </div>
