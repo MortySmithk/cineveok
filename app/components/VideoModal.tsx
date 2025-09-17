@@ -35,7 +35,6 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
           </button>
         </div>
         
-<<<<<<< HEAD
         {/* Estrutura de aspect-ratio que você forneceu */}
         <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
           {src ? (
@@ -55,25 +54,6 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
             </div>
           )}
         </div>
-=======
-        {/* O wrapper <div> foi removido e o estilo aplicado diretamente no iframe */}
-        {src ? (
-          <iframe
-            src={src}
-            width="100%"
-            style={{ aspectRatio: '16 / 9', border: 'none' }} // Estilo que você pediu
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            referrerPolicy="no-referrer" // Essencial para o player carregar
-            title="CineVEO Player"
-          ></iframe>
-        ) : (
-          // Placeholder de carregamento que também respeita a proporção
-          <div style={{ aspectRatio: '16 / 9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
-            Carregando stream...
-          </div>
-        )}
->>>>>>> afca92f0ae5e107952dd8191951f253d274bc8db
       </div>
     </div>
   );
