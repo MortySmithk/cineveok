@@ -23,9 +23,9 @@
         input:focus, select:focus, textarea:focus {
              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
         }
-        #episodes-list::-webkit-scrollbar { width: 6px; }
-        #episodes-list::-webkit-scrollbar-track { background: #1f2937; }
-        #episodes-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -56,18 +56,33 @@
         <main class="container mx-auto p-4 md:p-8">
             <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-bold text-white mb-4">Buscar no TMDB</h2>
-                    <div class="flex gap-2">
-                        <input id="catalog-search-input" type="text" placeholder="Nome do filme ou série..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
-                        <button id="catalog-search-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-600 transition">Buscar</button>
-                    </div>
-                    <div id="catalog-list" class="mt-4 space-y-3 max-h-96 overflow-y-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="lg:col-span-1 flex flex-col gap-8">
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-bold text-white mb-4">Adicionar Rápido por ID</h2>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                            <select id="quick-add-media-type" class="bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                                <option value="movie">Filme</option>
+                                <option value="tv">Série</option>
+                            </select>
+                            <button id="quick-add-btn" class="bg-teal-500 text-white font-bold px-4 py-2 rounded-md hover:bg-teal-600 transition">Carregar</button>
                         </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-xl font-bold text-white mb-4">Buscar no TMDB (Alternativo)</h2>
+                        <div class="flex gap-2">
+                            <input id="catalog-search-input" type="text" placeholder="Nome do filme ou série..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                            <button id="catalog-search-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-600 transition">Buscar</button>
+                        </div>
+                        <div id="catalog-list" class="mt-4 space-y-3 max-h-80 overflow-y-auto">
+                        </div>
+                    </div>
                 </div>
 
-                <div class="lg:col-span-2 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
                     <h2 class="text-xl font-bold text-white mb-4">Adicionar/Editar Links (Servidor 3)</h2>
                     <form id="media-form" class="space-y-4">
                         <input type="hidden" id="tmdb-id">
@@ -131,7 +146,6 @@
         const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
 
-        // --- Variável para armazenar os dados da importação em massa ---
         let bulkImportData = {};
 
         // Elementos da UI
@@ -157,6 +171,11 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const bulkImportBtn = document.getElementById('bulk-import-btn');
         const bulkImportTextarea = document.getElementById('bulk-import-textarea');
+        // NOVO: Elementos da Adição Rápida
+        const quickAddTmdbId = document.getElementById('quick-add-tmdb-id');
+        const quickAddMediaType = document.getElementById('quick-add-media-type');
+        const quickAddBtn = document.getElementById('quick-add-btn');
+
 
         // Funções
         const showPanel = (user) => {
@@ -207,12 +226,14 @@
         
         const prepareFormForEditing = async (id, type) => {
             resetForm();
+            mediaTitle.textContent = "Carregando...";
             tmdbIdInput.value = id;
             mediaTypeInput.value = type;
             saveBtn.disabled = false;
 
             try {
                 const tmdbResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                if (!tmdbResponse.ok) throw new Error('Conteúdo não encontrado no TMDB.');
                 const tmdbData = await tmdbResponse.json();
                 mediaTitle.textContent = tmdbData.title || tmdbData.name;
 
@@ -222,8 +243,10 @@
 
                 if (type === 'movie') {
                     movieSection.classList.remove('hidden');
-                    if (firestoreData.urls) {
-                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.quality, urlData.url));
+                    if (firestoreData.urls && firestoreData.urls.length > 0) {
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url));
+                    } else {
+                        addMovieResolutionUI(); // Adiciona um campo em branco se não houver links
                     }
                 } else if (type === 'tv') {
                     seriesSection.classList.remove('hidden');
@@ -236,7 +259,8 @@
 
             } catch (error) {
                 console.error(error);
-                alert('Erro ao carregar detalhes do item.');
+                alert(error.message || 'Erro ao carregar detalhes do item.');
+                resetForm();
             }
         };
 
@@ -253,7 +277,7 @@
                     div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded';
                     div.innerHTML = `
                         <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
-                        <span class="flex-grow text-sm text-gray-300 truncate">${ep.name}</span>
+                        <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
                         <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
                     `;
                     episodesList.appendChild(div);
@@ -279,16 +303,16 @@
             saveBtn.disabled = true;
             bulkImportTextarea.classList.add('hidden');
             bulkImportTextarea.value = '';
+            bulkImportBtn.textContent = 'Importar em Massa';
             bulkImportData = {};
         };
         
-        // CORREÇÃO: Removendo o campo de "qualidade" para filmes
-        const addMovieResolutionUI = (quality = '', url = '') => {
+        const addMovieResolutionUI = (url = '') => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
                 <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
-                <button type="button" class="remove-btn text-red-500 hover:text-red-400">X</button>
+                <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold">X</button>
             `;
             movieUrlsList.appendChild(div);
         };
@@ -334,14 +358,18 @@
                         }
                     });
 
-                    if (!mediaData.seasons) {
-                        mediaData.seasons = {};
-                    }
+                    if (!mediaData.seasons) mediaData.seasons = {};
                     
-                    mediaData.seasons[seasonNumber] = { episodes: newEpisodes };
+                    const seasonName = seasonSelector.options[seasonSelector.selectedIndex].text;
+                    
+                    mediaData.seasons[seasonNumber] = { 
+                        ...mediaData.seasons[seasonNumber], // Mantém outros dados da temporada se existirem
+                        episodes: newEpisodes,
+                        name: seasonName
+                    };
                 }
                 
-                await setDoc(docRef, mediaData); 
+                await setDoc(docRef, mediaData, { merge: true }); // Usar merge para não sobrescrever temporadas não editadas
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
@@ -363,32 +391,27 @@
             }
 
             bulkImportData = {};
-            let currentSeason = seasonSelector.value; // CORREÇÃO: Use a temporada atualmente selecionada como padrão
+            let currentSeason = seasonSelector.value; 
 
             const lines = text.split('\n').filter(line => line.trim() !== '');
             lines.forEach(line => {
                 const seasonMatch = line.match(/Temporada\s+(\d+)/i);
                 if (seasonMatch) {
-                    currentSeason = parseInt(seasonMatch[1], 10).toString(); // CORREÇÃO: Armazena como string para coincidir com a chave
-                    if (!bulkImportData[currentSeason]) {
-                        bulkImportData[currentSeason] = {};
-                    }
+                    currentSeason = parseInt(seasonMatch[1], 10).toString();
+                    if (!bulkImportData[currentSeason]) bulkImportData[currentSeason] = {};
                     return;
                 }
 
                 const episodeMatch = line.match(/EP(\d+):\s*(https?:\/\/\S+)/i);
-                if (episodeMatch && currentSeason !== -1) {
+                if (episodeMatch && currentSeason) {
                     const episodeNumber = parseInt(episodeMatch[1], 10);
                     const url = episodeMatch[2].trim();
-                    if (!bulkImportData[currentSeason]) {
-                        bulkImportData[currentSeason] = {};
-                    }
+                    if (!bulkImportData[currentSeason]) bulkImportData[currentSeason] = {};
                     bulkImportData[currentSeason][episodeNumber] = url;
                 }
             });
             
-            const selectedSeason = seasonSelector.value;
-            populateFromBulkData(selectedSeason);
+            populateFromBulkData(seasonSelector.value);
             alert('Links processados. Verifique os campos e salve. Mude de temporada para ver os outros links importados.');
         };
 
@@ -397,9 +420,7 @@
             if (seasonData) {
                 for (const [epNumber, url] of Object.entries(seasonData)) {
                     const episodeInput = document.querySelector(`.episode-url[data-episode-number="${epNumber}"]`);
-                    if (episodeInput) {
-                        episodeInput.value = url;
-                    }
+                    if (episodeInput) episodeInput.value = url;
                 }
             }
         };
@@ -428,11 +449,22 @@
                 }
             });
             
+            // NOVO: Event Listener para Adição Rápida
+            quickAddBtn.addEventListener('click', () => {
+                const id = quickAddTmdbId.value.trim();
+                const type = quickAddMediaType.value;
+                if (!id) return alert('Por favor, insira um ID do TMDB.');
+                prepareFormForEditing(id, type);
+            });
+            quickAddTmdbId.addEventListener('keypress', (e) => { 
+                if (e.key === 'Enter') quickAddBtn.click();
+            });
+
             mediaForm.addEventListener('submit', handleMediaFormSubmit);
             cancelEditBtn.addEventListener('click', resetForm);
             document.getElementById('add-movie-url-btn').addEventListener('click', () => addMovieResolutionUI());
             movieUrlsList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('remove-btn')) e.target.parentElement.remove();
+                if (e.target.closest('.remove-btn')) e.target.closest('.flex').remove();
             });
             seasonSelector.addEventListener('change', async (e) => {
                 const seriesId = tmdbIdInput.value;
@@ -442,7 +474,6 @@
                 await loadEpisodesForSeason(seriesId, e.target.value, firestoreData);
             });
 
-            // CORREÇÃO: Lógica do botão de importação em massa
             bulkImportBtn.addEventListener('click', () => {
                 const isHidden = bulkImportTextarea.classList.contains('hidden');
                 if (isHidden) {
@@ -450,8 +481,8 @@
                     bulkImportTextarea.focus();
                     bulkImportBtn.textContent = 'Aplicar Links';
                 } else {
-                    bulkImportTextarea.classList.add('hidden');
                     handleBulkImport();
+                    bulkImportTextarea.classList.add('hidden');
                     bulkImportBtn.textContent = 'Importar em Massa';
                 }
             });
