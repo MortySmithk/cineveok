@@ -62,7 +62,7 @@
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
                         <h2 class="text-xl font-bold text-white mb-4">Adicionar Rápido por ID</h2>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                            <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB (ex: TMDB: 1053024)" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
                             <select id="quick-add-media-type" class="bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
                                 <option value="movie">Filme</option>
                                 <option value="tv">Série</option>
@@ -449,11 +449,17 @@
                 }
             });
             
-            // NOVO: Event Listener para Adição Rápida
+            // NOVO: Event Listener para Adição Rápida (MODIFICADO)
             quickAddBtn.addEventListener('click', () => {
-                const id = quickAddTmdbId.value.trim();
+                const rawValue = quickAddTmdbId.value.trim();
+                // Extrai apenas os dígitos da string inserida
+                const id = rawValue.replace(/\D/g, ''); 
                 const type = quickAddMediaType.value;
-                if (!id) return alert('Por favor, insira um ID do TMDB.');
+
+                if (!id) {
+                    alert('Por favor, insira um ID do TMDB válido.');
+                    return;
+                }
                 prepareFormForEditing(id, type);
             });
             quickAddTmdbId.addEventListener('keypress', (e) => { 
