@@ -23,10 +23,10 @@ const PlayerEmbedPage = () => {
     let url = '';
     if (type === 'movie') {
       const [tmdbId] = slug;
-      url = `https://ultraembed.fun/filme/${tmdbId}`;
+      url = `https://primevicio.vercel.app/embed/movie/${tmdbId}`;
     } else if (type === 'tv') {
       const [tmdbId, season, episode] = slug;
-      url = `https://ultraembed.fun/serie/${tmdbId}/${season}/${episode}`;
+      url = `https://primevicio.vercel.app/embed/tv/${tmdbId}/${season}/${episode}`;
     }
 
     if (url) {

@@ -33,7 +33,7 @@ const ApiDocsPage = () => {
             <p>Para o filme "Duna: Parte Dois" (TMDB ID: 653346), a URL seria:</p>
             <pre><code><Link href={exampleMovieUrl} target="_blank">{exampleMovieUrl}</Link></code></pre>
             <h4>Exemplo de Iframe:</h4>
-            <pre><code>{`<iframe src="${exampleMovieUrl}" frameborder="0" allowfullscreen></iframe>`}</code></pre>
+            <pre><code>{`<iframe src="https://primevicio.vercel.app/embed/movie/653346" frameborder="0" allowfullscreen></iframe>`}</code></pre>
           </section>
 
           <section>
@@ -49,7 +49,7 @@ const ApiDocsPage = () => {
             <p>Para "The Last of Us", Temporada 1, Episódio 1 (TMDB ID: 119051), a URL seria:</p>
             <pre><code><Link href={exampleSeriesUrl} target="_blank">{exampleSeriesUrl}</Link></code></pre>
             <h4>Exemplo de Iframe:</h4>
-            <pre><code>{`<iframe src="${exampleSeriesUrl}" frameborder="0" allowfullscreen></iframe>`}</code></pre>
+            <pre><code>{`<iframe src="https://primevicio.vercel.app/embed/tv/119051/1/1" frameborder="0" allowfullscreen></iframe>`}</code></pre>
           </section>
           
           <section>
