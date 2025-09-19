@@ -102,11 +102,12 @@
 
                         <div id="series-section" class="hidden space-y-3">
                             <h3 class="text-md font-semibold border-b border-gray-700 pb-2">Episódios da Série</h3>
-                            <div class="flex items-end gap-2">
+                            <div class="flex flex-wrap items-end gap-2">
                                 <div class="flex-grow">
                                     <label for="season-selector" class="text-sm font-medium text-gray-400">Selecione a Temporada:</label>
                                     <select id="season-selector" class="w-full mt-1 bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:border-yellow-500"></select>
                                 </div>
+                                <button type="button" id="invert-order-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Inverter Ordem</button>
                                 <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
                             </div>
                             <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links, um por linha.&#10;Formatos aceitos:&#10;1. Lista de links (serão atribuídos em ordem)&#10;https://link1.com&#10;https://link2.com&#10;2. Formato com EP&#10;EP01: https://link1.com&#10;EP02: https://link2.com&#10;3. Com Temporadas&#10;Temporada 1&#10;EP01: https://link1.com"></textarea>
@@ -171,6 +172,7 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const bulkImportBtn = document.getElementById('bulk-import-btn');
         const bulkImportTextarea = document.getElementById('bulk-import-textarea');
+        const invertOrderBtn = document.getElementById('invert-order-btn');
         const quickAddTmdbId = document.getElementById('quick-add-tmdb-id');
         const quickAddMediaType = document.getElementById('quick-add-media-type');
         const quickAddBtn = document.getElementById('quick-add-btn');
@@ -301,6 +303,7 @@
             seasonSelector.innerHTML = '';
             saveBtn.disabled = true;
             bulkImportTextarea.classList.add('hidden');
+            invertOrderBtn.classList.add('hidden');
             bulkImportTextarea.value = '';
             bulkImportBtn.textContent = 'Importar em Massa';
             bulkImportData = {};
@@ -434,6 +437,11 @@
                 }
             }
         };
+        
+        const handleInvertOrder = () => {
+            const lines = bulkImportTextarea.value.split('\n');
+            bulkImportTextarea.value = lines.reverse().join('\n');
+        };
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
@@ -492,14 +500,18 @@
                 const isHidden = bulkImportTextarea.classList.contains('hidden');
                 if (isHidden) {
                     bulkImportTextarea.classList.remove('hidden');
+                    invertOrderBtn.classList.remove('hidden');
                     bulkImportTextarea.focus();
                     bulkImportBtn.textContent = 'Aplicar Links';
                 } else {
                     handleBulkImport();
                     bulkImportTextarea.classList.add('hidden');
+                    invertOrderBtn.classList.add('hidden');
                     bulkImportBtn.textContent = 'Importar em Massa';
                 }
             });
+
+            invertOrderBtn.addEventListener('click', handleInvertOrder);
         });
     </script>
 </body>
