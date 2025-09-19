@@ -11,12 +11,12 @@ export async function GET(
     return NextResponse.json({ error: "TMDB ID, temporada e episódio são necessários." }, { status: 400 });
   }
 
-  const streamUrl = `https://primevicio.vercel.app/embed/tv/${tmdbId}/${season}/${episode}`;
+  const streamUrl = `https://ultraembed.fun/serie/${tmdbId}/${season}/${episode}`;
 
     // Retorna uma estrutura de stream simples que o front-end pode usar
   const stream = {
     name: `CineVEO - T${season} E${episode}`,
-    description: 'Fonte única',
+    description: 'Fonte principal',
     url: streamUrl,
   };
 

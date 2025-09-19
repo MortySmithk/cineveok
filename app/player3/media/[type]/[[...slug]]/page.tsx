@@ -23,10 +23,10 @@ const PlayerEmbedPage = () => {
     let url = '';
     if (type === 'movie') {
       const [tmdbId] = slug;
-      url = `https://primevicio.vercel.app/embed/movie/${tmdbId}`;
+      url = `https://ultraembed.fun/filme/${tmdbId}`;
     } else if (type === 'tv') {
       const [tmdbId, season, episode] = slug;
-      url = `https://primevicio.vercel.app/embed/tv/${tmdbId}/${season}/${episode}`;
+      url = `https://ultraembed.fun/serie/${tmdbId}/${season}/${episode}`;
     }
 
     if (url) {
@@ -56,7 +56,7 @@ const PlayerEmbedPage = () => {
             frameBorder="0"
             allow="autoplay; encrypted-media"
             allowFullScreen
-            referrerPolicy="no-referrer" // <-- CORREÇÃO ADICIONADA AQUI
+            referrerPolicy="no-referrer"
             title="CineVEO Player Embed"
         ></iframe>
       )}

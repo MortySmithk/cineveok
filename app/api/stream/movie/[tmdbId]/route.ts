@@ -10,12 +10,12 @@ export async function GET(
     return NextResponse.json({ error: "TMDB ID é necessário." }, { status: 400 });
   }
 
-  const streamUrl = `https://primevicio.vercel.app/embed/movie/${tmdbId}`;
+  const streamUrl = `https://ultraembed.fun/filme/${tmdbId}`;
 
   // Retorna uma estrutura de stream simples que o front-end pode usar
   const stream = {
-    name: 'CineVEO - Player Principal',
-    description: 'Fonte única',
+    name: 'CineVEO - Servidor 1',
+    description: 'Fonte principal',
     url: streamUrl,
   };
 
