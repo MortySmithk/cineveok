@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 class="text-xl font-bold text-white mb-4">Adicionar/Editar Links (Servidor 3)</h2>
+                    <h2 class="text-xl font-bold text-white mb-4">Adicionar/Editar Links</h2>
                     <form id="media-form" class="space-y-4">
                         <input type="hidden" id="tmdb-id">
                         <input type="hidden" id="media-type">
@@ -109,7 +109,7 @@
                                 </div>
                                 <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
                             </div>
-                            <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links aqui no formato:&#10;Temporada 1&#10;EP01: https://...&#10;EP02: https://...&#10;Temporada 2&#10;EP01: https://..."></textarea>
+                            <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links, um por linha.&#10;Formatos aceitos:&#10;1. Lista de links (serão atribuídos em ordem)&#10;https://link1.com&#10;https://link2.com&#10;2. Formato com EP&#10;EP01: https://link1.com&#10;EP02: https://link2.com&#10;3. Com Temporadas&#10;Temporada 1&#10;EP01: https://link1.com"></textarea>
                             <div id="episodes-list" class="space-y-3 max-h-96 overflow-y-auto p-2 bg-gray-900 rounded-md">
                                 </div>
                         </div>
@@ -171,7 +171,6 @@
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const bulkImportBtn = document.getElementById('bulk-import-btn');
         const bulkImportTextarea = document.getElementById('bulk-import-textarea');
-        // NOVO: Elementos da Adição Rápida
         const quickAddTmdbId = document.getElementById('quick-add-tmdb-id');
         const quickAddMediaType = document.getElementById('quick-add-media-type');
         const quickAddBtn = document.getElementById('quick-add-btn');
@@ -246,7 +245,7 @@
                     if (firestoreData.urls && firestoreData.urls.length > 0) {
                         firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url));
                     } else {
-                        addMovieResolutionUI(); // Adiciona um campo em branco se não houver links
+                        addMovieResolutionUI();
                     }
                 } else if (type === 'tv') {
                     seriesSection.classList.remove('hidden');
@@ -363,13 +362,13 @@
                     const seasonName = seasonSelector.options[seasonSelector.selectedIndex].text;
                     
                     mediaData.seasons[seasonNumber] = { 
-                        ...mediaData.seasons[seasonNumber], // Mantém outros dados da temporada se existirem
+                        ...mediaData.seasons[seasonNumber], 
                         episodes: newEpisodes,
                         name: seasonName
                     };
                 }
                 
-                await setDoc(docRef, mediaData, { merge: true }); // Usar merge para não sobrescrever temporadas não editadas
+                await setDoc(docRef, mediaData, { merge: true });
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
@@ -391,29 +390,40 @@
             }
 
             bulkImportData = {};
-            let currentSeason = seasonSelector.value; 
+            let currentSeason = seasonSelector.value;
+            let simpleLinkCounter = 1;
 
             const lines = text.split('\n').filter(line => line.trim() !== '');
+
             lines.forEach(line => {
                 const seasonMatch = line.match(/Temporada\s+(\d+)/i);
                 if (seasonMatch) {
                     currentSeason = parseInt(seasonMatch[1], 10).toString();
                     if (!bulkImportData[currentSeason]) bulkImportData[currentSeason] = {};
-                    return;
+                    simpleLinkCounter = 1; 
+                    return; 
                 }
 
                 const episodeMatch = line.match(/EP(\d+):\s*(https?:\/\/\S+)/i);
-                if (episodeMatch && currentSeason) {
+                if (episodeMatch) {
                     const episodeNumber = parseInt(episodeMatch[1], 10);
                     const url = episodeMatch[2].trim();
                     if (!bulkImportData[currentSeason]) bulkImportData[currentSeason] = {};
                     bulkImportData[currentSeason][episodeNumber] = url;
+                    return;
+                }
+
+                if (line.startsWith('http')) {
+                    if (!bulkImportData[currentSeason]) bulkImportData[currentSeason] = {};
+                    bulkImportData[currentSeason][simpleLinkCounter] = line.trim();
+                    simpleLinkCounter++;
                 }
             });
-            
+
             populateFromBulkData(seasonSelector.value);
-            alert('Links processados. Verifique os campos e salve. Mude de temporada para ver os outros links importados.');
+            alert('Links processados. Verifique os campos e salve. Se importou múltiplas temporadas, mude a seleção para ver os outros links.');
         };
+
 
         const populateFromBulkData = (seasonNumber) => {
             const seasonData = bulkImportData[seasonNumber];
@@ -449,10 +459,8 @@
                 }
             });
             
-            // NOVO: Event Listener para Adição Rápida (MODIFICADO)
             quickAddBtn.addEventListener('click', () => {
                 const rawValue = quickAddTmdbId.value.trim();
-                // Extrai apenas os dígitos da string inserida
                 const id = rawValue.replace(/\D/g, ''); 
                 const type = quickAddMediaType.value;
 
