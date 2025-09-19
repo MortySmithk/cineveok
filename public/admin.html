@@ -467,13 +467,15 @@
 
         // --- NOVAS FUNÇÕES PARA RELATÓRIOS ---
         const hasAbyssLink = (docData) => {
-            if (docData.type === 'movie' && docData.urls) {
-                return docData.urls.some(u => u.url && u.url.includes(ABYSS_DOMAIN));
+            // CORRIGIDO: Adicionada a verificação Array.isArray() para garantir que 'urls' é uma lista
+            if (docData.type === 'movie' && Array.isArray(docData.urls)) {
+                return docData.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN));
             }
             if (docData.type === 'series' && docData.seasons) {
                 return Object.values(docData.seasons).some(season => 
-                    season.episodes && season.episodes.some(ep => 
-                        ep.urls && ep.urls.some(u => u.url && u.url.includes(ABYSS_DOMAIN))
+                    // Adicionadas verificações extras de segurança aqui também
+                    season && Array.isArray(season.episodes) && season.episodes.some(ep => 
+                        ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN))
                     )
                 );
             }
@@ -495,7 +497,7 @@
                 });
                 updateReportCounts();
             } catch (error) {
-                console.error("Erro ao carregar mídia para relatórios: ", error);
+                console.error("Erro ao carregar mídia para relatórios:", error);
                 alert("Não foi possível carregar os dados para os relatórios.");
             }
         };
