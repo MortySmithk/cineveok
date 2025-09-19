@@ -23,9 +23,13 @@
         input:focus, select:focus, textarea:focus {
              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
         }
-        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar { width: 6px; }
-        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track { background: #1f2937; }
-        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        .report-btn.active {
+            background-color: #ca8a04;
+            color: #111827;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -55,6 +59,24 @@
 
         <main class="container mx-auto p-4 md:p-8">
             <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
+
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-xl font-bold text-white mb-4">Relatórios de Links Abyss</h2>
+                <div id="report-tabs" class="flex flex-wrap gap-3 border-b border-gray-700 pb-4 mb-4">
+                    <button data-report-type="movies-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Filmes Sem Links Abyss (<span id="count-movies-no-links">...</span>)
+                    </button>
+                    <button data-report-type="series-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Séries Sem Links Abyss (<span id="count-series-no-links">...</span>)
+                    </button>
+                    <button data-report-type="with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Conteúdo Com Links Abyss (<span id="count-with-links">...</span>)
+                    </button>
+                </div>
+                <div id="report-results-container" class="space-y-3">
+                    <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
@@ -131,7 +153,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCNEGDpDLuWYrxTkoONy4oQujnatx6KIS8",
@@ -146,8 +168,10 @@
 
         const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
+        const ABYSS_DOMAIN = 'short.icu';
 
         let bulkImportData = {};
+        let allMediaCache = []; // Cache para os dados dos relatórios
 
         // Elementos da UI
         const loginScreen = document.getElementById('login-screen');
@@ -176,13 +200,16 @@
         const quickAddTmdbId = document.getElementById('quick-add-tmdb-id');
         const quickAddMediaType = document.getElementById('quick-add-media-type');
         const quickAddBtn = document.getElementById('quick-add-btn');
+        const reportTabs = document.getElementById('report-tabs');
+        const reportResultsContainer = document.getElementById('report-results-container');
 
 
         // Funções
-        const showPanel = (user) => {
+        const showPanel = async (user) => {
             userEmailSpan.textContent = user.email;
             loginScreen.classList.add('hidden');
             adminPanel.classList.remove('hidden');
+            await loadAndProcessAllMedia(); // Carrega os dados para os relatórios
         };
 
         const showLogin = () => {
@@ -361,9 +388,7 @@
                     });
 
                     if (!mediaData.seasons) mediaData.seasons = {};
-                    
                     const seasonName = seasonSelector.options[seasonSelector.selectedIndex].text;
-                    
                     mediaData.seasons[seasonNumber] = { 
                         ...mediaData.seasons[seasonNumber], 
                         episodes: newEpisodes,
@@ -375,6 +400,7 @@
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
+                await loadAndProcessAllMedia(); // Recarrega os dados para atualizar os contadores
             } catch (error) {
                 alert('Erro ao salvar os dados.');
                 console.error("Erro: ", error);
@@ -387,15 +413,11 @@
 
         const handleBulkImport = () => {
             const text = bulkImportTextarea.value.trim();
-            if (!text) {
-                alert('A área de texto está vazia.');
-                return;
-            }
+            if (!text) { alert('A área de texto está vazia.'); return; }
 
             bulkImportData = {};
             let currentSeason = seasonSelector.value;
             let simpleLinkCounter = 1;
-
             const lines = text.split('\n').filter(line => line.trim() !== '');
 
             lines.forEach(line => {
@@ -424,7 +446,7 @@
             });
 
             populateFromBulkData(seasonSelector.value);
-            alert('Links processados. Verifique os campos e salve. Se importou múltiplas temporadas, mude a seleção para ver os outros links.');
+            alert('Links processados. Verifique os campos e salve.');
         };
 
 
@@ -443,7 +465,89 @@
             bulkImportTextarea.value = lines.reverse().join('\n');
         };
 
-        // Event Listeners
+        // --- NOVAS FUNÇÕES PARA RELATÓRIOS ---
+        const hasAbyssLink = (docData) => {
+            if (docData.type === 'movie' && docData.urls) {
+                return docData.urls.some(u => u.url && u.url.includes(ABYSS_DOMAIN));
+            }
+            if (docData.type === 'series' && docData.seasons) {
+                return Object.values(docData.seasons).some(season => 
+                    season.episodes && season.episodes.some(ep => 
+                        ep.urls && ep.urls.some(u => u.url && u.url.includes(ABYSS_DOMAIN))
+                    )
+                );
+            }
+            return false;
+        };
+
+        const loadAndProcessAllMedia = async () => {
+            const mediaCollection = collection(firestore, 'media');
+            try {
+                const querySnapshot = await getDocs(mediaCollection);
+                allMediaCache = []; // Limpa o cache
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    allMediaCache.push({
+                        id: doc.id,
+                        type: data.type, // 'movie' or 'series'
+                        hasAbyssLink: hasAbyssLink(data)
+                    });
+                });
+                updateReportCounts();
+            } catch (error) {
+                console.error("Erro ao carregar mídia para relatórios: ", error);
+                alert("Não foi possível carregar os dados para os relatórios.");
+            }
+        };
+
+        const updateReportCounts = () => {
+            const moviesNoLinks = allMediaCache.filter(m => m.type === 'movie' && !m.hasAbyssLink).length;
+            const seriesNoLinks = allMediaCache.filter(m => m.type === 'series' && !m.hasAbyssLink).length;
+            const withLinks = allMediaCache.filter(m => m.hasAbyssLink).length;
+
+            document.getElementById('count-movies-no-links').textContent = moviesNoLinks;
+            document.getElementById('count-series-no-links').textContent = seriesNoLinks;
+            document.getElementById('count-with-links').textContent = withLinks;
+        };
+        
+        const displayReportResults = (reportType) => {
+            let filteredMedia = [];
+            let reportTitle = "";
+
+            if (reportType === 'movies-no-links') {
+                filteredMedia = allMediaCache.filter(m => m.type === 'movie' && !m.hasAbyssLink);
+                reportTitle = "Filmes Sem Links Abyss";
+            } else if (reportType === 'series-no-links') {
+                filteredMedia = allMediaCache.filter(m => m.type === 'series' && !m.hasAbyssLink);
+                reportTitle = "Séries Sem Links Abyss";
+            } else if (reportType === 'with-links') {
+                filteredMedia = allMediaCache.filter(m => m.hasAbyssLink);
+                reportTitle = "Conteúdo Com Links Abyss";
+            }
+
+            if (filteredMedia.length === 0) {
+                reportResultsContainer.innerHTML = `<p class="text-gray-400">Nenhum item encontrado para "${reportTitle}".</p>`;
+                return;
+            }
+            
+            let listHtml = `<div id="report-results-list" class="space-y-2 max-h-96 overflow-y-auto pr-2">`;
+            filteredMedia.forEach(item => {
+                const tmdbType = item.type === 'series' ? 'tv' : 'movie';
+                listHtml += `
+                    <div class="bg-gray-700 p-3 rounded-md flex items-center justify-between">
+                        <p class="font-semibold text-white">TMDB ID: ${item.id} <span class="text-xs text-gray-400">(${item.type})</span></p>
+                        <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
+                            Gerenciar
+                        </button>
+                    </div>
+                `;
+            });
+            listHtml += `</div>`;
+            reportResultsContainer.innerHTML = listHtml;
+        };
+
+
+        // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
                 if (user && ADMIN_UIDS.includes(user.uid)) {
@@ -460,27 +564,25 @@
             catalogSearchBtn.addEventListener('click', performSearch);
             catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             
-            catalogList.addEventListener('click', (e) => {
+            const manageClickListener = (e) => {
                 const button = e.target.closest('.manage-btn');
                 if (button) {
                     prepareFormForEditing(button.dataset.tmdbId, button.dataset.tmdbType);
                 }
-            });
+            };
+
+            catalogList.addEventListener('click', manageClickListener);
+            reportResultsContainer.addEventListener('click', manageClickListener);
             
             quickAddBtn.addEventListener('click', () => {
                 const rawValue = quickAddTmdbId.value.trim();
                 const id = rawValue.replace(/\D/g, ''); 
                 const type = quickAddMediaType.value;
 
-                if (!id) {
-                    alert('Por favor, insira um ID do TMDB válido.');
-                    return;
-                }
+                if (!id) { alert('Por favor, insira um ID do TMDB válido.'); return; }
                 prepareFormForEditing(id, type);
             });
-            quickAddTmdbId.addEventListener('keypress', (e) => { 
-                if (e.key === 'Enter') quickAddBtn.click();
-            });
+            quickAddTmdbId.addEventListener('keypress', (e) => { if (e.key === 'Enter') quickAddBtn.click(); });
 
             mediaForm.addEventListener('submit', handleMediaFormSubmit);
             cancelEditBtn.addEventListener('click', resetForm);
@@ -512,6 +614,15 @@
             });
 
             invertOrderBtn.addEventListener('click', handleInvertOrder);
+
+            reportTabs.addEventListener('click', (e) => {
+                const button = e.target.closest('.report-btn');
+                if (button) {
+                    document.querySelectorAll('.report-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    displayReportResults(button.dataset.reportType);
+                }
+            });
         });
     </script>
 </body>
