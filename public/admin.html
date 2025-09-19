@@ -209,7 +209,7 @@
             userEmailSpan.textContent = user.email;
             loginScreen.classList.add('hidden');
             adminPanel.classList.remove('hidden');
-            await loadAndProcessAllMedia(); // Carrega os dados para os relatórios
+            await loadAndProcessAllMedia(); 
         };
 
         const showLogin = () => {
@@ -362,9 +362,12 @@
             try {
                 const docSnap = await getDoc(docRef);
                 const existingData = docSnap.exists() ? docSnap.data() : {};
+                
+                // NOVO: Coleta os dados para o objeto a ser salvo
                 const mediaData = { 
                     ...existingData, 
-                    type: type === 'tv' ? 'series' : 'movie' 
+                    type: type === 'tv' ? 'series' : 'movie',
+                    title: mediaTitle.textContent // NOVO: Salva o título no banco de dados
                 };
 
                 if (type === 'movie') {
@@ -398,9 +401,29 @@
                 
                 await setDoc(docRef, mediaData, { merge: true });
                 
+                // NOVO: Atualiza o cache localmente para o salvamento ser instantâneo
+                const updatedCacheItem = allMediaCache.find(item => item.id === id);
+                const newHasAbyssLink = hasAbyssLink(mediaData);
+                if (updatedCacheItem) {
+                    updatedCacheItem.hasAbyssLink = newHasAbyssLink;
+                    updatedCacheItem.title = mediaData.title;
+                } else {
+                    allMediaCache.push({
+                        id: id,
+                        type: mediaData.type,
+                        title: mediaData.title,
+                        hasAbyssLink: newHasAbyssLink
+                    });
+                }
+                updateReportCounts();
+                const activeReport = document.querySelector('.report-btn.active');
+                if (activeReport) {
+                    displayReportResults(activeReport.dataset.reportType);
+                }
+                
                 alert('Dados salvos com sucesso!');
                 resetForm();
-                await loadAndProcessAllMedia(); // Recarrega os dados para atualizar os contadores
+
             } catch (error) {
                 alert('Erro ao salvar os dados.');
                 console.error("Erro: ", error);
@@ -465,15 +488,12 @@
             bulkImportTextarea.value = lines.reverse().join('\n');
         };
 
-        // --- NOVAS FUNÇÕES PARA RELATÓRIOS ---
         const hasAbyssLink = (docData) => {
-            // CORRIGIDO: Adicionada a verificação Array.isArray() para garantir que 'urls' é uma lista
             if (docData.type === 'movie' && Array.isArray(docData.urls)) {
                 return docData.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN));
             }
             if (docData.type === 'series' && docData.seasons) {
                 return Object.values(docData.seasons).some(season => 
-                    // Adicionadas verificações extras de segurança aqui também
                     season && Array.isArray(season.episodes) && season.episodes.some(ep => 
                         ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN))
                     )
@@ -486,12 +506,13 @@
             const mediaCollection = collection(firestore, 'media');
             try {
                 const querySnapshot = await getDocs(mediaCollection);
-                allMediaCache = []; // Limpa o cache
+                allMediaCache = [];
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
                     allMediaCache.push({
                         id: doc.id,
-                        type: data.type, // 'movie' or 'series'
+                        type: data.type,
+                        title: data.title, // NOVO: Carrega o título do banco de dados
                         hasAbyssLink: hasAbyssLink(data)
                     });
                 });
@@ -535,9 +556,14 @@
             let listHtml = `<div id="report-results-list" class="space-y-2 max-h-96 overflow-y-auto pr-2">`;
             filteredMedia.forEach(item => {
                 const tmdbType = item.type === 'series' ? 'tv' : 'movie';
+                // NOVO: Usa o título se existir, senão mostra o ID
+                const itemTitle = item.title ? item.title : `Título não salvo (ID: ${item.id})`;
                 listHtml += `
                     <div class="bg-gray-700 p-3 rounded-md flex items-center justify-between">
-                        <p class="font-semibold text-white">TMDB ID: ${item.id} <span class="text-xs text-gray-400">(${item.type})</span></p>
+                        <div>
+                           <p class="font-semibold text-white">${itemTitle}</p>
+                           <p class="text-xs text-gray-400">Tipo: ${item.type}</p>
+                        </div>
                         <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
                             Gerenciar
                         </button>
