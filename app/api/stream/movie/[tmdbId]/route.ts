@@ -1,7 +1,7 @@
 // app/api/stream/movie/[tmdbId]/route.ts
 import { NextResponse } from "next/server";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../../../firebase"; // Ajuste o caminho se necessário
+import { db } from "../../../../firebase"; // CAMINHO CORRIGIDO
 
 export async function GET(
   request: Request,
