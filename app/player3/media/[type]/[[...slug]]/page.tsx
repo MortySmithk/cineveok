@@ -14,28 +14,44 @@ const PlayerEmbedPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!type || !slug || !Array.isArray(slug) || slug.length === 0) {
-      setError("Parâmetros inválidos na URL.");
+    const fetchStreamUrl = async () => {
+      if (!type || !slug || !Array.isArray(slug) || slug.length === 0) {
+        setError("Parâmetros inválidos na URL.");
+        setIsLoading(false);
+        return;
+      }
+
+      let apiUrl = '';
+      if (type === 'movie') {
+        const [tmdbId] = slug;
+        apiUrl = `/api/stream/movie/${tmdbId}`;
+      } else if (type === 'tv') {
+        const [tmdbId, season, episode] = slug;
+        apiUrl = `/api/stream/series/${tmdbId}/${season}/${episode}`;
+      }
+
+      if (apiUrl) {
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error('Link não encontrado.');
+          }
+          const data = await response.json();
+          if (data.streams && data.streams.length > 0) {
+            setStreamUrl(data.streams[0].url);
+          } else {
+            setError("Nenhum link de streaming disponível.");
+          }
+        } catch (err: any) {
+          setError(err.message || "Erro ao buscar o link de streaming.");
+        }
+      } else {
+        setError("Tipo de mídia não suportado.");
+      }
       setIsLoading(false);
-      return;
-    }
+    };
 
-    let url = '';
-    if (type === 'movie') {
-      const [tmdbId] = slug;
-      url = `https://primevicio.vercel.app/embed/movie/${tmdbId}`;
-    } else if (type === 'tv') {
-      const [tmdbId, season, episode] = slug;
-      url = `https://primevicio.vercel.app/embed/tv/${tmdbId}/${season}/${episode}`;
-    }
-
-    if (url) {
-      setStreamUrl(url);
-    } else {
-      setError("Tipo de mídia não suportado.");
-    }
-    setIsLoading(false);
-
+    fetchStreamUrl();
   }, [type, slug]);
 
   return (

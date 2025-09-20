@@ -14,7 +14,7 @@ const ApiDocsPage = () => {
         <div className="api-docs-content">
           <p>
             Bem-vindo à documentação da API de Player Embed do CineVEO. Você pode usar nossos players em seu site ou aplicação
-            seguindo os formatos de URL abaixo.
+            seguindo os formatos de URL abaixo, que buscam os links diretamente de nossa base de dados.
           </p>
 
           <section>
@@ -33,7 +33,7 @@ const ApiDocsPage = () => {
             <p>Para o filme "Duna: Parte Dois" (TMDB ID: 653346), a URL seria:</p>
             <pre><code><Link href={exampleMovieUrl} target="_blank">{exampleMovieUrl}</Link></code></pre>
             <h4>Exemplo de Iframe:</h4>
-            <pre><code>{`<iframe src="https://primevicio.vercel.app/embed/movie/653346" frameborder="0" allowfullscreen></iframe>`}</code></pre>
+            <pre><code>{`<iframe src="${exampleMovieUrl}" frameborder="0" allowfullscreen></iframe>`}</code></pre>
           </section>
 
           <section>
@@ -49,7 +49,7 @@ const ApiDocsPage = () => {
             <p>Para "The Last of Us", Temporada 1, Episódio 1 (TMDB ID: 119051), a URL seria:</p>
             <pre><code><Link href={exampleSeriesUrl} target="_blank">{exampleSeriesUrl}</Link></code></pre>
             <h4>Exemplo de Iframe:</h4>
-            <pre><code>{`<iframe src="https://primevicio.vercel.app/embed/tv/119051/1/1" frameborder="0" allowfullscreen></iframe>`}</code></pre>
+            <pre><code>{`<iframe src="${exampleSeriesUrl}" frameborder="0" allowfullscreen></iframe>`}</code></pre>
           </section>
           
           <section>
@@ -69,7 +69,7 @@ const ApiDocsPage = () => {
                 </div>
             </div>
              <p className="disclaimer">
-                * Números baseados no catálogo geral do TMDB. A disponibilidade de stream para um título específico não é garantida.
+                * Números baseados no catálogo geral do TMDB. A disponibilidade de stream para um título específico não é garantida e depende da nossa base de dados.
             </p>
           </section>
 

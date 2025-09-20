@@ -31,11 +31,6 @@ interface MediaDetails {
   number_of_seasons?: number;
   seasons?: Season[];
 }
-interface StreamFromApi {
-  url: string;
-  name: string;
-  description: string;
-}
 interface ProcessedStream { url: string; title: string; description: string; }
 
 // --- Componente ---
@@ -51,17 +46,10 @@ export default function MediaPage() {
   const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
 
-  // NOVO: Estado para o episódio ativo (player principal da série)
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [isFetchingActiveStream, setIsFetchingActiveStream] = useState(false);
-
-  // Estados para o sistema de "dropdown" de episódios
-  const [expandedEpisode, setExpandedEpisode] = useState<number | null>(null);
-  const [isFetchingDropdownStreams, setIsFetchingDropdownStreams] = useState(false);
-  const [dropdownStreams, setDropdownStreams] = useState<ProcessedStream[]>([]);
-
-  // Estados do Modal (usado para filmes e mobile)
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStreamUrl, setModalStreamUrl] = useState('');
   const [modalTitle, setModalTitle] = useState('');
@@ -69,7 +57,6 @@ export default function MediaPage() {
   const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
   // --- EFEITOS ---
-  // Busca os detalhes da mídia
   useEffect(() => {
     if (!id || !type) return;
     const fetchData = async () => {
@@ -87,13 +74,11 @@ export default function MediaPage() {
         setDetails(mediaDetails);
 
         if (type === 'movie' && mediaDetails.id) {
-          // Para filmes, busca o stream para o botão "Assistir"
           handleStreamFetch(mediaDetails.id.toString()).then(streams => {
             if (streams.length > 0) setModalStreamUrl(streams[0].url);
           });
         }
         if (type === 'tv') {
-          // Para séries, define o primeiro episódio como ativo
           setActiveEpisode({ season: 1, episode: 1 });
         }
       } catch (error) {
@@ -103,7 +88,6 @@ export default function MediaPage() {
     fetchData();
   }, [id, type]);
 
-  // Busca os episódios da temporada selecionada
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
     const fetchSeasonData = async () => {
@@ -120,10 +104,10 @@ export default function MediaPage() {
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
   
-  // Busca o stream do episódio ativo para o player principal da série
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id) {
       setIsFetchingActiveStream(true);
+      setActiveStreamUrl(''); // Limpa a URL anterior
       handleStreamFetch(id, activeEpisode.season, activeEpisode.episode).then(streams => {
         setActiveStreamUrl(streams.length > 0 ? streams[0].url : '');
         setIsFetchingActiveStream(false);
@@ -133,30 +117,27 @@ export default function MediaPage() {
 
 
   // --- FUNÇÕES ---
-  // Função genérica para buscar streams
   const handleStreamFetch = async (tmdbId: string, season?: number, episode?: number): Promise<ProcessedStream[]> => {
     const isMovie = !season;
     const apiUrl = isMovie ? `/api/stream/movie/${tmdbId}` : `/api/stream/series/${tmdbId}/${season}/${episode}`;
     try {
       const response = await axios.get(apiUrl);
-      const streams: StreamFromApi[] = response.data.streams || [];
-      return streams
-        .filter(s => s && s.name && s.url)
-        .map(s => ({ title: s.name, description: s.description, url: s.url }));
+      return response.data.streams || [];
     } catch (error) {
-      console.error("Erro ao buscar streams", error);
+      console.error("Erro ao buscar streams da nossa API:", error);
       return [];
     }
   };
 
-  // Lida com o clique em um episódio na lista
   const handleEpisodeClick = (season: number, episode: number) => {
     setActiveEpisode({ season, episode });
   };
   
-  // Abre o modal de vídeo (para filmes ou mobile)
   const openWatchModal = (streamUrl: string | undefined, title: string) => {
-    if (!streamUrl) return;
+    if (!streamUrl) {
+        alert("Nenhum link de streaming disponível para este filme.");
+        return;
+    }
     setModalStreamUrl(streamUrl);
     setModalTitle(title);
     setIsModalOpen(true);
@@ -171,7 +152,6 @@ export default function MediaPage() {
     return `${hours}h ${remainingMins}m`;
   };
 
-  // --- RENDERIZAÇÃO ---
   if (isLoading && !details) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
   }
@@ -202,18 +182,16 @@ export default function MediaPage() {
             </div>
           </div>
           
-          {/* SEÇÃO DE SÉRIES COM NOVO LAYOUT */}
           {type === 'tv' && (
             <section className="series-watch-section">
               <div className="series-watch-grid">
                 
-                {/* Coluna da Esquerda: Player */}
                 <div className="series-player-wrapper">
                   <div className="player-container">
                     {isFetchingActiveStream && (
                       <div className="player-loader">
                         <div className="spinner"></div>
-                        <span>Carregando player...</span>
+                        <span>Buscando link...</span>
                       </div>
                     )}
                     {!isFetchingActiveStream && activeStreamUrl && (
@@ -233,7 +211,6 @@ export default function MediaPage() {
                   </div>
                 </div>
 
-                {/* Coluna da Direita: Lista de Episódios */}
                 <div className="episodes-list-wrapper">
                   <div className="episodes-header">
                     <h2>Episódios</h2>
@@ -243,7 +220,6 @@ export default function MediaPage() {
                       onChange={(e) => {
                         const newSeason = Number(e.target.value);
                         setSelectedSeason(newSeason);
-                        // Ao trocar de temporada, seleciona o primeiro episódio dela
                         handleEpisodeClick(newSeason, 1);
                       }}
                     >
@@ -281,7 +257,6 @@ export default function MediaPage() {
             </section>
           )}
 
-          {/* Seção de elenco (mantida) */}
           <section className="cast-section">
             <h2>Elenco Principal</h2>
             <div className="cast-grid">
