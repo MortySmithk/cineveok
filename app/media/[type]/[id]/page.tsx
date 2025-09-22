@@ -1,7 +1,7 @@
 // app/media/[type]/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -31,7 +31,6 @@ interface MediaDetails {
   number_of_seasons?: number;
   seasons?: Season[];
 }
-interface ProcessedStream { url: string; title: string; description: string; }
 
 // --- Componente ---
 export default function MediaPage() {
@@ -48,7 +47,6 @@ export default function MediaPage() {
 
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  const [isFetchingActiveStream, setIsFetchingActiveStream] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStreamUrl, setModalStreamUrl] = useState('');
@@ -73,11 +71,12 @@ export default function MediaPage() {
         };
         setDetails(mediaDetails);
 
+        // Se for filme, já define a URL do modal
         if (type === 'movie' && mediaDetails.id) {
-          handleStreamFetch(mediaDetails.id.toString()).then(streams => {
-            if (streams.length > 0) setModalStreamUrl(streams[0].url);
-          });
+          setModalStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
+          setModalTitle(mediaDetails.title);
         }
+        // Se for série, define o primeiro episódio como ativo
         if (type === 'tv') {
           setActiveEpisode({ season: 1, episode: 1 });
         }
@@ -104,42 +103,25 @@ export default function MediaPage() {
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
   
+  // Define a URL do player da série quando o episódio ativo muda
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id) {
-      setIsFetchingActiveStream(true);
-      setActiveStreamUrl(''); // Limpa a URL anterior
-      handleStreamFetch(id, activeEpisode.season, activeEpisode.episode).then(streams => {
-        setActiveStreamUrl(streams.length > 0 ? streams[0].url : '');
-        setIsFetchingActiveStream(false);
-      });
+      const { season, episode } = activeEpisode;
+      setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
     }
   }, [activeEpisode, id, type]);
 
 
   // --- FUNÇÕES ---
-  const handleStreamFetch = async (tmdbId: string, season?: number, episode?: number): Promise<ProcessedStream[]> => {
-    const isMovie = !season;
-    const apiUrl = isMovie ? `/api/stream/movie/${tmdbId}` : `/api/stream/series/${tmdbId}/${season}/${episode}`;
-    try {
-      const response = await axios.get(apiUrl);
-      return response.data.streams || [];
-    } catch (error) {
-      console.error("Erro ao buscar streams da nossa API:", error);
-      return [];
-    }
-  };
-
   const handleEpisodeClick = (season: number, episode: number) => {
     setActiveEpisode({ season, episode });
   };
   
-  const openWatchModal = (streamUrl: string | undefined, title: string) => {
-    if (!streamUrl) {
+  const openWatchModal = () => {
+    if (!modalStreamUrl) {
         alert("Nenhum link de streaming disponível para este filme.");
         return;
     }
-    setModalStreamUrl(streamUrl);
-    setModalTitle(title);
     setIsModalOpen(true);
   };
 
@@ -175,7 +157,7 @@ export default function MediaPage() {
                 {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
               </div>
               <div className="action-buttons">
-                {type === 'movie' && <button className='btn-primary' onClick={() => openWatchModal(modalStreamUrl, details.title)}><PlayIcon width={20} height={20} /> Assistir</button>}
+                {type === 'movie' && <button className='btn-primary' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
                 <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary'>IMDb</a>
               </div>
               <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
@@ -188,24 +170,19 @@ export default function MediaPage() {
                 
                 <div className="series-player-wrapper">
                   <div className="player-container">
-                    {isFetchingActiveStream && (
-                      <div className="player-loader">
-                        <div className="spinner"></div>
-                        <span>Buscando link...</span>
-                      </div>
-                    )}
-                    {!isFetchingActiveStream && activeStreamUrl && (
+                    {activeStreamUrl ? (
                       <iframe
+                        key={activeStreamUrl} // Força o Iframe a recarregar quando a URL muda
                         src={activeStreamUrl}
                         title={`CineVEO Player - ${details.title}`}
                         allow="autoplay; encrypted-media"
                         allowFullScreen
-                        referrerPolicy="no-referrer"
+                        referrerPolicy="origin" // Importante para o player da Prime Vicio
                       ></iframe>
-                    )}
-                    {!isFetchingActiveStream && !activeStreamUrl && (
+                    ) : (
                        <div className="player-loader">
-                        <span>Link indisponível. Selecione outro episódio.</span>
+                        <div className="spinner"></div>
+                        <span>Carregando player...</span>
                       </div>
                     )}
                   </div>
@@ -220,7 +197,7 @@ export default function MediaPage() {
                       onChange={(e) => {
                         const newSeason = Number(e.target.value);
                         setSelectedSeason(newSeason);
-                        handleEpisodeClick(newSeason, 1);
+                        handleEpisodeClick(newSeason, 1); // Seleciona o primeiro episódio da nova temporada
                       }}
                     >
                       {details.seasons
