@@ -1,4 +1,3 @@
-// cineveo-next/app/tv/media/[type]/[id]/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -6,21 +5,21 @@ import axios from 'axios';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { useTVNavigation } from '@/app/hooks/useTVNavigation';
+import { useAuth } from '@/app/components/AuthProvider';
 
-// Interfaces (podem ser importadas de um arquivo compartilhado)
-interface Genre { id: number; name: string; }
+// --- Interfaces ---
 interface Episode { id: number; name: string; episode_number: number; still_path: string; }
 interface Season { id: number; name: string; season_number: number; }
 interface MediaDetails {
   id: number; title: string; overview: string; backdrop_path: string;
-  release_date?: string; first_air_date?: string; genres: Genre[];
-  vote_average: number; seasons?: Season[];
+  seasons?: Season[];
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
 export default function TVMediaPage() {
   const params = useParams();
+  const { user } = useAuth();
   const type = params.type as 'movie' | 'tv';
   const id = params.id as string;
 
@@ -29,9 +28,8 @@ export default function TVMediaPage() {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [playerUrl, setPlayerUrl] = useState('');
   const [showPlayer, setShowPlayer] = useState(false);
-
-  // Hook de navegação para TV
-  useTVNavigation('.focusable');
+  
+  useTVNavigation(); // Hook de navegação para TV
 
   useEffect(() => {
     if (!id || !type) return;
@@ -42,7 +40,6 @@ export default function TVMediaPage() {
         setDetails({
           ...data,
           title: data.title || data.name,
-          release_date: data.release_date || data.first_air_date,
         });
         if (type === 'movie') {
           setPlayerUrl(`https://primevicio.vercel.app/embed/movie/${id}`);
@@ -64,6 +61,10 @@ export default function TVMediaPage() {
   }, [id, type, selectedSeason]);
 
   const handlePlay = (season?: number, episode?: number) => {
+    if (!user) {
+      alert("Por favor, faça login para assistir.");
+      return;
+    }
     if (type === 'tv' && season && episode) {
       setPlayerUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
     }
@@ -71,6 +72,7 @@ export default function TVMediaPage() {
   };
 
   if (!details) return <div className="tv-loading-spinner"></div>;
+
   if (showPlayer) {
     return (
       <div className="tv-player-fullscreen">
@@ -108,7 +110,9 @@ export default function TVMediaPage() {
             <div className="tv-episodes-carousel">
               {episodes.map(ep => (
                 <button key={ep.id} className="tv-episode-card focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
-                  <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
+                   {ep.still_path ? (
+                    <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
+                  ) : <div className="tv-episode-placeholder"/>}
                   <div className="tv-episode-info">
                     <span>EP {ep.episode_number}</span>
                     <p>{ep.name}</p>
