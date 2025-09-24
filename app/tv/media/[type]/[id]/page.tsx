@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { useTVNavigation } from '@/app/hooks/useTVNavigation';
 import { useAuth } from '@/app/components/AuthProvider';
 
-// --- Interfaces ---
 interface Episode { id: number; name: string; episode_number: number; still_path: string; }
 interface Season { id: number; name: string; season_number: number; }
 interface MediaDetails {
@@ -30,7 +29,7 @@ export default function TVMediaPage() {
   const [playerUrl, setPlayerUrl] = useState('');
   const [showPlayer, setShowPlayer] = useState(false);
   
-  useTVNavigation(); // Hook de navegação para TV
+  useTVNavigation();
 
   useEffect(() => {
     if (!id || !type) return;
@@ -38,10 +37,7 @@ export default function TVMediaPage() {
       try {
         const res = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=seasons`);
         const data = res.data;
-        setDetails({
-          ...data,
-          title: data.title || data.name,
-        });
+        setDetails({ ...data, title: data.title || data.name });
         if (type === 'movie') {
           setPlayerUrl(`https://primevicio.vercel.app/embed/movie/${id}`);
         }
@@ -61,9 +57,19 @@ export default function TVMediaPage() {
     fetchEpisodes();
   }, [id, type, selectedSeason]);
 
+  // Efeito para focar no elemento principal após o carregamento
+  useEffect(() => {
+    if (details) {
+      setTimeout(() => {
+        const mainButton = document.querySelector<HTMLElement>('.tv-details-container .focusable');
+        mainButton?.focus();
+      }, 300);
+    }
+  }, [details, episodes]); // Roda quando detalhes ou episódios mudam
+
   const handlePlay = (season?: number, episode?: number) => {
     if (!user) {
-      router.push('/tv/login'); // Redireciona para o login se não estiver logado
+      router.push('/tv/login');
       return;
     }
     if (type === 'tv' && season && episode) {
@@ -88,7 +94,6 @@ export default function TVMediaPage() {
       <Image src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="tv-details-backdrop" />
       <div className="tv-details-overlay"></div>
       
-      {/* Container adicionado para corrigir o foco */}
       <div className="tv-details-container">
         <div className="tv-details-content">
           <h1>{details.title}</h1>
@@ -111,7 +116,9 @@ export default function TVMediaPage() {
                   </button>
                 ))}
               </div>
-              <div className="tv-episodes-carousel">
+              
+              {/* LAYOUT DE EPISÓDIOS MUDOU DE CARROSSEL PARA GRADE */}
+              <div className="tv-episodes-grid">
                 {episodes.map(ep => (
                   <button key={ep.id} className="tv-episode-card focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
                      {ep.still_path ? (

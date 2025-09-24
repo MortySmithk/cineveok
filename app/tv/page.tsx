@@ -12,7 +12,7 @@ interface Media {
   title?: string;
   name?: string;
   poster_path: string;
-  media_type?: 'movie' | 'tv'; // <-- ESTA LINHA FOI ADICIONADA PARA CORRIGIR O ERRO
+  media_type?: 'movie' | 'tv';
 }
 
 interface Section {
@@ -53,6 +53,17 @@ export default function TVHomePage() {
     fetchMedia();
   }, []);
 
+  // Efeito para focar no primeiro elemento quando o conteúdo carregar
+  useEffect(() => {
+    if (!isLoading) {
+      setTimeout(() => {
+        const firstFocusable = document.querySelector<HTMLElement>('#tv-main-content .focusable');
+        firstFocusable?.focus();
+      }, 200); // Pequeno atraso para garantir a renderização
+    }
+  }, [isLoading]);
+
+
   return (
     <div className="tv-home-container">
       {!user && (
@@ -81,7 +92,7 @@ export default function TVHomePage() {
                   className="tv-home-card focusable"
                 >
                   <Image
-                    src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/220x330'}
                     alt={item.title || item.name || ''}
                     layout="fill"
                     objectFit="cover"

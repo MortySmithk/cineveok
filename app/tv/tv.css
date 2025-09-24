@@ -241,3 +241,35 @@ body {
   position: relative;
   z-index: 5;
 }
+/* Remova ou substitua as regras antigas de .tv-episodes-carousel por estas */
+
+.tv-episodes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  max-height: calc(100vh - 450px); /* Altura máxima para a lista */
+  overflow-y: auto; /* Adiciona scroll se a lista for longa */
+  padding-right: 10px; /* Espaço para o scrollbar */
+}
+
+/* Estilo do Scrollbar para a grade de episódios */
+.tv-episodes-grid::-webkit-scrollbar {
+    width: 8px;
+}
+.tv-episodes-grid::-webkit-scrollbar-thumb {
+    background: #3f3f3f;
+    border-radius: 4px;
+}
+
+/* Ajustes no card de episódio para a grade */
+.tv-episode-card {
+  width: 100%; /* Ocupa o espaço da coluna da grade */
+  height: auto; /* Altura automática */
+  aspect-ratio: 16 / 9; /* Proporção de vídeo */
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 3px solid transparent;
+  background-color: #212121;
+}
