@@ -5,7 +5,7 @@ import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 
-// Importações corrigidas para usar 'export default'
+// Importações com 'export default' (agora vai funcionar)
 import HomeIcon from './icons/HomeIcon';
 import SeriesIcon from './icons/SeriesIcon';
 import MoviesIcon from './icons/MoviesIcon';
@@ -27,7 +27,6 @@ export const Sidebar = () => {
     { href: '/tv/filmes', icon: MoviesIcon, label: 'Filmes' },
     { href: '/tv/animes', icon: AnimeIcon, label: 'Animes' },
     { href: '/tv/doramas', icon: DramaIcon, label: 'Doramas' },
-    // A aba "Jogos" foi removida conforme solicitado
   ];
 
   const handleSignOut = async () => {
@@ -63,7 +62,6 @@ export const Sidebar = () => {
             </Link>
           ))}
         </nav>
-        {/* Item de Configurações movido para o final, fora da navegação principal */}
         <div className="tv-sidebar-footer">
           <Link href="#" className="tv-sidebar-item focusable">
               <SettingsIcon />
