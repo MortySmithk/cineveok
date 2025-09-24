@@ -1,0 +1,172 @@
+/* cineveo-next/app/tv/tv.css */
+body {
+  background-color: #0a0a0a;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  overflow: hidden; /* Evita scroll na página inteira */
+}
+
+#tv-app-container {
+  width: 100vw;
+  height: 100vh;
+}
+
+.tv-loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #f5c518;
+  border-radius: 50%;
+  animation: tv-spin 1s linear infinite;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes tv-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.tv-main-content {
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.tv-header {
+  margin-bottom: 30px;
+}
+
+.tv-navigation {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.nav-item {
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: #aaa;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.nav-item:focus {
+  outline: 3px solid #f5c518;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tv-sections-container {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.tv-section {
+  margin-bottom: 40px;
+}
+
+.tv-section h2 {
+  font-size: 1.6rem;
+  margin-bottom: 15px;
+}
+
+.tv-carousel {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px; /* Espaço para a sombra do foco */
+}
+
+.tv-card {
+  position: relative;
+  width: 220px;
+  height: 330px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  border: 3px solid transparent;
+}
+
+.tv-card:focus {
+  outline: none;
+  transform: scale(1.05);
+  border-color: #f5c518;
+  box-shadow: 0 0 25px rgba(245, 197, 24, 0.7);
+}
+
+.tv-card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* Página de Detalhes */
+.tv-details-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.tv-details-backdrop { z-index: -2; filter: brightness(0.4); }
+.tv-details-overlay { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to right, #0a0a0a 30%, transparent 70%); }
+.tv-details-content { padding: 60px; max-width: 50%; }
+.tv-details-content h1 { font-size: 3.5rem; }
+.tv-details-overview { font-size: 1.1rem; color: #ccc; max-height: 150px; overflow: hidden; }
+
+.tv-play-button {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 1.5rem;
+  background-color: #f5c518;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tv-play-button:focus { outline: 3px solid #fff; }
+
+.tv-seasons-container { margin-top: 30px; }
+.tv-seasons-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tv-season-tab {
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid transparent;
+  color: #fff;
+  border-radius: 8px;
+}
+.tv-season-tab.active { background: #f5c518; color: #000; }
+.tv-season-tab:focus { outline: none; border-color: #fff; }
+
+.tv-episodes-carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; }
+.tv-episode-card {
+  width: 250px;
+  height: 140px;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 3px solid transparent;
+}
+.tv-episode-card:focus { outline: none; border-color: #f5c518; }
+.tv-episode-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
+.tv-episode-info span { font-size: 0.9rem; }
+.tv-episode-info p { font-size: 1rem; font-weight: bold; margin: 0; }
+
+.tv-player-fullscreen { position: fixed; inset: 0; z-index: 100; background: #000; }
+.tv-player-fullscreen iframe { width: 100%; height: 100%; border: 0; }
+.tv-player-close { position: absolute; top: 30px; left: 30px; z-index: 101; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; font-size: 1.2rem; border-radius: 8px; }
+.tv-player-close:focus { outline: 3px solid #f5c518; }

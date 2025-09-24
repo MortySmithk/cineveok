@@ -1,4 +1,4 @@
-// app/components/Header.tsx
+// cineveo-next/app/components/Header.tsx
 "use client";
 
 import Link from 'next/link';
@@ -40,6 +40,12 @@ export default function Header() {
     };
   };
 
+  // Não renderiza o Header na rota /tv
+  if (pathname.startsWith('/tv')) {
+    return null;
+  }
+
+
   return (
     <>
       <header className="site-header-main">
@@ -64,6 +70,7 @@ export default function Header() {
               <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
               <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
               <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
+               <Link href="/tv" style={getLinkStyle('/tv')}>TV</Link>
               <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
             </nav>
           </div>
@@ -106,6 +113,7 @@ export default function Header() {
             <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
             <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
             <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
+            <Link href="/tv" style={getLinkStyle('/tv')}>TV</Link>
             <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
         </nav>
         <div className="mobile-auth">

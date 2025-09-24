@@ -1,4 +1,4 @@
-// app/page.tsx - A NOVA PÁGINA INICIAL
+// cineveo-next/app/page.tsx - VERSÃO COM "CONTINUAR ASSISTINDO"
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,6 +8,7 @@ import Image from 'next/image';
 import StarIcon from './components/icons/StarIcon';
 import PlayIcon from './components/icons/PlayIcon';
 import BookmarkIcon from './components/icons/BookmarkIcon';
+import { useContinueWatching, ContinueWatchingItem } from './hooks/useContinueWatching';
 
 interface Media { id: number; title?: string; name?: string; poster_path: string; backdrop_path: string; release_date?: string; first_air_date?: string; vote_average: number; overview: string; media_type: 'movie' | 'tv'; }
 
@@ -19,6 +20,8 @@ export default function HomePage() {
   const [popularSeries, setPopularSeries] = useState<Media[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { history: continueWatchingHistory } = useContinueWatching();
+
 
   useEffect(() => {
     const fetchMedia = async () => {
@@ -82,11 +85,28 @@ export default function HomePage() {
       </div>
 
       <div className="main-container" style={{ marginTop: '-80px', position: 'relative', zIndex: 10 }}>
+        {/* Continuar Assistindo */}
+        {continueWatchingHistory.length > 0 && (
+          <section className="movie-section">
+            <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
+            <div className="movie-carousel">
+              {continueWatchingHistory.map((item) => (
+                <Link href={`/media/${item.mediaType}/${item.tmdbId}`} key={item.id} className="movie-card">
+                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
+                  <div className="movie-card-info">
+                    <h3 className="movie-card-title">{item.title}</h3>
+                    {item.progress && <p className="continue-watching-progress">T{item.progress.season} E{item.progress.episode}</p>}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Lançamentos */}
         <section className="movie-section">
-          <div className="section-header">
-            <h2 className="section-title">Filmes Lançamento no CineVEO</h2>
-          </div>
+          <div className="section-header"><h2 className="section-title">Filmes Lançamento no CineVEO</h2></div>
           <div className="movie-carousel">
             {latestMovies.map((movie) => (
               <Link href={`/media/movie/${movie.id}`} key={movie.id} className="movie-card">
@@ -104,9 +124,7 @@ export default function HomePage() {
 
         {/* Séries Populares */}
          <section className="movie-section">
-          <div className="section-header">
-            <h2 className="section-title">Séries Populares</h2>
-          </div>
+          <div className="section-header"><h2 className="section-title">Séries Populares</h2></div>
           <div className="movie-carousel">
             {popularSeries.map((series) => (
               <Link href={`/media/tv/${series.id}`} key={series.id} className="movie-card">

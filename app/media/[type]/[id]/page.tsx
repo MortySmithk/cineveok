@@ -1,4 +1,4 @@
-// app/media/[type]/[id]/page.tsx
+// app/media/[type]/[id]/page.tsx - VERSÃO COM "CONTINUAR ASSISTINDO"
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,6 +11,8 @@ import VideoModal from '@/app/components/VideoModal';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon';
+import { useContinueWatching } from '@/app/hooks/useContinueWatching';
+
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -37,6 +39,8 @@ export default function MediaPage() {
   const params = useParams();
   const type = params.type as 'movie' | 'tv';
   const id = params.id as string;
+
+  const { saveProgress, getProgress } = useContinueWatching();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,16 +80,22 @@ export default function MediaPage() {
           setModalStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
           setModalTitle(mediaDetails.title);
         }
-        // Se for série, define o primeiro episódio como ativo
+        
+        // Se for série, busca o progresso salvo
         if (type === 'tv') {
-          setActiveEpisode({ season: 1, episode: 1 });
+            const progress = getProgress('tv', id);
+            const startSeason = progress?.progress?.season || 1;
+            const startEpisode = progress?.progress?.episode || 1;
+            setSelectedSeason(startSeason);
+            setActiveEpisode({ season: startSeason, episode: startEpisode });
         }
+
       } catch (error) {
         setStatus("Não foi possível carregar os detalhes.");
       }
     };
     fetchData();
-  }, [id, type]);
+  }, [id, type, getProgress]);
 
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
@@ -105,11 +115,21 @@ export default function MediaPage() {
   
   // Define a URL do player da série quando o episódio ativo muda
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && id) {
+    if (type === 'tv' && activeEpisode && id && details) {
       const { season, episode } = activeEpisode;
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
+      
+      // Salva o progresso
+      saveProgress({
+          mediaType: 'tv',
+          tmdbId: id,
+          title: details.title,
+          poster_path: details.poster_path,
+          progress: { season, episode }
+      });
+
     }
-  }, [activeEpisode, id, type]);
+  }, [activeEpisode, id, type, details, saveProgress]);
 
 
   // --- FUNÇÕES ---
@@ -123,6 +143,15 @@ export default function MediaPage() {
         return;
     }
     setIsModalOpen(true);
+    // Salva progresso para filmes ao abrir o modal
+    if(details) {
+        saveProgress({
+            mediaType: 'movie',
+            tmdbId: id,
+            title: details.title,
+            poster_path: details.poster_path,
+        });
+    }
   };
 
   const formatRuntime = (minutes?: number | number[]) => {
