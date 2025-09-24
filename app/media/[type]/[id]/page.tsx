@@ -30,6 +30,7 @@ export default function TVMediaPage() {
   const [showPlayer, setShowPlayer] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   
+  // O hook agora observa o container principal desta página
   useTVNavigation('.tv-details-container');
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function TVMediaPage() {
         const data = res.data;
         setDetails({ ...data, title: data.title || data.name });
         if (type === 'movie') {
-          setPlayerUrl(`https://player3.cineveo.workers.dev/api/stream/movie/${id}`);
+          setPlayerUrl(`https://primevicio.vercel.app/embed/movie/${id}`);
         }
       } catch (error) { console.error("Erro ao carregar detalhes:", error); }
     };
@@ -58,51 +59,34 @@ export default function TVMediaPage() {
     fetchEpisodes();
   }, [id, type, selectedSeason]);
 
-  // Efeito de foco automático (versão mais robusta)
+  // Efeito para focar no elemento principal após o carregamento (VERSÃO CORRIGIDA)
   useEffect(() => {
-    // Só continua se os detalhes e os episódios (para séries) estiverem carregados
-    if (!details || (type === 'tv' && episodes.length === 0)) {
-      return;
-    }
+    const isReady = details && (type === 'movie' || (type === 'tv' && episodes.length > 0));
 
-    let attempts = 0;
-    const maxAttempts = 20; // Tenta por até 2 segundos (20 * 100ms)
+    if (isReady) {
+      const timer = setTimeout(() => {
+        if (mainContentRef.current) {
+          let targetElement: HTMLElement | null = null;
 
-    const tryFocus = () => {
-      if (mainContentRef.current) {
-        let targetElement: HTMLElement | null = null;
+          if (type === 'tv') {
+            // Foca diretamente no primeiro episódio na grelha.
+            targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-episodes-grid-final .focusable');
+          } 
+          else if (type === 'movie') {
+            // Mantém o foco no botão de assistir para filmes.
+            targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-play-button.focusable');
+          }
 
-        if (type === 'tv') {
-          // Tenta focar no primeiro episódio
-          targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-episodes-grid-final .focusable');
-        } else if (type === 'movie') {
-          // Tenta focar no botão de play para filmes
-          targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-play-button.focusable');
+          // Agora ele vai focar no alvo assim que ele estiver pronto.
+          if (targetElement) {
+            targetElement.focus();
+          }
         }
-
-        if (targetElement) {
-          targetElement.focus();
-          return true; // Sucesso
-        }
-      }
-      return false; // Falhou
-    };
-
-    if (tryFocus()) {
-      return; // Conseguiu focar de primeira
+      }, 300); // Delay para garantir que a renderização esteja completa.
+      
+      return () => clearTimeout(timer);
     }
-
-    // Se não conseguiu de primeira, tenta repetidamente
-    const intervalId = setInterval(() => {
-      attempts++;
-      if (tryFocus() || attempts >= maxAttempts) {
-        clearInterval(intervalId);
-      }
-    }, 100);
-
-    return () => clearInterval(intervalId);
   }, [details, episodes, type]);
-
 
   const handlePlay = (season?: number, episode?: number) => {
     if (!user) {
@@ -110,7 +94,7 @@ export default function TVMediaPage() {
       return;
     }
     if (type === 'tv' && season && episode) {
-      setPlayerUrl(`https://player3.cineveo.workers.dev/api/stream/series/${id}/${season}/${episode}`);
+      setPlayerUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
     }
     setShowPlayer(true);
   };
@@ -120,7 +104,7 @@ export default function TVMediaPage() {
   if (showPlayer) {
     return (
       <div className="tv-player-fullscreen">
-        <iframe src={playerUrl} allowFullScreen allow="autoplay" referrerPolicy="no-referrer"></iframe>
+        <iframe src={playerUrl} allowFullScreen allow="autoplay"></iframe>
         <button onClick={() => setShowPlayer(false)} className="tv-player-close focusable">Voltar</button>
       </div>
     );
