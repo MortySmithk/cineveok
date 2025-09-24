@@ -57,45 +57,31 @@ export const useTVNavigation = (containerSelector = 'body') => {
           const dx = (candidateRect.left + candidateRect.width / 2) - (currentRect.left + currentRect.width / 2);
           const dy = (candidateRect.top + candidateRect.height / 2) - (currentRect.top + currentRect.height / 2);
 
-          // --- LÓGICA MODIFICADA ---
-          // Verifica a sobreposição visual real em vez de calcular a partir dos centros.
-          const overlapsHorizontally = candidateRect.left < currentRect.right && candidateRect.right > currentRect.left;
-          const overlapsVertically = candidateRect.top < currentRect.bottom && candidateRect.bottom > currentRect.top;
-
           let isValidCandidate = false;
 
+          // Verifica se o candidato está na direção geral do movimento da seta.
           switch (key) {
             case 'ArrowDown':
-              // O candidato deve estar abaixo e ter uma sobreposição horizontal.
-              if (dy > 0 && overlapsHorizontally) {
-                isValidCandidate = true;
-              }
+              if (dy > 0) isValidCandidate = true;
               break;
             case 'ArrowUp':
-              // O candidato deve estar acima e ter uma sobreposição horizontal.
-              if (dy < 0 && overlapsHorizontally) {
-                isValidCandidate = true;
-              }
+              if (dy < 0) isValidCandidate = true;
               break;
             case 'ArrowRight':
-              // O candidato deve estar à direita e ter uma sobreposição vertical.
-              if (dx > 0 && overlapsVertically) {
-                isValidCandidate = true;
-              }
+              if (dx > 0) isValidCandidate = true;
               break;
             case 'ArrowLeft':
-              // O candidato deve estar à esquerda e ter uma sobreposição vertical.
-              if (dx < 0 && overlapsVertically) {
-                isValidCandidate = true;
-              }
+              if (dx < 0) isValidCandidate = true;
               break;
           }
 
           if (isValidCandidate) {
-            // A fórmula de distância com penalidade foi mantida, pois é eficaz.
+            // Nova fórmula de distância com um forte "viés de eixo".
+            // Isto penaliza fortemente o desvio do eixo principal do movimento.
+            // Por exemplo, ao pressionar 'para baixo', a distância horizontal (dx) é muito mais "cara" do que a vertical (dy).
             const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
-                ? Math.sqrt(dx * dx + (dy * dy * 2.5)) // Penaliza movimento vertical
-                : Math.sqrt((dx * dx * 2.5) + dy * dy); // Penaliza movimento horizontal
+                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 3, 2)) // Penaliza fortemente o movimento vertical
+                : Math.sqrt(Math.pow(dx * 3, 2) + Math.pow(dy, 2)); // Penaliza fortemente o movimento horizontal
             
             if (distance < minDistance) {
               minDistance = distance;
@@ -110,6 +96,8 @@ export const useTVNavigation = (containerSelector = 'body') => {
       if (nextFocus) {
         nextFocus.focus();
         focusedElementRef.current = nextFocus;
+        // Garante que o item focado esteja visível no ecrã
+        nextFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     };
     
