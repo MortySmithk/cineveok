@@ -8,69 +8,96 @@ export const useTVNavigation = (containerSelector = 'body') => {
     const container = document.querySelector(containerSelector);
     if (!container) return;
 
-    const focusables = Array.from(
-      container.querySelectorAll<HTMLElement>('.focusable')
-    );
+    // Atraso mínimo para garantir que todos os elementos sejam renderizados
+    setTimeout(() => {
+      const focusables = Array.from(
+        container.querySelectorAll<HTMLElement>('.focusable:not([disabled])')
+      );
 
-    if (focusables.length > 0) {
-        const firstFocusable = focusables[0];
-        firstFocusable.focus();
-        focusedElementRef.current = firstFocusable;
-    }
+      if (focusables.length > 0 && !document.activeElement?.closest(containerSelector)) {
+          const firstFocusable = focusables[0];
+          firstFocusable.focus();
+          focusedElementRef.current = firstFocusable;
+      }
+    }, 100);
+
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const { key } = e;
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) {
         return;
       }
+      
+      const allFocusables = Array.from(
+        document.querySelectorAll<HTMLElement>('.focusable:not([disabled])')
+      );
+      const currentFocused = document.activeElement as HTMLElement;
+      
+      if (!currentFocused || !allFocusables.includes(currentFocused)) {
+        return;
+      }
+      
       e.preventDefault();
 
-      const currentFocused = document.activeElement as HTMLElement;
-      if (!currentFocused || !focusables.includes(currentFocused)) return;
-      
       if (key === 'Enter') {
         currentFocused.click();
         return;
       }
       
-      const findNextFocus = () => {
+      const findNextFocus = (): HTMLElement | null => {
         const currentRect = currentFocused.getBoundingClientRect();
         let bestCandidate: HTMLElement | null = null;
         let minDistance = Infinity;
 
-        focusables.forEach(el => {
-            if (el === currentFocused) return;
+        for (const candidate of allFocusables) {
+          if (candidate === currentFocused) continue;
+
+          const candidateRect = candidate.getBoundingClientRect();
+          
+          const dx = (candidateRect.left + candidateRect.width / 2) - (currentRect.left + currentRect.width / 2);
+          const dy = (candidateRect.top + candidateRect.height / 2) - (currentRect.top + currentRect.height / 2);
+
+          let isValidCandidate = false;
+
+          switch (key) {
+            case 'ArrowDown':
+              // O candidato deve estar abaixo e ter uma sobreposição horizontal
+              if (dy > 0 && Math.abs(dx) < (currentRect.width / 2 + candidateRect.width / 2)) {
+                isValidCandidate = true;
+              }
+              break;
+            case 'ArrowUp':
+              // O candidato deve estar acima e ter uma sobreposição horizontal
+              if (dy < 0 && Math.abs(dx) < (currentRect.width / 2 + candidateRect.width / 2)) {
+                isValidCandidate = true;
+              }
+              break;
+            case 'ArrowRight':
+              // O candidato deve estar à direita e ter uma sobreposição vertical
+              if (dx > 0 && Math.abs(dy) < (currentRect.height / 2 + candidateRect.height / 2)) {
+                isValidCandidate = true;
+              }
+              break;
+            case 'ArrowLeft':
+              // O candidato deve estar à esquerda e ter uma sobreposição vertical
+              if (dx < 0 && Math.abs(dy) < (currentRect.height / 2 + candidateRect.height / 2)) {
+                isValidCandidate = true;
+              }
+              break;
+          }
+
+          if (isValidCandidate) {
+            // Prioriza a distância no eixo principal do movimento
+            const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
+                ? Math.sqrt(dx * dx + (dy * dy * 2.5)) // Penaliza movimento vertical
+                : Math.sqrt((dx * dx * 2.5) + dy * dy); // Penaliza movimento horizontal
             
-            const elRect = el.getBoundingClientRect();
-            let isCandidate = false;
-
-            if (key === 'ArrowDown' && elRect.top > currentRect.bottom) isCandidate = true;
-            if (key === 'ArrowUp' && elRect.bottom < currentRect.top) isCandidate = true;
-            if (key === 'ArrowRight' && elRect.left > currentRect.right) isCandidate = true;
-            if (key === 'ArrowLeft' && elRect.right < currentRect.left) isCandidate = true;
-            
-            if (isCandidate) {
-                const dx = (elRect.left + elRect.width / 2) - (currentRect.left + currentRect.width / 2);
-                const dy = (elRect.top + elRect.height / 2) - (currentRect.top + currentRect.height / 2);
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    bestCandidate = el;
-                }
+            if (distance < minDistance) {
+              minDistance = distance;
+              bestCandidate = candidate;
             }
-        });
-
-        // Fallback to simple index-based navigation if geometric search fails
-        if (!bestCandidate) {
-            const currentIndex = focusables.indexOf(currentFocused);
-            if (key === 'ArrowRight' || key === 'ArrowDown') {
-                bestCandidate = focusables[Math.min(focusables.length - 1, currentIndex + 1)];
-            } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
-                bestCandidate = focusables[Math.max(0, currentIndex - 1)];
-            }
+          }
         }
-        
         return bestCandidate;
       };
 
