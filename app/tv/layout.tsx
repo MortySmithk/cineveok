@@ -1,4 +1,4 @@
-import { Sidebar } from './components/Sidebar';
+import { Sidebar } from '@/app/components/Sidebar'; // Caminho corrigido
 import './tv.css';
 
 export default function TVLayout({ children }: { children: React.ReactNode }) {
