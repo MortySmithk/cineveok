@@ -30,6 +30,7 @@ export default function TVMediaPage() {
   const [showPlayer, setShowPlayer] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   
+  // O hook agora observa o container principal desta página
   useTVNavigation('.tv-details-container');
 
   useEffect(() => {
@@ -76,7 +77,6 @@ export default function TVMediaPage() {
             targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-play-button.focusable');
           }
 
-          // A condição que impedia o foco foi removida.
           // Agora ele vai focar no alvo assim que ele estiver pronto.
           if (targetElement) {
             targetElement.focus();
