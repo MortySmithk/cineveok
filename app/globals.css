@@ -706,11 +706,12 @@ main { padding-top: 68px; }
     display: grid;
     grid-template-columns: 2fr 1fr; /* Player ocupa 2/3, lista 1/3 */
     gap: 2rem;
-    align-items: stretch; /* Revertido para o valor original que é melhor para o layout */
+    align-items: stretch; /* Mantém o layout vertical estável */
   }
   
   .series-player-wrapper {
-    /* A ordem no mobile é player primeiro, então não precisa mudar */
+    /* NOVA CORREÇÃO: Impede que a coluna do player colapse durante recarregamentos. */
+    min-width: 0;
   }
 
   .episodes-list-wrapper {
