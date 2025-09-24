@@ -12,6 +12,7 @@ interface Media {
   title?: string;
   name?: string;
   poster_path: string;
+  media_type?: 'movie' | 'tv'; // <-- ESTA LINHA FOI ADICIONADA PARA CORRIGIR O ERRO
 }
 
 interface Section {
@@ -39,7 +40,7 @@ export default function TVHomePage() {
         const [moviesRes, seriesRes, trendingRes] = await Promise.all([popularMoviesPromise, popularSeriesPromise, trendingPromise]);
 
         setSections([
-          { title: 'Em Alta', items: trendingRes.data.results.map((item: any) => ({...item, media_type: item.media_type || 'tv'})), mediaType: 'tv' },
+          { title: 'Em Alta', items: trendingRes.data.results, mediaType: 'tv' },
           { title: 'Filmes Populares', items: moviesRes.data.results, mediaType: 'movie' },
           { title: 'Séries Populares', items: seriesRes.data.results, mediaType: 'tv' },
         ]);
@@ -76,7 +77,7 @@ export default function TVHomePage() {
               {section.items.map(item => (
                 <Link
                   href={`/tv/media/${item.media_type || section.mediaType}/${item.id}`}
-                  key={`${item.id}-${item.title}`}
+                  key={`${item.id}-${item.title || item.name}`}
                   className="tv-home-card focusable"
                 >
                   <Image
