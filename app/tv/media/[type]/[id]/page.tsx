@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useTVNavigation } from '@/app/hooks/useTVNavigation';
 import { useAuth } from '@/app/components/AuthProvider';
@@ -19,6 +19,7 @@ const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
 export default function TVMediaPage() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const type = params.type as 'movie' | 'tv';
   const id = params.id as string;
@@ -62,7 +63,7 @@ export default function TVMediaPage() {
 
   const handlePlay = (season?: number, episode?: number) => {
     if (!user) {
-      alert("Por favor, faça login para assistir.");
+      router.push('/tv/login'); // Redireciona para o login se não estiver logado
       return;
     }
     if (type === 'tv' && season && episode) {
@@ -86,42 +87,46 @@ export default function TVMediaPage() {
     <div className="tv-details-page">
       <Image src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="tv-details-backdrop" />
       <div className="tv-details-overlay"></div>
-      <div className="tv-details-content">
-        <h1>{details.title}</h1>
-        <p className="tv-details-overview">{details.overview}</p>
-        
-        {type === 'movie' && (
-          <button onClick={() => handlePlay()} className="tv-play-button focusable">Assistir Filme</button>
-        )}
+      
+      {/* Container adicionado para corrigir o foco */}
+      <div className="tv-details-container">
+        <div className="tv-details-content">
+          <h1>{details.title}</h1>
+          <p className="tv-details-overview">{details.overview}</p>
+          
+          {type === 'movie' && (
+            <button onClick={() => handlePlay()} className="tv-play-button focusable">Assistir Filme</button>
+          )}
 
-        {type === 'tv' && details.seasons && (
-          <div className="tv-seasons-container">
-            <div className="tv-seasons-tabs">
-              {details.seasons.filter(s => s.season_number > 0).map(season => (
-                <button
-                  key={season.id}
-                  className={`tv-season-tab focusable ${selectedSeason === season.season_number ? 'active' : ''}`}
-                  onClick={() => setSelectedSeason(season.season_number)}
-                >
-                  {season.name}
-                </button>
-              ))}
+          {type === 'tv' && details.seasons && (
+            <div className="tv-seasons-container">
+              <div className="tv-seasons-tabs">
+                {details.seasons.filter(s => s.season_number > 0).map(season => (
+                  <button
+                    key={season.id}
+                    className={`tv-season-tab focusable ${selectedSeason === season.season_number ? 'active' : ''}`}
+                    onClick={() => setSelectedSeason(season.season_number)}
+                  >
+                    {season.name}
+                  </button>
+                ))}
+              </div>
+              <div className="tv-episodes-carousel">
+                {episodes.map(ep => (
+                  <button key={ep.id} className="tv-episode-card focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
+                     {ep.still_path ? (
+                      <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
+                    ) : <div className="tv-episode-placeholder"/>}
+                    <div className="tv-episode-info">
+                      <span>EP {ep.episode_number}</span>
+                      <p>{ep.name}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="tv-episodes-carousel">
-              {episodes.map(ep => (
-                <button key={ep.id} className="tv-episode-card focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
-                   {ep.still_path ? (
-                    <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
-                  ) : <div className="tv-episode-placeholder"/>}
-                  <div className="tv-episode-info">
-                    <span>EP {ep.episode_number}</span>
-                    <p>{ep.name}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
