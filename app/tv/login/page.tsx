@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/app/firebase';
@@ -11,7 +11,17 @@ export default function TVLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  useTVNavigation();
+  
+  // O hook agora foca no container do login para evitar confusão com a sidebar
+  useTVNavigation('.tv-login-container');
+
+  // Foco automático no primeiro input
+  useEffect(() => {
+    setTimeout(() => {
+      const firstInput = document.querySelector<HTMLElement>('.tv-login-input.focusable');
+      firstInput?.focus();
+    }, 200);
+  }, []);
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();

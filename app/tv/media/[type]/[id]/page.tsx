@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -28,8 +28,10 @@ export default function TVMediaPage() {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [playerUrl, setPlayerUrl] = useState('');
   const [showPlayer, setShowPlayer] = useState(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
   
-  useTVNavigation();
+  // O hook agora observa o container principal desta página
+  useTVNavigation('.tv-details-container');
 
   useEffect(() => {
     if (!id || !type) return;
@@ -61,11 +63,13 @@ export default function TVMediaPage() {
   useEffect(() => {
     if (details) {
       setTimeout(() => {
-        const mainButton = document.querySelector<HTMLElement>('.tv-details-container .focusable');
-        mainButton?.focus();
-      }, 300);
+        if (mainContentRef.current) {
+          const firstFocusable = mainContentRef.current.querySelector<HTMLElement>('.focusable');
+          firstFocusable?.focus();
+        }
+      }, 400); // Aumentado para garantir que a grade de episódios renderize
     }
-  }, [details, episodes]); // Roda quando detalhes ou episódios mudam
+  }, [details, episodes]);
 
   const handlePlay = (season?: number, episode?: number) => {
     if (!user) {
@@ -94,7 +98,7 @@ export default function TVMediaPage() {
       <Image src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="tv-details-backdrop" />
       <div className="tv-details-overlay"></div>
       
-      <div className="tv-details-container">
+      <div className="tv-details-container" ref={mainContentRef}>
         <div className="tv-details-content">
           <h1>{details.title}</h1>
           <p className="tv-details-overview">{details.overview}</p>
@@ -117,15 +121,16 @@ export default function TVMediaPage() {
                 ))}
               </div>
               
-              {/* LAYOUT DE EPISÓDIOS MUDOU DE CARROSSEL PARA GRADE */}
-              <div className="tv-episodes-grid">
+              <div className="tv-episodes-grid-final">
                 {episodes.map(ep => (
-                  <button key={ep.id} className="tv-episode-card focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
-                     {ep.still_path ? (
-                      <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
-                    ) : <div className="tv-episode-placeholder"/>}
-                    <div className="tv-episode-info">
-                      <span>EP {ep.episode_number}</span>
+                  <button key={ep.id} className="tv-episode-card-final focusable" onClick={() => handlePlay(selectedSeason, ep.episode_number)}>
+                     <div className="tv-episode-card-final-img">
+                       {ep.still_path ? (
+                        <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={ep.name} layout="fill" objectFit="cover" />
+                      ) : <div className="tv-episode-placeholder"/>}
+                     </div>
+                    <div className="tv-episode-card-final-info">
+                      <span>Episódio {ep.episode_number}</span>
                       <p>{ep.name}</p>
                     </div>
                   </button>
