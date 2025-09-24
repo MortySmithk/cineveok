@@ -705,7 +705,7 @@ main { padding-top: 68px; }
     display: grid;
     grid-template-columns: 2fr 1fr; /* Player ocupa 2/3, lista 1/3 */
     gap: 2rem;
-    align-items: flex-start;
+    align-items: stretch; /* Alterado de flex-start para stretch */
   }
   
   .series-player-wrapper {
