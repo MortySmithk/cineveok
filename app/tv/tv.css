@@ -196,7 +196,12 @@ body {
   border: 2px solid transparent; color: #fff; border-radius: 8px; cursor: pointer;
 }
 .tv-season-tab.active { background: #f1f1f1; color: #0f0f0f; font-weight: bold; }
-.tv-season-tab:focus { outline: none; border-color: #fff; transform: none; background: rgba(255,255,255,0.2); }
+/* MODIFICAÇÃO ABAIXO */
+.tv-season-tab:focus {
+  outline: none;
+  border-color: #fff;
+  background: rgba(255,255,255,0.2);
+}
 
 /* GRADE DE EPISÓDIOS - ESTILO FINAL */
 .tv-episodes-grid-final {
