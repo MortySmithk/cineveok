@@ -5,14 +5,15 @@ import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 
-import { HomeIcon } from './icons/HomeIcon';
-import { SeriesIcon } from './icons/SeriesIcon';
-import { MoviesIcon } from './icons/MoviesIcon';
-import { SettingsIcon } from './icons/SettingsIcon';
-import { SearchIconTV } from './icons/SearchIconTV';
-import { AnimeIcon } from './icons/AnimeIcon';
-import { DramaIcon } from './icons/DramaIcon';
-import { UserIcon } from './icons/UserIcon';
+// Importações corrigidas para usar 'export default'
+import HomeIcon from './icons/HomeIcon';
+import SeriesIcon from './icons/SeriesIcon';
+import MoviesIcon from './icons/MoviesIcon';
+import SettingsIcon from './icons/SettingsIcon';
+import SearchIconTV from './icons/SearchIconTV';
+import AnimeIcon from './icons/AnimeIcon';
+import DramaIcon from './icons/DramaIcon';
+import UserIcon from './icons/UserIcon';
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -26,7 +27,7 @@ export const Sidebar = () => {
     { href: '/tv/filmes', icon: MoviesIcon, label: 'Filmes' },
     { href: '/tv/animes', icon: AnimeIcon, label: 'Animes' },
     { href: '/tv/doramas', icon: DramaIcon, label: 'Doramas' },
-    { href: '#', icon: SettingsIcon, label: 'Configurações' },
+    // A aba "Jogos" foi removida conforme solicitado
   ];
 
   const handleSignOut = async () => {
@@ -62,6 +63,13 @@ export const Sidebar = () => {
             </Link>
           ))}
         </nav>
+        {/* Item de Configurações movido para o final, fora da navegação principal */}
+        <div className="tv-sidebar-footer">
+          <Link href="#" className="tv-sidebar-item focusable">
+              <SettingsIcon />
+              <span>Configurações</span>
+          </Link>
+        </div>
       </div>
     </aside>
   );
