@@ -57,37 +57,42 @@ export const useTVNavigation = (containerSelector = 'body') => {
           const dx = (candidateRect.left + candidateRect.width / 2) - (currentRect.left + currentRect.width / 2);
           const dy = (candidateRect.top + candidateRect.height / 2) - (currentRect.top + currentRect.height / 2);
 
+          // --- LÓGICA MODIFICADA ---
+          // Verifica a sobreposição visual real em vez de calcular a partir dos centros.
+          const overlapsHorizontally = candidateRect.left < currentRect.right && candidateRect.right > currentRect.left;
+          const overlapsVertically = candidateRect.top < currentRect.bottom && candidateRect.bottom > currentRect.top;
+
           let isValidCandidate = false;
 
           switch (key) {
             case 'ArrowDown':
-              // O candidato deve estar abaixo e ter uma sobreposição horizontal
-              if (dy > 0 && Math.abs(dx) < (currentRect.width / 2 + candidateRect.width / 2)) {
+              // O candidato deve estar abaixo e ter uma sobreposição horizontal.
+              if (dy > 0 && overlapsHorizontally) {
                 isValidCandidate = true;
               }
               break;
             case 'ArrowUp':
-              // O candidato deve estar acima e ter uma sobreposição horizontal
-              if (dy < 0 && Math.abs(dx) < (currentRect.width / 2 + candidateRect.width / 2)) {
+              // O candidato deve estar acima e ter uma sobreposição horizontal.
+              if (dy < 0 && overlapsHorizontally) {
                 isValidCandidate = true;
               }
               break;
             case 'ArrowRight':
-              // O candidato deve estar à direita e ter uma sobreposição vertical
-              if (dx > 0 && Math.abs(dy) < (currentRect.height / 2 + candidateRect.height / 2)) {
+              // O candidato deve estar à direita e ter uma sobreposição vertical.
+              if (dx > 0 && overlapsVertically) {
                 isValidCandidate = true;
               }
               break;
             case 'ArrowLeft':
-              // O candidato deve estar à esquerda e ter uma sobreposição vertical
-              if (dx < 0 && Math.abs(dy) < (currentRect.height / 2 + candidateRect.height / 2)) {
+              // O candidato deve estar à esquerda e ter uma sobreposição vertical.
+              if (dx < 0 && overlapsVertically) {
                 isValidCandidate = true;
               }
               break;
           }
 
           if (isValidCandidate) {
-            // Prioriza a distância no eixo principal do movimento
+            // A fórmula de distância com penalidade foi mantida, pois é eficaz.
             const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
                 ? Math.sqrt(dx * dx + (dy * dy * 2.5)) // Penaliza movimento vertical
                 : Math.sqrt((dx * dx * 2.5) + dy * dy); // Penaliza movimento horizontal
