@@ -14,7 +14,7 @@ interface MediaDetails {
   seasons?: Season[];
 }
 
-const API_KEY = "860b66ade580bacae580bacae581f4228fad49fc";
+const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
 export default function TVMediaPage() {
   const params = useParams();
@@ -30,7 +30,6 @@ export default function TVMediaPage() {
   const [showPlayer, setShowPlayer] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
   
-  // O hook agora observa o container principal desta página
   useTVNavigation('.tv-details-container');
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function TVMediaPage() {
     fetchEpisodes();
   }, [id, type, selectedSeason]);
 
-  // Efeito para focar no elemento principal após o carregamento (MODIFICADO)
+  // Efeito para focar no elemento principal após o carregamento (VERSÃO CORRIGIDA)
   useEffect(() => {
     const isReady = details && (type === 'movie' || (type === 'tv' && episodes.length > 0));
 
@@ -68,21 +67,22 @@ export default function TVMediaPage() {
         if (mainContentRef.current) {
           let targetElement: HTMLElement | null = null;
 
-          // Se for uma série, o alvo é o primeiro episódio.
           if (type === 'tv') {
+            // Foca diretamente no primeiro episódio na grelha.
             targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-episodes-grid-final .focusable');
           } 
-          // Se for um filme, o alvo é o botão de assistir.
           else if (type === 'movie') {
+            // Mantém o foco no botão de assistir para filmes.
             targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-play-button.focusable');
           }
 
-          // Apenas define o foco se o alvo for encontrado e nada já estiver focado dentro do container.
-          if (targetElement && !mainContentRef.current.contains(document.activeElement)) {
+          // A condição que impedia o foco foi removida.
+          // Agora ele vai focar no alvo assim que ele estiver pronto.
+          if (targetElement) {
             targetElement.focus();
           }
         }
-      }, 250); // Delay ligeiramente ajustado para garantir a renderização.
+      }, 300); // Delay para garantir que a renderização esteja completa.
       
       return () => clearTimeout(timer);
     }
