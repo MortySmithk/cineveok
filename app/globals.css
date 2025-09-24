@@ -726,3 +726,16 @@ main { padding-top: 68px; }
     max-height: 80vh; 
   }
 }
+/* Adicione estas regras no final do arquivo para corrigir o layout do player */
+
+@media (min-width: 1024px) {
+  .series-watch-grid {
+    display: grid;
+    /* A coluna do player (2.5fr) terá prioridade de espaço e nunca será comprimida.
+      A coluna da lista de episódios (1fr) terá um tamanho mínimo de 400px.
+    */
+    grid-template-columns: minmax(0, 2.5fr) minmax(400px, 1fr);
+    gap: 2rem;
+    align-items: start;
+  }
+}

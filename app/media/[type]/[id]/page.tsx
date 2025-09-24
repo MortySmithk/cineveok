@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -11,7 +11,6 @@ import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
-
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -26,14 +25,15 @@ interface CastMember {
 interface MediaDetails {
   id: number; title: string; overview: string; poster_path: string; backdrop_path: string;
   release_date: string; genres: Genre[]; vote_average: number; imdb_id?: string;
-  runtime?: number; // Específico para filmes
-  episode_run_time?: number[]; // Específico para séries
+  runtime?: number;
+  episode_run_time?: number[];
   credits?: { cast: CastMember[] };
   number_of_seasons?: number;
   seasons?: Season[];
 }
 
-// --- Componente ---
+const API_KEY = "860b66ade580bacae581f4228fad49fc";
+
 export default function MediaPage() {
   const params = useParams();
   const type = params.type as 'movie' | 'tv';
@@ -44,20 +44,15 @@ export default function MediaPage() {
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState('Carregando...');
-
   const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
-
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalStreamUrl, setModalStreamUrl] = useState('');
   const [modalTitle, setModalTitle] = useState('');
-  
-  const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-  // --- EFEITOS ---
+  // Efeito para buscar os dados da mídia e definir o ponto de continuação APENAS UMA VEZ
   useEffect(() => {
     if (!id || !type) return;
     const fetchData = async () => {
@@ -80,20 +75,20 @@ export default function MediaPage() {
         }
         
         if (type === 'tv') {
-            const progress = getProgress('tv', id);
-            const startSeason = progress?.progress?.season || 1;
-            const startEpisode = progress?.progress?.episode || 1;
-            setSelectedSeason(startSeason);
-            setActiveEpisode({ season: startSeason, episode: startEpisode });
+          const progress = getProgress('tv', id);
+          const startSeason = progress?.progress?.season || 1;
+          const startEpisode = progress?.progress?.episode || 1;
+          setSelectedSeason(startSeason);
+          setActiveEpisode({ season: startSeason, episode: startEpisode });
         }
-
       } catch (error) {
         setStatus("Não foi possível carregar os detalhes.");
       }
     };
     fetchData();
-  }, [id, type, getProgress]);
+  }, [id, type]); // Removido getProgress para quebrar o loop
 
+  // Efeito para buscar os episódios quando a temporada muda
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
     const fetchSeasonData = async () => {
@@ -109,25 +104,23 @@ export default function MediaPage() {
     };
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
-  
+
+  // Efeito para definir a URL do player e salvar o progresso
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
       const { season, episode } = activeEpisode;
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
       
       saveProgress({
-          mediaType: 'tv',
-          tmdbId: id,
-          title: details.title,
-          poster_path: details.poster_path,
-          progress: { season, episode }
+        mediaType: 'tv',
+        tmdbId: id,
+        title: details.title,
+        poster_path: details.poster_path,
+        progress: { season, episode }
       });
-
     }
   }, [activeEpisode, id, type, details, saveProgress]);
 
-
-  // --- FUNÇÕES ---
   const handleEpisodeClick = (season: number, episode: number) => {
     setActiveEpisode({ season, episode });
   };
@@ -138,14 +131,8 @@ export default function MediaPage() {
         return;
     }
     setIsModalOpen(true);
-
     if(details) {
-        saveProgress({
-            mediaType: 'movie',
-            tmdbId: id,
-            title: details.title,
-            poster_path: details.poster_path,
-        });
+        saveProgress({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
     }
   };
 
@@ -191,18 +178,10 @@ export default function MediaPage() {
           {type === 'tv' && (
             <section className="series-watch-section">
               <div className="series-watch-grid">
-                
                 <div className="series-player-wrapper">
                   <div className="player-container">
                     {activeStreamUrl ? (
-                      <iframe
-                        key={activeStreamUrl}
-                        src={activeStreamUrl}
-                        title={`CineVEO Player - ${details.title}`}
-                        allow="autoplay; encrypted-media"
-                        allowFullScreen
-                        referrerPolicy="origin"
-                      ></iframe>
+                      <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
                     ) : (
                        <div className="player-loader">
                         <div className="spinner"></div>
@@ -211,7 +190,6 @@ export default function MediaPage() {
                     )}
                   </div>
                 </div>
-
                 <div className="episodes-list-wrapper">
                   <div className="episodes-header">
                     <h2>Episódios</h2>
@@ -224,10 +202,7 @@ export default function MediaPage() {
                         handleEpisodeClick(newSeason, 1);
                       }}
                     >
-                      {details.seasons
-                        ?.filter(s => s.season_number > 0 && s.episode_count > 0)
-                        .map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)
-                      }
+                      {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
                     </select>
                   </div>
                   <div className="episode-list">
