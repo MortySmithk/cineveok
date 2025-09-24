@@ -1,172 +1,225 @@
-/* cineveo-next/app/tv/tv.css */
+/* cineveo-next/app/tv/tv.css - NOVA VERSÃO PERFEITA */
 body {
-  background-color: #0a0a0a;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #0F0F0F;
+  color: #F1F1F1;
+  font-family: 'YouTube Sans', 'Roboto', sans-serif;
   margin: 0;
-  overflow: hidden; /* Evita scroll na página inteira */
+  overflow: hidden;
 }
 
 #tv-app-container {
-  width: 100vw;
+  display: flex;
   height: 100vh;
 }
 
-.tv-loading-spinner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 60px;
-  height: 60px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #f5c518;
-  border-radius: 50%;
-  animation: tv-spin 1s linear infinite;
-  transform: translate(-50%, -50%);
+/* --- ESTILO DE FOCO GLOBAL --- */
+.focusable:focus {
+  outline: 3px solid white;
+  outline-offset: -3px;
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
-@keyframes tv-spin {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+/* --- BARRA LATERAL (SIDEBAR) --- */
+.tv-sidebar {
+  width: 280px;
+  background-color: #0F0F0F;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
 }
 
-.tv-main-content {
-  padding: 40px 60px;
+.tv-sidebar-content {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  box-sizing: border-box;
+  gap: 20px;
 }
 
-.tv-header {
-  margin-bottom: 30px;
-}
-
-.tv-navigation {
+.tv-sidebar-login, .tv-sidebar-item {
   display: flex;
-  gap: 30px;
-  margin-bottom: 30px;
-}
-
-.nav-item {
-  font-size: 1.8rem;
-  font-weight: 500;
-  color: #aaa;
-  text-decoration: none;
-  padding: 10px;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  text-decoration: none;
+  color: #F1F1F1;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid transparent;
 }
 
-.nav-item:focus {
-  outline: 3px solid #f5c518;
-  color: #fff;
+.tv-sidebar-item.active {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.tv-sections-container {
-  overflow-y: auto;
-  flex-grow: 1;
-}
-
-.tv-section {
-  margin-bottom: 40px;
-}
-
-.tv-section h2 {
-  font-size: 1.6rem;
-  margin-bottom: 15px;
-}
-
-.tv-carousel {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 20px; /* Espaço para a sombra do foco */
-}
-
-.tv-card {
-  position: relative;
-  width: 220px;
-  height: 330px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: transform 0.2s ease;
-  border: 3px solid transparent;
-}
-
-.tv-card:focus {
+.tv-sidebar-item:focus, .tv-sidebar-login:focus {
+  background-color: rgba(255, 255, 255, 0.2);
   outline: none;
-  transform: scale(1.05);
-  border-color: #f5c518;
-  box-shadow: 0 0 25px rgba(245, 197, 24, 0.7);
+  transform: none;
+  box-shadow: none;
+  border: 2px solid white;
 }
 
-.tv-card-title {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-  font-size: 1rem;
-  font-weight: bold;
+.tv-sidebar-item svg {
+  width: 28px;
+  height: 28px;
 }
 
-/* Página de Detalhes */
-.tv-details-page {
-  width: 100%;
-  height: 100%;
+/* --- CONTEÚDO PRINCIPAL --- */
+#tv-main-content {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+/* --- PÁGINA INICIAL --- */
+.tv-home-container {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 40px;
 }
-.tv-details-backdrop { z-index: -2; filter: brightness(0.4); }
-.tv-details-overlay { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to right, #0a0a0a 30%, transparent 70%); }
-.tv-details-content { padding: 60px; max-width: 50%; }
-.tv-details-content h1 { font-size: 3.5rem; }
-.tv-details-overview { font-size: 1.1rem; color: #ccc; max-height: 150px; overflow: hidden; }
-
-.tv-play-button {
-  margin-top: 20px;
-  padding: 15px 30px;
-  font-size: 1.5rem;
-  background-color: #f5c518;
-  color: #000;
+.tv-home-promo-section {
+  background-color: #212121;
+  border-radius: 12px;
+  padding: 30px;
+}
+.promo-title { font-size: 2.2rem; margin-bottom: 10px; }
+.promo-subtitle { font-size: 1.1rem; color: #aaa; margin-bottom: 25px; }
+.tv-login-button {
+  background-color: #f1f1f1;
+  color: #0f0f0f;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 12px 28px;
+  border-radius: 25px;
   border: none;
-  border-radius: 8px;
   cursor: pointer;
 }
-.tv-play-button:focus { outline: 3px solid #fff; }
 
-.tv-seasons-container { margin-top: 30px; }
-.tv-seasons-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-.tv-season-tab {
-  padding: 10px 20px;
+.tv-home-carousel-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.tv-home-carousel {
+    display: flex;
+    gap: 20px;
+}
+
+.tv-home-card {
+    position: relative;
+    width: 250px;
+    height: 140px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.tv-home-card-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+
+
+/* --- PÁGINA DE BUSCA --- */
+.tv-search-page {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: 40px;
+  height: calc(100vh - 80px); /* Altura total menos padding */
+}
+
+.tv-search-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tv-search-field {
+  width: 100%;
+  height: 60px;
+  background-color: #212121;
+  border-radius: 8px;
+  padding: 0 20px;
+  font-size: 1.8rem;
+  line-height: 60px;
+  color: #aaa;
+}
+
+.tv-search-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tv-search-suggestions button {
+  width: 100%;
+  text-align: left;
   font-size: 1.2rem;
-  background: rgba(255,255,255,0.1);
-  border: 2px solid transparent;
-  color: #fff;
+  padding: 15px 20px;
+  background-color: transparent;
+  color: #f1f1f1;
+  border: none;
   border-radius: 8px;
 }
-.tv-season-tab.active { background: #f5c518; color: #000; }
-.tv-season-tab:focus { outline: none; border-color: #fff; }
 
-.tv-episodes-carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; }
-.tv-episode-card {
-  width: 250px;
-  height: 140px;
-  flex-shrink: 0;
-  position: relative;
+.tv-search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.tv-search-result-card {
   border-radius: 8px;
   overflow: hidden;
-  border: 3px solid transparent;
 }
-.tv-episode-card:focus { outline: none; border-color: #f5c518; }
-.tv-episode-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
-.tv-episode-info span { font-size: 0.9rem; }
-.tv-episode-info p { font-size: 1rem; font-weight: bold; margin: 0; }
+.tv-search-result-card p {
+  margin-top: 8px;
+  font-size: 1rem;
+}
 
-.tv-player-fullscreen { position: fixed; inset: 0; z-index: 100; background: #000; }
-.tv-player-fullscreen iframe { width: 100%; height: 100%; border: 0; }
-.tv-player-close { position: absolute; top: 30px; left: 30px; z-index: 101; background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; font-size: 1.2rem; border-radius: 8px; }
-.tv-player-close:focus { outline: 3px solid #f5c518; }
+
+/* --- TECLADO VIRTUAL --- */
+.tv-keyboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tv-keyboard-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+}
+
+.tv-key {
+  width: 100%;
+  height: 50px;
+  background-color: #212121;
+  color: #f1f1f1;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.tv-key[data-key="space"] { grid-column: span 10; }
+
+.tv-keyboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.tv-key-action {
+  height: 50px;
+  background-color: #3f3f3f;
+  color: #f1f1f1;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 4px;
+}

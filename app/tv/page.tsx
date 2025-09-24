@@ -1,96 +1,41 @@
-// cineveo-next/app/tv/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useTVNavigation } from '../hooks/useTVNavigation';
 
-interface Media {
-  id: number;
-  title?: string;
-  name?: string;
-  poster_path: string;
-  media_type: 'movie' | 'tv';
-}
-
-const API_KEY = "860b66ade580bacae581f4228fad49fc";
+// Componente de Card de Mídia para a Home
+const MediaCard = ({ title, poster }: { title: string; poster: string }) => (
+    <div className="tv-home-card focusable">
+        <Image src={poster} alt={title} layout="fill" objectFit="cover" />
+        <div className="tv-home-card-title">{title}</div>
+    </div>
+);
 
 export default function TVHomePage() {
-  const [sections, setSections] = useState<{ title: string; items: Media[] }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchAllMedia = async () => {
-      setIsLoading(true);
-      try {
-        const endpoints = [
-          { title: "Em Alta", url: `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR` },
-          { title: "Filmes Populares", url: `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pt-BR` },
-          { title: "Séries Populares", url: `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR` },
-        ];
-
-        const responses = await Promise.all(endpoints.map(e => axios.get(e.url)));
-        
-        const newSections = responses.map((res, index) => ({
-          title: endpoints[index].title,
-          items: res.data.results.map((item: any) => ({
-            ...item,
-            media_type: item.media_type || (endpoints[index].title.includes('Filmes') ? 'movie' : 'tv')
-          }))
-        }));
-        
-        setSections(newSections);
-      } catch (error) {
-        console.error("Erro ao buscar mídia para TV:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAllMedia();
-  }, []);
-
-  useTVNavigation('.focusable');
-
-  if (isLoading) {
-    return <div className="tv-loading-spinner"></div>;
-  }
+  useTVNavigation('#tv-main-content'); // Ativa a navegação por foco nesta área
 
   return (
-    <div className="tv-main-content">
-      <header className="tv-header">
-         <Image src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="CineVEO Logo" width={180} height={45} priority />
-      </header>
-      
-      <nav className="tv-navigation">
-        <a href="#" className="nav-item focusable">Início</a>
-        <a href="#" className="nav-item focusable">Filmes</a>
-        <a href="#" className="nav-item focusable">Séries</a>
-        <a href="#" className="nav-item focusable">Pesquisar</a>
-      </nav>
-
-      <div className="tv-sections-container">
-        {sections.map((section, sectionIndex) => (
-          <section key={sectionIndex} className="tv-section">
-            <h2>{section.title}</h2>
-            <div className="tv-carousel">
-              {section.items.map(item => (
-                <Link href={`/tv/media/${item.media_type}/${item.id}`} key={item.id} className="tv-card focusable">
-                  <Image
-                    src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                    alt={item.title || item.name || ''}
-                    layout="fill"
-                    objectFit="cover"
-                  />
-                  <div className="tv-card-title">{item.title || item.name}</div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
+    <div className="tv-home-container">
+      <div className="tv-home-promo-section">
+        <h1 className="promo-title">Deixe o CineVEO com a sua cara</h1>
+        <p className="promo-subtitle">
+          Faça login para ter acesso a recomendações, inscrições e muito mais.
+        </p>
+        <button className="tv-login-button focusable">
+          Fazer login
+        </button>
       </div>
+
+      <section className="tv-home-carousel-section">
+          <h2>Filmes em Destaque</h2>
+          <div className="tv-home-carousel">
+              <MediaCard title="Duna: Parte 2" poster="https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg" />
+              <MediaCard title="Godzilla e Kong: O Novo Império" poster="https://image.tmdb.org/t/p/w500/6vhoverj0ZoHjK252nN2NstblXo.jpg" />
+              <MediaCard title="Kung Fu Panda 4" poster="https://image.tmdb.org/t/p/w500/pM7o3yIT5aDeaOKY1v25doUtckE.jpg" />
+              <MediaCard title="Guerra Civil" poster="https://image.tmdb.org/t/p/w500/2GzgNUDbHJUxO0gBq4a4y5D2n60.jpg" />
+              <MediaCard title="Abigail" poster="https://image.tmdb.org/t/p/w500/y0i2NGAqUe2j72Ddba4sWFFL6h.jpg" />
+          </div>
+      </section>
     </div>
   );
 }
