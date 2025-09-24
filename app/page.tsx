@@ -4,85 +4,152 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useTVNavigation } from '../hooks/useTVNavigation';
-import { useAuth } from '../components/AuthProvider';
+import StarIcon from '@/app/components/icons/StarIcon'; // Caminho corrigido
+import PlayIcon from '@/app/components/icons/PlayIcon'; // Caminho corrigido
+import BookmarkIcon from '@/app/components/icons/BookmarkIcon'; // Caminho corrigido
+import { useContinueWatching } from '@/app/hooks/useContinueWatching'; // Caminho corrigido
 
-interface Media {
-  id: number;
-  title?: string;
-  name?: string;
-  poster_path: string;
-  media_type: 'movie' | 'tv';
-}
-
-interface Section {
-  title: string;
-  items: Media[];
-  mediaType: 'movie' | 'tv';
+interface Media { 
+  id: number; 
+  title?: string; 
+  name?: string; 
+  poster_path: string; 
+  backdrop_path: string; 
+  release_date?: string; 
+  first_air_date?: string; 
+  vote_average: number; 
+  overview: string; 
+  media_type: 'movie' | 'tv'; 
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-export default function TVHomePage() {
-  const { user } = useAuth();
-  const [sections, setSections] = useState<Section[]>([]);
-  useTVNavigation('#tv-main-content');
+export default function HomePage() {
+  const [trending, setTrending] = useState<Media[]>([]);
+  const [latestMovies, setLatestMovies] = useState<Media[]>([]);
+  const [popularSeries, setPopularSeries] = useState<Media[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const { history: continueWatchingHistory } = useContinueWatching();
+
 
   useEffect(() => {
     const fetchMedia = async () => {
+      setIsLoading(true);
       try {
-        const popularMovies = axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pt-BR`);
-        const popularSeries = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
+        const trendingPromise = axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`);
+        const latestMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR`);
+        const popularSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
         
-        const [moviesRes, seriesRes] = await Promise.all([popularMovies, popularSeries]);
+        const [trendingResponse, latestMoviesResponse, popularSeriesResponse] = await Promise.all([trendingPromise, latestMoviesPromise, popularSeriesPromise]);
 
-        setSections([
-          { title: 'Filmes em Destaque', items: moviesRes.data.results, mediaType: 'movie' },
-          { title: 'Séries Populares', items: seriesRes.data.results, mediaType: 'tv' },
-        ]);
-      } catch (error) {
-        console.error("Erro ao carregar conteúdo da página inicial:", error);
-      }
+        setTrending(trendingResponse.data.results.slice(0, 5));
+        setLatestMovies(latestMoviesResponse.data.results);
+        setPopularSeries(popularSeriesResponse.data.results);
+      } catch (error) { console.error("Erro ao buscar mídia:", error);
+      } finally { setIsLoading(false); }
     };
     fetchMedia();
   }, []);
 
-  return (
-    <div className="tv-home-container">
-      {!user && (
-        <div className="tv-home-promo-section">
-          <h1 className="promo-title">Deixe o CineVEO com a sua cara</h1>
-          <p className="promo-subtitle">
-            Faça login para ter acesso a recomendações, inscrições e muito mais.
-          </p>
-          <Link href="/tv/login" className="tv-login-button focusable">
-            Fazer login
-          </Link>
-        </div>
-      )}
+  useEffect(() => {
+    if (trending.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveSlide((current) => (current === trending.length - 1 ? 0 : current + 1));
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [trending]);
 
-      {sections.map((section, index) => (
-        <section key={index} className="tv-home-carousel-section">
-          <h2>{section.title}</h2>
-          <div className="tv-home-carousel">
-            {section.items.map(item => (
-              <Link
-                href={`/tv/media/${section.mediaType}/${item.id}`}
-                key={item.id}
-                className="tv-home-card focusable"
-              >
-                <Image
-                  src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                  alt={item.title || item.name || ''}
-                  layout="fill"
-                  objectFit="cover"
-                />
-                <div className="tv-home-card-title">{item.title || item.name}</div>
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} />
+      </div>
+    );
+  }
+
+  return (
+    <main>
+      <div className="hero-slider">
+        {trending.map((item, index) => (
+          <div key={item.id} className={`slide ${index === activeSlide ? 'active' : ''}`}>
+            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="slide-bg" />
+            <div className="slide-overlay"></div>
+            <div className="slide-content">
+              <h1 className="slide-title">{item.title || item.name}</h1>
+              <div className="slide-meta">
+                <span>{(item.release_date || item.first_air_date)?.substring(0, 4)}</span>
+                <span className="stars">★★★★★</span>
+              </div>
+              <p className="slide-overview">{item.overview}</p>
+              <div className="slide-actions">
+                <Link href={`/media/${item.media_type}/${item.id}`} className="btn-primary slide-btn"><PlayIcon /> Assistir</Link>
+                <button className="btn-secondary slide-btn">+ Minha Lista</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div className="slide-dots">
+          {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={index === activeSlide ? 'active' : ''}></button>))}
+        </div>
+      </div>
+
+      <div className="main-container" style={{ marginTop: '-80px', position: 'relative', zIndex: 10 }}>
+        {/* Continuar Assistindo */}
+        {continueWatchingHistory.length > 0 && (
+          <section className="movie-section">
+            <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
+            <div className="movie-carousel">
+              {continueWatchingHistory.map((item) => (
+                <Link href={`/media/${item.mediaType}/${item.tmdbId}`} key={item.id} className="movie-card">
+                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
+                  <div className="movie-card-info">
+                    <h3 className="movie-card-title">{item.title}</h3>
+                    {item.progress && <p className="continue-watching-progress">T{item.progress.season} E{item.progress.episode}</p>}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Lançamentos */}
+        <section className="movie-section">
+          <div className="section-header"><h2 className="section-title">Filmes Lançamento no CineVEO</h2></div>
+          <div className="movie-carousel">
+            {latestMovies.map((movie) => (
+              <Link href={`/media/movie/${movie.id}`} key={movie.id} className="movie-card">
+                 <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                 <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
+                 <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{movie.title}</h3>
+                   <div className="movie-card-meta"><span>{movie.release_date?.substring(0, 4)}</span><span><StarIcon /> {movie.vote_average.toFixed(1)}</span></div>
+                 </div>
               </Link>
             ))}
           </div>
         </section>
-      ))}
-    </div>
+
+        {/* Séries Populares */}
+         <section className="movie-section">
+          <div className="section-header"><h2 className="section-title">Séries Populares</h2></div>
+          <div className="movie-carousel">
+            {popularSeries.map((series) => (
+              <Link href={`/media/tv/${series.id}`} key={series.id} className="movie-card">
+                 <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
+                 <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }} /></div>
+                 <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{series.name}</h3>
+                   <div className="movie-card-meta"><span>{series.first_air_date?.substring(0, 4)}</span><span><StarIcon /> {series.vote_average.toFixed(1)}</span></div>
+                 </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
