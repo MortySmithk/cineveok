@@ -14,7 +14,7 @@ interface MediaDetails {
   seasons?: Season[];
 }
 
-const API_KEY = "860b66ade580bacae581f4228fad49fc";
+const API_KEY = "860b66ade580bacae580bacae581f4228fad49fc";
 
 export default function TVMediaPage() {
   const params = useParams();
@@ -61,26 +61,32 @@ export default function TVMediaPage() {
 
   // Efeito para focar no elemento principal após o carregamento (MODIFICADO)
   useEffect(() => {
-    // Define que o conteúdo está pronto quando os detalhes foram carregados e,
-    // no caso de uma série, quando a lista de episódios também foi carregada.
     const isReady = details && (type === 'movie' || (type === 'tv' && episodes.length > 0));
 
     if (isReady) {
       const timer = setTimeout(() => {
         if (mainContentRef.current) {
-          const firstFocusable = mainContentRef.current.querySelector<HTMLElement>('.focusable:not([disabled])');
-          
-          // Apenas define o foco inicial se o usuário já não tiver focado em algo dentro do container.
-          // Isso evita "roubar" o foco se o usuário for mais rápido que o script.
-          if (firstFocusable && !mainContentRef.current.contains(document.activeElement)) {
-            firstFocusable.focus();
+          let targetElement: HTMLElement | null = null;
+
+          // Se for uma série, o alvo é o primeiro episódio.
+          if (type === 'tv') {
+            targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-episodes-grid-final .focusable');
+          } 
+          // Se for um filme, o alvo é o botão de assistir.
+          else if (type === 'movie') {
+            targetElement = mainContentRef.current.querySelector<HTMLElement>('.tv-play-button.focusable');
+          }
+
+          // Apenas define o foco se o alvo for encontrado e nada já estiver focado dentro do container.
+          if (targetElement && !mainContentRef.current.contains(document.activeElement)) {
+            targetElement.focus();
           }
         }
-      }, 200); // Um delay seguro para garantir a renderização completa.
+      }, 250); // Delay ligeiramente ajustado para garantir a renderização.
       
       return () => clearTimeout(timer);
     }
-  }, [details, episodes, type]); // Dependências garantem que a lógica rode nos momentos certos.
+  }, [details, episodes, type]);
 
   const handlePlay = (season?: number, episode?: number) => {
     if (!user) {
