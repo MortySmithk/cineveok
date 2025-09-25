@@ -1,4 +1,3 @@
-// app/layout.tsx
 "use client"
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -57,23 +56,23 @@ export default function RootLayout({
                 <div className="footer-section">
                   <h4>Também Criados Pelo CineVEO:</h4>
                   <ul>
-                    <li><a href="https://streetflix.pro/" target="_blank" rel="noopener noreferrer">StreetFlix</a></li>
-                    <li><a href="https://www.pipocine.site/" target="_blank" rel="noopener noreferrer">PipoCine</a></li>
+                    <li><a href="https://streetflix.pro/" target="_blank" rel="noopener noreferrer" className="focusable">StreetFlix</a></li>
+                    <li><a href="https://www.pipocine.site/" target="_blank" rel="noopener noreferrer" className="focusable">PipoCine</a></li>
                   </ul>
                 </div>
                 <div className="footer-section">
                   <h4>Parceiros</h4>
                   <ul>
-                    <li><a href="https://telaoculta.vercel.app/" target="_blank" rel="noopener noreferrer">TelaOculta</a></li>
+                    <li><a href="https://telaoculta.vercel.app/" target="_blank" rel="noopener noreferrer" className="focusable">TelaOculta</a></li>
                   </ul>
                 </div>
                 <div className="footer-section">
                   <h4>Navegação</h4>
                   <ul>
-                    <li><Link href="/filmes">Filmes</Link></li>
-                    <li><Link href="/series">Séries</Link></li>
-                    <li><Link href="/animacoes">Animações</Link></li>
-                    <li><Link href="/api/api-docs">API</Link></li>
+                    <li><Link href="/filmes" className="focusable">Filmes</Link></li>
+                    <li><Link href="/series" className="focusable">Séries</Link></li>
+                    <li><Link href="/animacoes" className="focusable">Animações</Link></li>
+                    <li><Link href="/api/api-docs" className="focusable">API</Link></li>
                   </ul>
                 </div>
               </div>

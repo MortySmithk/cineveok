@@ -750,3 +750,14 @@ main { padding-top: 68px; }
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
   z-index: 10;
 }
+/* Adicione no final do seu arquivo app/globals.css */
+
+/* --- ESTILO DE FOCO GLOBAL PARA NAVEGAÇÃO DE TV --- */
+.focusable:focus {
+  outline: 4px solid #f5c518 !important; /* Amarelo para destaque */
+  outline-offset: 3px !important;
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out, outline 0.2s ease-in-out;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}

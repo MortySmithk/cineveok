@@ -81,11 +81,9 @@ export const useAppNavigation = (containerSelector = 'body') => {
 
           if (isValidCandidate) {
             // Nova fórmula de distância com um forte "viés de eixo".
-            // Isto penaliza fortemente o desvio do eixo principal do movimento.
-            // Por exemplo, ao pressionar 'para baixo', a distância horizontal (dx) é muito mais "cara" do que a vertical (dy).
             const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
-                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 3, 2)) // Penaliza fortemente o movimento vertical
-                : Math.sqrt(Math.pow(dx * 3, 2) + Math.pow(dy, 2)); // Penaliza fortemente o movimento horizontal
+                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 3, 2))
+                : Math.sqrt(Math.pow(dx * 3, 2) + Math.pow(dy, 2));
             
             if (distance < minDistance) {
               minDistance = distance;
@@ -100,7 +98,6 @@ export const useAppNavigation = (containerSelector = 'body') => {
       if (nextFocus) {
         nextFocus.focus();
         focusedElementRef.current = nextFocus;
-        // Garante que o item focado esteja visível no ecrã
         nextFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     };
