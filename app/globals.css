@@ -16,6 +16,10 @@
 body { font-family: 'Inter', sans-serif; background-color: var(--background-color); color: var(--text-primary); }
 a { text-decoration: none; color: inherit; }
 
+/* --- UTILITÁRIOS DE LAYOUT --- */
+.mobile-only-layout { display: none; }
+.desktop-only-layout { display: block; }
+
 /* --- CONTAINER PRINCIPAL E LAYOUT GERAL --- */
 .main-container { max-width: 1600px; margin: 0 auto; padding: 0 3rem; }
 main { padding-top: 68px; }
@@ -436,7 +440,10 @@ main { padding-top: 68px; }
 
 /* Telas Pequenas (Celulares) */
 @media (max-width: 768px) {
-  main { padding-top: 112px !important; }
+  .desktop-only-layout { display: none; }
+  .mobile-only-layout { display: block; }
+  
+  main { padding-top: 0 !important; } /* Remove padding do main no mobile */
 
   .header-nav-desktop, .header-auth-desktop, .header-search-desktop { display: none; }
   .header-mobile-actions, .header-search-mobile-btn { display: flex; }
@@ -468,6 +475,18 @@ main { padding-top: 68px; }
     font-weight: 700;
     border-bottom-color: var(--accent-yellow);
   }
+  
+  /* CONTAINER DO TOPO NO MOBILE (PLAYER E EPISÓDIOS) */
+  .mobile-top-content-container {
+      margin-top: 112px; /* Altura do header (68px + 44px) */
+      padding: 0 1rem;
+      margin-bottom: 2rem;
+  }
+  .mobile-top-content-container .series-watch-section {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+  }
 
   /* AJUSTES PÁGINA INICIAL */
   .hero-slider { height: 60vh; margin-top: -112px; }
@@ -494,34 +513,21 @@ main { padding-top: 68px; }
   .details-info h1 { font-size: 1.8rem; text-align: center; }
   .details-meta-bar { justify-content: center; font-size: 0.8rem; gap: 1rem;}
   .action-buttons-desktop { display: none; }
-
-  /* NOVO PLAYER EMBUTIDO PARA FILMES NO CELULAR */
-  .mobile-player-container {
-    display: block;
-    margin-top: 112px; /* Altura do header (68px + 44px) */
-  }
-  /* Ajuste para séries, para que o player apareça acima dos detalhes */
-  .series-watch-grid {
-      flex-direction: column-reverse; /* Coloca a lista de episódios acima do player */
-  }
-  .series-player-wrapper {
-      margin-top: 1rem;
-  }
   
   /* ESTILOS DO NOVO SELETOR DE EPISÓDIOS */
   .episodes-header {
     flex-direction: row;
     align-items: center;
     gap: 1rem;
+    margin-bottom: 1rem;
   }
-  .episodes-section .season-selector { flex-grow: 1; }
+  .series-watch-section .season-selector { flex-grow: 1; }
   .episode-count-info { font-size: 0.9rem; color: var(--text-secondary); white-space: nowrap; }
   .episode-list-desktop { display: none; }
   .episode-grid-mobile {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
     gap: 0.75rem;
-    margin-top: 1rem;
   }
   .episode-grid-button {
     background-color: var(--card-color);
