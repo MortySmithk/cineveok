@@ -1,4 +1,3 @@
-// app/register/page.tsx
 "use client";
 
 import { useState } from 'react';
@@ -23,7 +22,6 @@ export default function RegisterPage() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Atualiza o perfil com o nome de utilizador
       await updateProfile(userCredential.user, { displayName: username });
       router.push('/');
     } catch (err: any) {
@@ -61,23 +59,26 @@ export default function RegisterPage() {
         
         <form onSubmit={handleEmailRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <input type="text" placeholder="Nome de utilizador" value={username} onChange={(e) => setUsername(e.target.value)} required 
+            className="focusable"
             style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
           <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required 
+            className="focusable"
             style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
           <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required 
+            className="focusable"
             style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
-          <button type="submit" className='stream-button active' style={{border: 'none', padding: '0.9rem'}}>Criar conta</button>
+          <button type="submit" className='stream-button active focusable' style={{border: 'none', padding: '0.9rem'}}>Criar conta</button>
         </form>
 
         <p style={{ textAlign: 'center', margin: '1.5rem 0', color: 'var(--text-secondary)' }}>ou</p>
 
-        <button onClick={handleGoogleLogin} className='details-button' style={{ width: '100%', justifyContent: 'center' }}>
+        <button onClick={handleGoogleLogin} className='details-button focusable' style={{ width: '100%', justifyContent: 'center' }}>
             Continuar com Google
         </button>
 
         <p style={{ textAlign: 'center', marginTop: '2rem' }}>
             Já tem uma conta?{' '}
-            <Link href="/login" style={{ color: 'var(--accent-yellow)', textDecoration: 'underline' }}>
+            <Link href="/login" className="focusable" style={{ color: 'var(--accent-yellow)', textDecoration: 'underline' }}>
                 Entre aqui
             </Link>
         </p>

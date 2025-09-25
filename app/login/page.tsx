@@ -1,4 +1,3 @@
-// app/login/page.tsx
 "use client";
 
 import { useState } from 'react';
@@ -54,21 +53,23 @@ export default function LoginPage() {
         
         <form onSubmit={handleEmailLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required 
+            className="focusable"
             style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
           <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required 
+            className="focusable"
             style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
-          <button type="submit" className='stream-button active' style={{border: 'none', padding: '0.9rem'}}>Entrar</button>
+          <button type="submit" className='stream-button active focusable' style={{border: 'none', padding: '0.9rem'}}>Entrar</button>
         </form>
 
         <p style={{ textAlign: 'center', margin: '1.5rem 0', color: 'var(--text-secondary)' }}>ou</p>
 
-        <button onClick={handleGoogleLogin} className='details-button' style={{ width: '100%', justifyContent: 'center' }}>
+        <button onClick={handleGoogleLogin} className='details-button focusable' style={{ width: '100%', justifyContent: 'center' }}>
             Entrar com Google
         </button>
 
         <p style={{ textAlign: 'center', marginTop: '2rem' }}>
             Não tem uma conta?{' '}
-            <Link href="/register" style={{ color: 'var(--accent-yellow)', textDecoration: 'underline' }}>
+            <Link href="/register" className="focusable" style={{ color: 'var(--accent-yellow)', textDecoration: 'underline' }}>
                 Crie uma conta
             </Link>
         </p>
