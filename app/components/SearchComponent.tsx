@@ -166,7 +166,8 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
             <SearchIcon width={18} height={18} />
           </button>
         </form>
-        {isActive && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
+        {/* MODIFICAÇÃO: Adicionado "!isMobile" para esconder no celular */}
+        {isActive && !isMobile && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
       </div>
     </>
   );
