@@ -17,11 +17,9 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    setIsMenuOpen(false);
     setIsSearchOpen(false);
   }, [pathname]);
 
@@ -38,32 +36,34 @@ export default function Header() {
       transition: 'color 0.2s ease',
     };
   };
+  
+  const getMobileLinkClass = (href: string): string => {
+      const isActive = pathname === href;
+      return `mobile-nav-link focusable ${isActive ? 'active' : ''}`;
+  }
 
   return (
     <>
       <header className="site-header-main">
         <div className="header-content">
           <div className="header-left">
-            {!isMenuOpen && (
               <Link href="/" className="focusable">
                 <Image
                   src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
                   alt="CineVEO Logo"
-                  width={160}
-                  height={40}
+                  width={140}
+                  height={35}
                   priority
                   style={{ objectFit: 'contain' }}
                 />
               </Link>
-            )}
+            
             <nav className="header-nav-desktop">
               <Link href="/" style={getLinkStyle('/')} className="focusable">Início</Link>
               <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
               <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
-              <Link href="/animacoes" style={getLinkStyle('/animacoes')} className="focusable">Animações</Link>
-              <Link href="/novelas" style={getLinkStyle('/novelas')} className="focusable">Novelas</Link>
               <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
-              <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')} className="focusable">API</Link>
+              <Link href="/doramas" style={getLinkStyle('/doramas')} className="focusable">Doramas</Link>
             </nav>
           </div>
 
@@ -71,9 +71,6 @@ export default function Header() {
             <div className="header-search-desktop">
               <SearchComponent />
             </div>
-            <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
-              <SearchIcon width={22} height={22} />
-            </button>
             
             <div className="header-auth-desktop">
               {user ? (
@@ -86,38 +83,25 @@ export default function Header() {
               )}
             </div>
             
-            <button className="hamburger-menu focusable" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? 
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> : 
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-              }
-            </button>
+            {/* --- Botões Mobile --- */}
+            <div className="header-mobile-actions">
+                <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
+                  <SearchIcon width={24} height={24} />
+                </button>
+                {/* O login/perfil mobile pode ser adicionado aqui se necessário */}
+            </div>
           </div>
         </div>
-      </header>
-
-      {/* Overlays */}
-      <div className={`mobile-menu-overlay ${isMenuOpen ? 'open' : ''}`}>
-        <nav className="mobile-nav-links">
-            <Link href="/" style={getLinkStyle('/')} className="focusable">Início</Link>
-            <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
-            <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
-            <Link href="/animacoes" style={getLinkStyle('/animacoes')} className="focusable">Animações</Link>
-            <Link href="/novelas" style={getLinkStyle('/novelas')} className="focusable">Novelas</Link>
-            <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
-            <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')} className="focusable">API</Link>
+        
+        {/* --- NAVEGAÇÃO APENAS PARA CELULAR --- */}
+        <nav className="mobile-sub-nav">
+            <Link href="/" className={getMobileLinkClass('/')}>Início</Link>
+            <Link href="/filmes" className={getMobileLinkClass('/filmes')}>Filmes</Link>
+            <Link href="/series" className={getMobileLinkClass('/series')}>Séries</Link>
+            <Link href="/animes" className={getMobileLinkClass('/animes')}>Animes</Link>
+            <Link href="/doramas" className={getMobileLinkClass('/doramas')}>Doramas</Link>
         </nav>
-        <div className="mobile-auth">
-            {user ? (
-                <>
-                    <span>Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
-                    <button onClick={handleSignOut} className="btn-secondary-small focusable">Sair</button>
-                </>
-            ) : (
-                <Link href="/login" className="btn-primary-small focusable">Entrar</Link>
-            )}
-        </div>
-      </div>
+      </header>
 
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>

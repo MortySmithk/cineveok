@@ -49,8 +49,10 @@ export default function MediaPage() {
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalStreamUrl, setModalStreamUrl] = useState('');
-  const [modalTitle, setModalTitle] = useState('');
+  
+  // URL para o player (modal no desktop, embed no mobile)
+  const [playerUrl, setPlayerUrl] = useState('');
+  const [playerTitle, setPlayerTitle] = useState('');
 
   // Efeito para buscar os dados da mídia e definir o ponto de continuação APENAS UMA VEZ
   useEffect(() => {
@@ -70,8 +72,8 @@ export default function MediaPage() {
         setDetails(mediaDetails);
 
         if (type === 'movie' && mediaDetails.id) {
-          setModalStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
-          setModalTitle(mediaDetails.title);
+          setPlayerUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
+          setPlayerTitle(mediaDetails.title);
         }
         
         if (type === 'tv') {
@@ -86,7 +88,7 @@ export default function MediaPage() {
       }
     };
     fetchData();
-  }, [id, type]); // Removido getProgress para quebrar o loop
+  }, [id, type]);
 
   // Efeito para buscar os episódios quando a temporada muda
   useEffect(() => {
@@ -105,7 +107,7 @@ export default function MediaPage() {
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // Efeito para definir a URL do player e salvar o progresso
+  // Efeito para definir a URL do player da SÉRIE e salvar o progresso
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
       const { season, episode } = activeEpisode;
@@ -125,8 +127,8 @@ export default function MediaPage() {
     setActiveEpisode({ season, episode });
   };
   
-  const openWatchModal = () => {
-    if (!modalStreamUrl) {
+  const openWatchModal = () => { // Usado apenas para desktop em filmes
+    if (!playerUrl) {
         alert("Nenhum link de streaming disponível para este filme.");
         return;
     }
@@ -152,10 +154,39 @@ export default function MediaPage() {
     return <div className="loading-container">{status}</div>;
   }
 
+  // Define o player a ser usado (TV sempre embed, Filme depende da tela)
+  const streamUrlToRender = type === 'tv' ? activeStreamUrl : playerUrl;
+
   return (
     <>
-      <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={modalStreamUrl} title={modalTitle} />
-      <main style={{ paddingTop: '80px', paddingBottom: '40px' }}>
+      <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={playerUrl} title={playerTitle} />
+      
+      {/* --- Player Visível Apenas no Celular (para filmes) ou Sempre (para séries) --- */}
+      <div className={type === 'movie' ? "mobile-player-container" : ""}>
+          {streamUrlToRender ? (
+              <div className="player-container">
+                  <iframe 
+                      key={streamUrlToRender} 
+                      src={streamUrlToRender} 
+                      title={`CineVEO Player - ${details.title}`} 
+                      allow="autoplay; encrypted-media" 
+                      allowFullScreen 
+                      referrerPolicy="origin"
+                  ></iframe>
+              </div>
+          ) : (
+            type === 'tv' && (
+              <div className="player-container">
+                <div className="player-loader">
+                  <div className="spinner"></div>
+                  <span>Selecione um episódio para começar a assistir.</span>
+                </div>
+              </div>
+            )
+          )}
+      </div>
+
+      <main className="details-main-content">
         <div className="main-container">
           <div className="details-grid">
             <div className="details-poster"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
@@ -167,7 +198,7 @@ export default function MediaPage() {
                 <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
                 {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
               </div>
-              <div className="action-buttons">
+              <div className="action-buttons-desktop">
                 {type === 'movie' && <button className='btn-primary focusable' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
                 <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>
               </div>
@@ -176,60 +207,61 @@ export default function MediaPage() {
           </div>
           
           {type === 'tv' && (
-            <section className="series-watch-section">
-              <div className="series-watch-grid">
-                <div className="series-player-wrapper">
-                  <div className="player-container">
-                    {activeStreamUrl ? (
-                      <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
-                    ) : (
-                       <div className="player-loader">
-                        <div className="spinner"></div>
-                        <span>Selecione um episódio para começar a assistir.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="episodes-list-wrapper">
-                  <div className="episodes-header">
-                    <h2>Episódios</h2>
-                    <select 
-                      className="season-selector focusable" 
-                      value={selectedSeason} 
-                      onChange={(e) => {
-                        const newSeason = Number(e.target.value);
-                        setSelectedSeason(newSeason);
-                        handleEpisodeClick(newSeason, 1);
-                      }}
-                    >
-                      {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="episode-list">
-                    {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                    {!isLoading && seasonEpisodes.map(ep => (
-                      <button 
-                        key={ep.id} 
-                        className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
-                        onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}
-                      >
-                        <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
-                        <div className="episode-item-thumbnail">
-                          {ep.still_path ? (
-                            <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />
-                          ) : (
-                            <div className='thumbnail-placeholder-small'></div>
-                          )}
-                        </div>
-                        <div className="episode-item-info">
-                          <span className="episode-item-title">{ep.name}</span>
-                          <p className="episode-item-overview">{ep.overview}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <section className="episodes-section">
+              <div className="episodes-header">
+                <select 
+                  className="season-selector focusable" 
+                  value={selectedSeason} 
+                  onChange={(e) => {
+                    const newSeason = Number(e.target.value);
+                    setSelectedSeason(newSeason);
+                    handleEpisodeClick(newSeason, 1);
+                  }}
+                >
+                  {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
+                </select>
+                <p className='episode-count-info'>Atualizado até o episódio {seasonEpisodes.length}</p>
               </div>
+
+              {/* --- LISTA DE EPISÓDIOS PARA DESKTOP --- */}
+              <div className="episode-list episode-list-desktop">
+                {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                {!isLoading && seasonEpisodes.map(ep => (
+                  <button 
+                    key={ep.id} 
+                    className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
+                    onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}
+                  >
+                    <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
+                    <div className="episode-item-thumbnail">
+                      {ep.still_path ? (
+                        <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />
+                      ) : (
+                        <div className='thumbnail-placeholder-small'></div>
+                      )}
+                    </div>
+                    <div className="episode-item-info">
+                      <span className="episode-item-title">{ep.name}</span>
+                      <p className="episode-item-overview">{ep.overview}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              {/* --- GRADE DE EPISÓDIOS PARA MOBILE --- */}
+              <div className="episode-grid-mobile">
+                {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                {!isLoading && seasonEpisodes.map(ep => (
+                    <button 
+                        key={ep.id}
+                        className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
+                        onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}
+                    >
+                        {ep.episode_number}
+                    </button>
+                ))}
+              </div>
+
             </section>
           )}
 
