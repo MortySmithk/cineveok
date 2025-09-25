@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from 'react';
 
-export const useTVNavigation = (containerSelector = 'body') => {
+export const useAppNavigation = (containerSelector = 'body') => {
   const focusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -34,6 +34,10 @@ export const useTVNavigation = (containerSelector = 'body') => {
       const currentFocused = document.activeElement as HTMLElement;
       
       if (!currentFocused || !allFocusables.includes(currentFocused)) {
+        // Se nada estiver focado, foca no primeiro elemento focável
+        if (allFocusables.length > 0) {
+          allFocusables[0].focus();
+        }
         return;
       }
       

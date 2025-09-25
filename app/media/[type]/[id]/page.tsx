@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -168,8 +168,8 @@ export default function MediaPage() {
                 {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
               </div>
               <div className="action-buttons">
-                {type === 'movie' && <button className='btn-primary' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
-                <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary'>IMDb</a>
+                {type === 'movie' && <button className='btn-primary focusable' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
+                <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>
               </div>
               <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
             </div>
@@ -194,7 +194,7 @@ export default function MediaPage() {
                   <div className="episodes-header">
                     <h2>Episódios</h2>
                     <select 
-                      className="season-selector" 
+                      className="season-selector focusable" 
                       value={selectedSeason} 
                       onChange={(e) => {
                         const newSeason = Number(e.target.value);
@@ -210,7 +210,7 @@ export default function MediaPage() {
                     {!isLoading && seasonEpisodes.map(ep => (
                       <button 
                         key={ep.id} 
-                        className={`episode-item-button ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
+                        className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
                         onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}
                       >
                         <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>

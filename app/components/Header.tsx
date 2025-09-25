@@ -20,7 +20,6 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Fecha os menus quando a rota muda
   useEffect(() => {
     setIsMenuOpen(false);
     setIsSearchOpen(false);
@@ -40,19 +39,13 @@ export default function Header() {
     };
   };
 
-  // Não renderiza o Header na rota /tv
-  if (pathname.startsWith('/tv')) {
-    return null;
-  }
-
-
   return (
     <>
       <header className="site-header-main">
         <div className="header-content">
           <div className="header-left">
             {!isMenuOpen && (
-              <Link href="/">
+              <Link href="/" className="focusable">
                 <Image
                   src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
                   alt="CineVEO Logo"
@@ -64,14 +57,13 @@ export default function Header() {
               </Link>
             )}
             <nav className="header-nav-desktop">
-              <Link href="/" style={getLinkStyle('/')}>Início</Link>
-              <Link href="/filmes" style={getLinkStyle('/filmes')}>Filmes</Link>
-              <Link href="/series" style={getLinkStyle('/series')}>Séries</Link>
-              <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
-              <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
-              <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
-               <Link href="/tv" style={getLinkStyle('/tv')}>TV</Link>
-              <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
+              <Link href="/" style={getLinkStyle('/')} className="focusable">Início</Link>
+              <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
+              <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
+              <Link href="/animacoes" style={getLinkStyle('/animacoes')} className="focusable">Animações</Link>
+              <Link href="/novelas" style={getLinkStyle('/novelas')} className="focusable">Novelas</Link>
+              <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
+              <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')} className="focusable">API</Link>
             </nav>
           </div>
 
@@ -79,7 +71,7 @@ export default function Header() {
             <div className="header-search-desktop">
               <SearchComponent />
             </div>
-            <button className="header-search-mobile-btn" onClick={() => setIsSearchOpen(true)}>
+            <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
               <SearchIcon width={22} height={22} />
             </button>
             
@@ -87,14 +79,14 @@ export default function Header() {
               {user ? (
                   <>
                       <span className="user-greeting">Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
-                      <button onClick={handleSignOut} className="btn-secondary-small">Sair</button>
+                      <button onClick={handleSignOut} className="btn-secondary-small focusable">Sair</button>
                   </>
               ) : (
-                  <Link href="/login" className="btn-primary-small">Entrar</Link>
+                  <Link href="/login" className="btn-primary-small focusable">Entrar</Link>
               )}
             </div>
             
-            <button className="hamburger-menu" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <button className="hamburger-menu focusable" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? 
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> : 
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -107,23 +99,22 @@ export default function Header() {
       {/* Overlays */}
       <div className={`mobile-menu-overlay ${isMenuOpen ? 'open' : ''}`}>
         <nav className="mobile-nav-links">
-            <Link href="/" style={getLinkStyle('/')}>Início</Link>
-            <Link href="/filmes" style={getLinkStyle('/filmes')}>Filmes</Link>
-            <Link href="/series" style={getLinkStyle('/series')}>Séries</Link>
-            <Link href="/animacoes" style={getLinkStyle('/animacoes')}>Animações</Link>
-            <Link href="/novelas" style={getLinkStyle('/novelas')}>Novelas</Link>
-            <Link href="/animes" style={getLinkStyle('/animes')}>Animes</Link>
-            <Link href="/tv" style={getLinkStyle('/tv')}>TV</Link>
-            <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')}>API</Link>
+            <Link href="/" style={getLinkStyle('/')} className="focusable">Início</Link>
+            <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
+            <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
+            <Link href="/animacoes" style={getLinkStyle('/animacoes')} className="focusable">Animações</Link>
+            <Link href="/novelas" style={getLinkStyle('/novelas')} className="focusable">Novelas</Link>
+            <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
+            <Link href="/api/api-docs" style={getLinkStyle('/api/api-docs')} className="focusable">API</Link>
         </nav>
         <div className="mobile-auth">
             {user ? (
                 <>
                     <span>Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
-                    <button onClick={handleSignOut} className="btn-secondary-small">Sair</button>
+                    <button onClick={handleSignOut} className="btn-secondary-small focusable">Sair</button>
                 </>
             ) : (
-                <Link href="/login" className="btn-primary-small">Entrar</Link>
+                <Link href="/login" className="btn-primary-small focusable">Entrar</Link>
             )}
         </div>
       </div>

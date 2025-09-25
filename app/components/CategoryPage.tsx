@@ -1,4 +1,4 @@
-// app/components/CategoryPage.tsx - VERSÃO CORRIGIDA
+// app/components/CategoryPage.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -67,7 +67,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
             media_type: item.media_type || mediaType,
           }))
           // Filtra para remover pessoas dos resultados
-          .filter((item: Media) => item.media_type !== 'person');
+          .filter((item: Media) => item.media_type !== 'person' && item.poster_path);
         
         setMediaList(filteredResults);
         setTotalPages(Math.min(response.data.total_pages, 500));
@@ -92,9 +92,9 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
         
         {!isSearchPage && (
           <div className="genre-filter-bar">
-            <button onClick={() => handleGenreChange(null)} className={!selectedGenre ? 'active' : ''}>Todos</button>
+            <button onClick={() => handleGenreChange(null)} className={`focusable ${!selectedGenre ? 'active' : ''}`}>Todos</button>
             {genres.map(genre => (
-              <button key={genre.id} onClick={() => handleGenreChange(genre.id)} className={selectedGenre === genre.id ? 'active' : ''}>{genre.name}</button>
+              <button key={genre.id} onClick={() => handleGenreChange(genre.id)} className={`focusable ${selectedGenre === genre.id ? 'active' : ''}`}>{genre.name}</button>
             ))}
           </div>
         )}
@@ -109,8 +109,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
           <>
             <div className="responsive-grid">
               {mediaList.map((item) => (
-                // AQUI ESTAVA O ERRO: `mediaType` foi trocado por `item.media_type`
-                <Link href={`/media/${item.media_type}/${item.id}`} key={item.id} className="movie-card">
+                <Link href={`/media/${item.media_type}/${item.id}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper">
                     <Image
                       src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
@@ -141,7 +140,12 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
                 </Link>
               ))}
             </div>
-            {/* Implementar paginação aqui se desejar */}
+            {/* Adicionar botões de paginação focáveis */}
+            <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem'}}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary focusable">Anterior</button>
+              <span style={{alignSelf: 'center'}}>Página {page} de {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="btn-secondary focusable">Próxima</button>
+            </div>
           </>
         )}
       </div>

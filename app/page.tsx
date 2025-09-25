@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
-import StarIcon from '@/app/components/icons/StarIcon'; // Caminho corrigido
-import PlayIcon from '@/app/components/icons/PlayIcon'; // Caminho corrigido
-import BookmarkIcon from '@/app/components/icons/BookmarkIcon'; // Caminho corrigido
-import { useContinueWatching } from '@/app/hooks/useContinueWatching'; // Caminho corrigido
+import StarIcon from '@/app/components/icons/StarIcon';
+import PlayIcon from '@/app/components/icons/PlayIcon';
+import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
+import { useContinueWatching } from '@/app/hooks/useContinueWatching';
 
 interface Media { 
   id: number; 
@@ -83,14 +83,14 @@ export default function HomePage() {
               </div>
               <p className="slide-overview">{item.overview}</p>
               <div className="slide-actions">
-                <Link href={`/media/${item.media_type}/${item.id}`} className="btn-primary slide-btn"><PlayIcon /> Assistir</Link>
-                <button className="btn-secondary slide-btn">+ Minha Lista</button>
+                <Link href={`/media/${item.media_type}/${item.id}`} className="btn-primary slide-btn focusable"><PlayIcon /> Assistir</Link>
+                <button className="btn-secondary slide-btn focusable">+ Minha Lista</button>
               </div>
             </div>
           </div>
         ))}
         <div className="slide-dots">
-          {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={index === activeSlide ? 'active' : ''}></button>))}
+          {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={`focusable ${index === activeSlide ? 'active' : ''}`}></button>))}
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export default function HomePage() {
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
             <div className="movie-carousel">
               {continueWatchingHistory.map((item) => (
-                <Link href={`/media/${item.mediaType}/${item.tmdbId}`} key={item.id} className="movie-card">
+                <Link href={`/media/${item.mediaType}/${item.tmdbId}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                   <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                   <div className="movie-card-info">
@@ -119,7 +119,7 @@ export default function HomePage() {
           <div className="section-header"><h2 className="section-title">Filmes Lançamento no CineVEO</h2></div>
           <div className="movie-carousel">
             {latestMovies.map((movie) => (
-              <Link href={`/media/movie/${movie.id}`} key={movie.id} className="movie-card">
+              <Link href={`/media/movie/${movie.id}`} key={movie.id} className="movie-card focusable">
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
@@ -137,7 +137,7 @@ export default function HomePage() {
           <div className="section-header"><h2 className="section-title">Séries Populares</h2></div>
           <div className="movie-carousel">
             {popularSeries.map((series) => (
-              <Link href={`/media/tv/${series.id}`} key={series.id} className="movie-card">
+              <Link href={`/media/tv/${series.id}`} key={series.id} className="movie-card focusable">
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={80} height={80} className="play-button-overlay" style={{ objectFit: 'contain' }} /></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
