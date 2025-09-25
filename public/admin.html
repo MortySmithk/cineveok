@@ -135,6 +135,7 @@
                                     <select id="season-selector" class="w-full mt-1 bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:border-yellow-500"></select>
                                 </div>
                                 <button type="button" id="invert-order-btn" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Inverter Ordem</button>
+                                <button type="button" id="copy-all-links-form-btn" class="hidden bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Copiar Todos os Links</button>
                                 <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
                             </div>
                             <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links, um por linha.&#10;Formatos aceitos:&#10;1. Lista de links (serão atribuídos em ordem)&#10;https://link1.com&#10;https://link2.com&#10;2. Formato com EP&#10;EP01: https://link1.com&#10;EP02: https://link2.com&#10;3. Com Temporadas&#10;Temporada 1&#10;EP01: https://link1.com"></textarea>
@@ -210,7 +211,9 @@
             reportTabs: document.getElementById('report-tabs'),
             reportResultsContainer: document.getElementById('report-results-container'),
             logoutButton: document.getElementById('logout-button'),
-            addMovieUrlBtn: document.getElementById('add-movie-url-btn')
+            addMovieUrlBtn: document.getElementById('add-movie-url-btn'),
+            // NOVO ELEMENTO ADICIONADO AO MAPA DA UI
+            copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn')
         };
 
         // Funções
@@ -239,12 +242,18 @@
             }
         };
 
+        // FUNÇÃO MODIFICADA PARA ADICIONAR O NOVO BOTÃO DE CÓPIA
         const createMediaListItemHTML = (item) => {
             const title = item.title || item.name;
             const year = (item.release_date || item.first_air_date || '').substring(0, 4);
             const typeLabel = item.type === 'series' || item.media_type === 'tv' ? 'Série' : 'Filme';
             const tmdbType = item.media_type || (item.type === 'series' ? 'tv' : 'movie');
             const isForced = item.forceFirestore === true;
+
+            // Adiciona o botão "Copiar Links" apenas se for uma série
+            const copyButtonHTML = tmdbType === 'tv' 
+                ? `<button class="copy-all-links-btn bg-cyan-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-cyan-700" data-tmdb-id="${item.id}">Copiar Links</button>` 
+                : '';
 
             return `
                 <div class="bg-gray-700 p-3 rounded-md">
@@ -253,6 +262,7 @@
                         <p class="text-xs text-gray-400">${typeLabel} - ID: ${item.id}</p>
                     </div>
                     <div class="mt-3 flex items-center justify-end gap-2">
+                        ${copyButtonHTML} 
                         <button class="force-firestore-btn text-xs font-bold px-3 py-1 rounded transition ${isForced ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-300'}" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
                             ${isForced ? 'Forçando Firestore' : 'Padrão API'}
                         </button>
@@ -291,7 +301,6 @@
                 const docSnap = await getDoc(firestoreDocRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
                 
-                // --- NOVO: Exibe o status do "Forçar Firestore" ---
                 if (firestoreData.forceFirestore) {
                     ui.forceFirestoreStatus.textContent = 'Usando Apenas Firestore';
                     ui.forceFirestoreStatus.className = 'text-xs font-bold p-2 rounded-md bg-green-500 text-white';
@@ -309,6 +318,8 @@
                     }
                 } else if (type === 'tv') {
                     ui.seriesSection.classList.remove('hidden');
+                    // Torna o botão de cópia do formulário visível
+                    ui.copyAllLinksFormBtn.classList.remove('hidden');
                     ui.seasonSelector.innerHTML = tmdbData.seasons
                         .filter(s => s.season_number > 0)
                         .map(s => `<option value="${s.season_number}">${s.name}</option>`).join('');
@@ -351,6 +362,7 @@
             }
         };
         
+        // FUNÇÃO MODIFICADA PARA ESCONDER O NOVO BOTÃO AO RESETAR
         const resetForm = () => {
             ui.mediaForm.reset();
             ui.mediaTitle.textContent = '-';
@@ -364,6 +376,7 @@
             ui.saveBtn.disabled = true;
             ui.bulkImportTextarea.classList.add('hidden');
             ui.invertOrderBtn.classList.add('hidden');
+            ui.copyAllLinksFormBtn.classList.add('hidden'); // Esconde o botão
             ui.bulkImportTextarea.value = '';
             ui.bulkImportBtn.textContent = 'Importar em Massa';
             ui.forceFirestoreStatus.classList.add('hidden');
@@ -581,8 +594,7 @@
             listHtml += `</div>`;
             ui.reportResultsContainer.innerHTML = listHtml;
         };
-
-        // --- NOVO: Função para alternar o "Forçar Firestore" ---
+        
         const toggleForceFirestore = async (button) => {
             const id = button.dataset.tmdbId;
             if (!id) return;
@@ -598,15 +610,13 @@
 
                 await setDoc(docRef, { forceFirestore: newStatus }, { merge: true });
                 
-                // Atualiza o cache
                 const cachedItem = allMediaCache.find(item => item.id == id);
                 if (cachedItem) {
                     cachedItem.forceFirestore = newStatus;
-                } else { // Adiciona ao cache se não existir (caso de um item novo)
+                } else { 
                     allMediaCache.push({ id, forceFirestore: newStatus });
                 }
 
-                // Atualiza a UI do botão
                 button.textContent = newStatus ? 'Forçando Firestore' : 'Padrão API';
                 button.classList.toggle('bg-green-600', newStatus);
                 button.classList.toggle('hover:bg-green-700', newStatus);
@@ -618,7 +628,6 @@
             } catch (error) {
                 console.error("Erro ao alternar 'forceFirestore':", error);
                 alert("Falha ao atualizar o status.");
-                // Reverte o texto do botão em caso de erro
                 const cachedItem = allMediaCache.find(item => item.id == id);
                 const isForced = cachedItem ? cachedItem.forceFirestore : false;
                 button.textContent = isForced ? 'Forçando Firestore' : 'Padrão API';
@@ -627,6 +636,57 @@
             }
         };
 
+        // --- NOVA FUNÇÃO PARA COPIAR OS LINKS DA SÉRIE ---
+        const copyAllSeriesLinksToClipboard = async (seriesId) => {
+            if (!seriesId) return;
+
+            try {
+                const docRef = doc(firestore, "media", seriesId.toString());
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists() || !docSnap.data().seasons) {
+                    alert('Nenhum link encontrado para esta série no banco de dados.');
+                    return;
+                }
+
+                const firestoreData = docSnap.data();
+                let outputText = '';
+
+                // Ordena as temporadas numericamente
+                const sortedSeasonNumbers = Object.keys(firestoreData.seasons).sort((a, b) => parseInt(a) - parseInt(b));
+
+                for (const seasonNumber of sortedSeasonNumbers) {
+                    const season = firestoreData.seasons[seasonNumber];
+                    if (season && season.episodes && season.episodes.length > 0) {
+                        outputText += `Temporada ${seasonNumber}\n`;
+                        
+                        // Ordena os episódios
+                        const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
+
+                        sortedEpisodes.forEach(ep => {
+                            if (ep.urls && ep.urls.length > 0 && ep.urls[0].url) {
+                                // Formata o número do episódio com zero à esquerda
+                                const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
+                                outputText += `EP${epNumberFormatted}: ${ep.urls[0].url}\n`;
+                            }
+                        });
+                        outputText += `\n`; // Adiciona uma linha em branco entre as temporadas
+                    }
+                }
+
+                if (outputText.trim() === '') {
+                    alert('A série possui temporadas, mas nenhum link de episódio foi encontrado.');
+                    return;
+                }
+
+                await navigator.clipboard.writeText(outputText.trim());
+                alert('Todos os links da série foram copiados com sucesso!');
+
+            } catch (error) {
+                console.error("Erro ao copiar links da série:", error);
+                alert("Ocorreu um erro ao tentar copiar os links.");
+            }
+        };
 
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -645,15 +705,25 @@
             ui.catalogSearchBtn.addEventListener('click', performSearch);
             ui.catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             
+            // LISTENER MODIFICADO PARA CAPTURAR O CLIQUE NO NOVO BOTÃO
             const universalClickListener = (e) => {
                 const manageButton = e.target.closest('.manage-btn');
                 if (manageButton) {
                     prepareFormForEditing(manageButton.dataset.tmdbId, manageButton.dataset.tmdbType);
-                    return; // Importante para não acionar os dois listeners
+                    return;
                 }
                 const forceButton = e.target.closest('.force-firestore-btn');
                 if (forceButton) {
                     toggleForceFirestore(forceButton);
+                    return;
+                }
+                // Captura o clique no botão de copiar
+                const copyLinksButton = e.target.closest('.copy-all-links-btn');
+                if (copyLinksButton) {
+                    copyLinksButton.textContent = 'Copiando...';
+                    copyAllSeriesLinksToClipboard(copyLinksButton.dataset.tmdbId).finally(() => {
+                        copyLinksButton.textContent = 'Copiar Links';
+                    });
                 }
             };
 
@@ -682,6 +752,18 @@
                 const docSnap = await getDoc(docRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
                 await loadEpisodesForSeason(seriesId, e.target.value, firestoreData);
+            });
+            
+            // NOVO LISTENER PARA O BOTÃO DE CÓPIA DENTRO DO FORMULÁRIO
+            ui.copyAllLinksFormBtn.addEventListener('click', () => {
+                const seriesId = ui.tmdbIdInput.value;
+                const button = ui.copyAllLinksFormBtn;
+                if (seriesId) {
+                    button.textContent = 'Copiando...';
+                    copyAllSeriesLinksToClipboard(seriesId).finally(() => {
+                        button.textContent = 'Copiar Todos os Links';
+                    });
+                }
             });
 
             ui.bulkImportBtn.addEventListener('click', () => {
