@@ -343,14 +343,12 @@
 
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-2 p-2 bg-gray-800 rounded';
-                    // *** INÍCIO DA MODIFICAÇÃO: Adicionado o botão "X" para remover ***
                     div.innerHTML = `
                         <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
                         <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
                         <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
-                        <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Limpar link do episódio">X</button>
+                        <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Excluir episódio">X</button>
                     `;
-                    // *** FIM DA MODIFICAÇÃO ***
                     ui.episodesList.appendChild(div);
                 });
                 
@@ -757,14 +755,15 @@
                 }
             });
 
-            // *** INÍCIO DA MODIFICAÇÃO: Listener para os botões "X" dos episódios ***
+            // *** INÍCIO DA MODIFICAÇÃO: Ação do botão "X" dos episódios ***
             ui.episodesList.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-episode-btn');
                 if (removeBtn) {
                     const episodeRow = removeBtn.parentElement;
                     const urlInput = episodeRow.querySelector('.episode-url');
                     if (urlInput) {
-                        urlInput.value = ''; // Limpa o campo de URL
+                        urlInput.value = ''; // Limpa o campo para garantir que não será salvo
+                        episodeRow.style.display = 'none'; // Esconde a linha do episódio da tela imediatamente
                     }
                 }
             });
