@@ -1,4 +1,4 @@
-// app/components/SearchComponent.tsx
+// cineveo-next/app/components/SearchComponent.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -7,7 +7,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchHistory } from '../hooks/useSearchHistory';
-import { generateSlug } from '../lib/utils'; // Importa a nova função
+import { generateSlug } from '../lib/utils';
 
 import SearchIcon from './icons/SearchIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
@@ -60,8 +60,14 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     return () => clearTimeout(handler);
   }, [query, fetchSuggestions]);
 
-  const handleSearch = (e: React.FormEvent, searchTerm: string = query) => {
-    e.preventDefault();
+  const cleanup = () => {
+    setQuery('');
+    setSuggestions([]);
+    setIsActive(false);
+    onSearch?.();
+  };
+
+  const executeSearch = (searchTerm: string) => {
     const finalTerm = searchTerm.trim();
     if (finalTerm) {
       addToHistory(finalTerm);
@@ -70,11 +76,9 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     }
   };
 
-  const cleanup = () => {
-    setQuery('');
-    setSuggestions([]);
-    setIsActive(false);
-    onSearch?.();
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSearch(query);
   };
 
   const handleVoiceSearch = () => {
@@ -105,6 +109,8 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     recognition.onresult = (event: any) => {
       const speechResult = event.results[0][0].transcript;
       setQuery(speechResult);
+      // Executa a pesquisa assim que o resultado for obtido
+      executeSearch(speechResult);
     };
     
     recognition.start();
@@ -115,10 +121,13 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
       {query.length < 2 && history.length > 0 && (
         <div className="history-list">
           {history.map((term) => (
-            <div key={term} className="history-item">
-              <HistoryIcon className="history-icon" onClick={() => setQuery(term)} />
-              <span className="history-text" onClick={() => setQuery(term)}>{term}</span>
-              <button onClick={() => removeFromHistory(term)} className="history-remove-btn">
+            <div key={term} className="history-item" onClick={() => executeSearch(term)}>
+              <HistoryIcon className="history-icon" />
+              <span className="history-text">{term}</span>
+              <button onClick={(e) => {
+                e.stopPropagation(); // Impede que o clique no botão de remover acione a pesquisa
+                removeFromHistory(term);
+              }} className="history-remove-btn">
                 <XIcon width={16} height={16} />
               </button>
             </div>

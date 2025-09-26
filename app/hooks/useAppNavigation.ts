@@ -9,6 +9,14 @@ export const useAppNavigation = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const { key } = e;
+      const currentFocused = document.activeElement as HTMLElement;
+
+      // FIX: If Enter is pressed in a form input, let the browser's default behavior handle it.
+      // This allows the form's onSubmit to trigger naturally.
+      if (key === 'Enter' && currentFocused instanceof HTMLInputElement && currentFocused.form) {
+        return;
+      }
+      
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) {
         return;
       }
@@ -21,8 +29,6 @@ export const useAppNavigation = () => {
         return;
       }
       
-      const currentFocused = document.activeElement as HTMLElement;
-      
       if (!currentFocused || !allFocusables.includes(currentFocused)) {
         allFocusables[0].focus();
         focusedElementRef.current = allFocusables[0];
@@ -30,27 +36,16 @@ export const useAppNavigation = () => {
         return;
       }
       
-      // --- CORREÇÃO FINAL AQUI ---
+      // Handle 'Enter' for other focusable elements like buttons and links
       if (key === 'Enter') {
-        // Prevenimos a ação padrão em todos os casos para ter controle total.
         e.preventDefault();
-
-        // Se o foco estiver em um input que pertence a um formulário...
-        if (currentFocused instanceof HTMLInputElement && currentFocused.form) {
-            // Encontra o botão de submit dentro do formulário e o "clica".
-            // Esta é a forma mais robusta de garantir que o onSubmit do React será chamado.
-            const submitButton = currentFocused.form.querySelector<HTMLButtonElement>('button[type="submit"]');
-            if (submitButton) {
-                submitButton.click();
-            }
-        } else if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
-            // Lógica para outros elementos clicáveis continua a mesma.
+        if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
             currentFocused.click();
         }
         return;
       }
 
-      // Prevenimos o padrão apenas para as setas de navegação
+      // Prevent default scrolling/action only for arrow key navigation
       e.preventDefault();
       
       const findNextFocus = (): HTMLElement | null => {
