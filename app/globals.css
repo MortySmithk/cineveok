@@ -178,7 +178,7 @@ main { padding-top: 68px; }
   transition: all 0.4s ease; display: flex; align-items: center; justify-content: center;
 }
 .play-button-overlay {
-  width: 80px; height: 80px;
+  width: 90px; height: 90px; /* MODIFICADO */
   opacity: 0; transform: scale(0.8);
   transition: all 0.3s ease;
 }
