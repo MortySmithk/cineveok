@@ -1,7 +1,7 @@
-// app/components/VideoModal.tsx
+// cineveo-next/app/components/VideoModal.tsx
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface VideoModalProps {
   src: string;
@@ -11,9 +11,21 @@ interface VideoModalProps {
 }
 
 const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   if (!isOpen) {
     return null;
   }
+
+  // --- CORREÇÃO AQUI ---
+  // Esta função agora limpa a fonte do iframe antes de chamar a função de fechar,
+  // garantindo que o áudio pare imediatamente.
+  const handleClose = () => {
+    if (iframeRef.current) {
+      iframeRef.current.src = 'about:blank'; // Limpa a URL para parar a reprodução
+    }
+    onClose(); // Chama a função original para fechar o modal
+  };
 
   const iframeStyle: React.CSSProperties = {
     position: 'absolute',
@@ -25,11 +37,13 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    // O evento onClick agora chama nossa nova função handleClose
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close-btn" onClick={onClose}>
+          {/* O botão de fechar também chama a nova função handleClose */}
+          <button className="modal-close-btn" onClick={handleClose}>
             &times;
           </button>
         </div>
@@ -37,12 +51,11 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
         <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
           {src ? (
             <iframe
+              ref={iframeRef} // Adiciona a referência ao iframe
               src={src}
               style={iframeStyle}
               allow="autoplay; encrypted-media"
               allowFullScreen
-              // --- CORREÇÃO AQUI ---
-              // Alterado de "no-referrer" para "origin-when-cross-origin" para permitir que o player funcione
               referrerPolicy="origin-when-cross-origin" 
               title="CineVEO Player"
             ></iframe>
