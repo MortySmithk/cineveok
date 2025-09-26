@@ -30,20 +30,22 @@ export const useAppNavigation = () => {
         return;
       }
       
-      // --- CORREÇÃO AQUI ---
-      // A lógica para o 'Enter' foi movida para antes do e.preventDefault()
-      // para permitir que o formulário seja submetido nativamente quando aplicável.
+      // --- CORREÇÃO FINAL AQUI ---
       if (key === 'Enter') {
-        // Se o elemento focado for um campo de texto dentro de um formulário,
-        // não fazemos nada e deixamos o navegador submeter o formulário.
-        if (currentFocused.tagName === 'INPUT' && currentFocused.closest('form')) {
-          return; // Permite a submissão padrão do formulário
-        }
-        
-        // Para outros elementos como botões e links, prevenimos o padrão e clicamos.
+        // Prevenimos a ação padrão em todos os casos para ter controle total.
         e.preventDefault();
-        if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
-          currentFocused.click();
+
+        // Se o foco estiver em um input que pertence a um formulário...
+        if (currentFocused instanceof HTMLInputElement && currentFocused.form) {
+            // Encontra o botão de submit dentro do formulário e o "clica".
+            // Esta é a forma mais robusta de garantir que o onSubmit do React será chamado.
+            const submitButton = currentFocused.form.querySelector<HTMLButtonElement>('button[type="submit"]');
+            if (submitButton) {
+                submitButton.click();
+            }
+        } else if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
+            // Lógica para outros elementos clicáveis continua a mesma.
+            currentFocused.click();
         }
         return;
       }
