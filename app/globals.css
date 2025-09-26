@@ -1,4 +1,4 @@
-/* app/globals.css */
+/* cineveo-next/app/globals.css */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
@@ -241,8 +241,10 @@ main { padding-top: 68px; }
 }
 .slide-dots button.active { background-color: white; }
 .movie-section { margin-bottom: 2.5rem; }
-.section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 .section-title { font-size: 1.5rem; font-weight: 700; }
+.section-view-all-link { color: var(--text-secondary); font-weight: bold; font-size: 1.5rem; text-decoration: none; transition: color 0.2s; }
+.section-view-all-link:hover { color: var(--text-primary); }
 .movie-carousel {
     display: grid;
     grid-auto-flow: column;
@@ -489,14 +491,9 @@ main { padding-top: 68px; }
   }
 
   /* AJUSTES PÁGINA INICIAL */
-  .hero-slider { height: 60vh; margin-top: -112px; }
-  .slide-content { max-width: 90%; padding: 0 1rem; justify-content: flex-end; padding-bottom: 5rem; text-align: center;}
-  .slide-title { font-size: 1.8rem; line-height: 1.2; }
-  .slide-meta { justify-content: center; }
-  .slide-overview { display: none; }
-  .slide-actions { justify-content: center; }
-  .slide-actions .btn-primary, .slide-actions .btn-secondary { font-size: 0.9rem !important; padding: 0.7rem 1.2rem !important; }
-  .main-container[style*="margin-top: -80px"] { margin-top: 0 !important; }
+  .hero-slider { display: none; } /* Remove o slider principal no mobile */
+  .main-container { margin-top: 132px !important; } /* Adiciona espaço no topo para compensar o header fixo */
+  
   .movie-carousel { grid-auto-columns: 160px; }
   .movie-carousel .movie-card { width: 160px; height: 240px; }
   

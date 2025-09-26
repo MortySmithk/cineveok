@@ -1,3 +1,4 @@
+// cineveo-next/app/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -74,7 +75,7 @@ export default function HomePage() {
       <div className="hero-slider">
         {trending.map((item, index) => (
           <div key={item.id} className={`slide ${index === activeSlide ? 'active' : ''}`}>
-            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt="" layout="fill" objectFit="cover" className="slide-bg" />
+            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt="" fill objectFit="cover" className="slide-bg" />
             <div className="slide-overlay"></div>
             <div className="slide-content">
               <h1 className="slide-title">{item.title || item.name}</h1>
@@ -95,7 +96,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="main-container" style={{ marginTop: '-80px', position: 'relative', zIndex: 10 }}>
+      <div className="main-container" style={{ position: 'relative', zIndex: 10 }}>
         {continueWatchingHistory.length > 0 && (
           <section className="movie-section">
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
@@ -115,7 +116,10 @@ export default function HomePage() {
         )}
 
         <section className="movie-section">
-          <div className="section-header"><h2 className="section-title">Filmes Lançamento no CineVEO</h2></div>
+          <div className="section-header">
+            <h2 className="section-title">Filmes Populares</h2>
+            <Link href="/filmes" className="section-view-all-link focusable">&gt;</Link>
+          </div>
           <div className="movie-carousel">
             {latestMovies.map((movie) => (
               <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable">
@@ -132,7 +136,10 @@ export default function HomePage() {
         </section>
 
          <section className="movie-section">
-          <div className="section-header"><h2 className="section-title">Séries Populares</h2></div>
+          <div className="section-header">
+             <h2 className="section-title">Séries Populares</h2>
+             <Link href="/series" className="section-view-all-link focusable">&gt;</Link>
+          </div>
           <div className="movie-carousel">
             {popularSeries.map((series) => (
               <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable">
