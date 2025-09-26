@@ -16,6 +16,22 @@
 body { font-family: 'Inter', sans-serif; background-color: var(--background-color); color: var(--text-primary); }
 a { text-decoration: none; color: inherit; }
 
+/* --- NOVAS ANIMAÇÕES DO BOTÃO DE PLAY --- */
+@keyframes play-button-appear {
+  0% { transform: scale(0.7); opacity: 0; }
+  40% { transform: scale(1.1); opacity: 1; }
+  50% { opacity: 0.5; }
+  60% { opacity: 1; }
+  70% { opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes play-button-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
 /* --- UTILITÁRIOS DE LAYOUT --- */
 .mobile-only-layout { display: none; }
 .desktop-only-layout { display: block; }
@@ -178,13 +194,18 @@ main { padding-top: 68px; }
   transition: all 0.4s ease; display: flex; align-items: center; justify-content: center;
 }
 .play-button-overlay {
-  width: 90px; height: 90px; /* MODIFICADO */
-  opacity: 0; transform: scale(0.8);
-  transition: all 0.3s ease;
+  width: 110px; height: 110px; /* MODIFICADO */
+  opacity: 0;
+  transform: scale(0.7);
+}
+.movie-card:hover .play-button-overlay {
+  animation: play-button-appear 0.5s ease-out forwards;
+}
+.play-button-overlay:hover {
+  animation: play-button-pulse 0.8s ease-in-out infinite;
 }
 .movie-card:hover .movie-card-poster { transform: scale(1.1); filter: brightness(0.7); }
 .movie-card:hover .movie-card-overlay { background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
-.movie-card:hover .play-button-overlay { opacity: 1; transform: scale(1); }
 .movie-card-bookmark {
     position: absolute; top: 10px; right: 10px;
     background-color: rgba(12, 12, 12, 0.7); backdrop-filter: blur(5px);

@@ -1,4 +1,4 @@
-// app/components/CategoryPage.tsx
+// cineveo-next/app/components/CategoryPage.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from './icons/StarIcon';
 import BookmarkIcon from './icons/BookmarkIcon';
-import { generateSlug } from '../lib/utils'; // Importa a nova função
+import { generateSlug } from '../lib/utils';
 
 interface Media {
   id: number;
@@ -122,8 +122,8 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
                     <Image 
                         src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" 
                         alt="Play" 
-                        width={80}
-                        height={80}
+                        width={110}
+                        height={110}
                         className="play-button-overlay" 
                         style={{ objectFit: 'contain' }}
                     />
