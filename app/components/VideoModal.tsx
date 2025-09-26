@@ -15,14 +15,13 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
     return null;
   }
 
-  // Estilos para o iframe, convertidos para objeto React
   const iframeStyle: React.CSSProperties = {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
     height: '100%',
-    border: 'none' // Adicionado para garantir que não haja bordas
+    border: 'none'
   };
 
   return (
@@ -35,7 +34,6 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
           </button>
         </div>
         
-        {/* Estrutura de aspect-ratio que você forneceu */}
         <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
           {src ? (
             <iframe
@@ -43,7 +41,9 @@ const VideoModal: React.FC<VideoModalProps> = ({ src, isOpen, onClose, title }) 
               style={iframeStyle}
               allow="autoplay; encrypted-media"
               allowFullScreen
-              referrerPolicy="no-referrer" // Essencial para o player carregar
+              // --- CORREÇÃO AQUI ---
+              // Alterado de "no-referrer" para "origin-when-cross-origin" para permitir que o player funcione
+              referrerPolicy="origin-when-cross-origin" 
               title="CineVEO Player"
             ></iframe>
           ) : (
