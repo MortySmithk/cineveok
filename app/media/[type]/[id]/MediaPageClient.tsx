@@ -201,8 +201,9 @@ export default function MediaPageClient({ params }: { params: { type: string; id
           </section>
         )}
 
-        {/* PLAYER DE FILME (APENAS PARA MOBILE, RENDERIZADO UMA VEZ) */}
-        {type === 'movie' && (
+        {/* --- CORREÇÃO AQUI --- */}
+        {/* PLAYER DE FILME (SÓ RENDERIZA QUANDO A playerUrl EXISTIR) */}
+        {type === 'movie' && playerUrl && (
           <div className="mobile-player-wrapper">
             <div className="player-container">
               <iframe key={playerUrl} src={playerUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
