@@ -6,12 +6,10 @@ import axios from 'axios';
 import Image from 'next/image';
 
 import StarIcon from '@/app/components/icons/StarIcon';
-// O VideoModal não é mais necessário aqui.
-// import VideoModal from '@/app/components/VideoModal'; 
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import PlayIcon from '@/app/components/icons/PlayIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
+import AudioVisualizer from '@/app/components/AudioVisualizer'; // Importa o novo componente
 
 // --- Interfaces (sem alterações) ---
 interface Genre { id: number; name: string; }
@@ -56,10 +54,8 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   
-  // Estados do modal foram removidos
-  // const [isModalOpen, setIsModalOpen] = useState(false);
-  // const [playerUrl, setPlayerUrl] = useState('');
-  // const [playerTitle, setPlayerTitle] = useState('');
+  // --- OTIMIZAÇÃO: Novo estado para controlar o carregamento do iframe ---
+  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
   useEffect(() => {
     if (!id || !type) return;
@@ -81,12 +77,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const typeText = type === 'movie' ? 'Filme Completo' : 'Série Completa';
         document.title = `Assistindo ${title} (${typeText}) - CineVEO`;
 
-        // --- ALTERAÇÃO PRINCIPAL AQUI ---
-        // Se for um filme, define a URL do stream diretamente e salva o progresso.
-        // Isso ativa o player integrado na página, em vez de preparar para um modal.
         if (type === 'movie' && mediaDetails.id) {
+          setIsPlayerLoading(true); // Reseta o loading ao carregar
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
-          // Salva o progresso assim que a página do filme carrega
           saveProgress({ mediaType: 'movie', tmdbId: id, title: mediaDetails.title, poster_path: mediaDetails.poster_path });
         }
         
@@ -102,7 +95,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       }
     };
     fetchData();
-  }, [id, type, getProgress, saveProgress]); // Adicionado saveProgress às dependências
+  }, [id, type, getProgress, saveProgress]);
 
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
@@ -122,6 +115,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
+      setIsPlayerLoading(true); // Reseta o loading ao trocar de episódio
       const { season, episode } = activeEpisode;
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
       saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
@@ -132,13 +126,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     setActiveEpisode({ season, episode });
   };
   
-  // A função para abrir o modal foi removida.
-  /*
-  const openWatchModal = () => {
-    // ...código removido...
-  };
-  */
-
   const formatRuntime = (minutes?: number | number[]) => {
     if (!minutes) return '';
     const mins = Array.isArray(minutes) ? minutes[0] : minutes;
@@ -164,30 +151,47 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     'director': { '@type': 'Person', 'name': 'Diretor do Filme' }
   };
 
+  const PlayerContent = () => (
+    <div className="player-container">
+      {/* --- OTIMIZAÇÃO: Mostra o spinner enquanto o isPlayerLoading for true --- */}
+      {isPlayerLoading && (
+        <div className="player-loader">
+          <div className="spinner"></div>
+          <span>Carregando player...</span>
+        </div>
+      )}
+      {activeStreamUrl ? (
+        <iframe 
+          key={activeStreamUrl} 
+          src={activeStreamUrl} 
+          title={`CineVEO Player - ${details.title}`} 
+          allow="autoplay; encrypted-media" 
+          allowFullScreen 
+          referrerPolicy="origin"
+          // --- OTIMIZAÇÃO: Atributos adicionados ---
+          loading="lazy"
+          onLoad={() => setIsPlayerLoading(false)}
+          style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
+        ></iframe>
+      ) : (
+        <div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>
+      )}
+    </div>
+  );
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      {/* O Modal foi removido do JSX */}
-      {/* <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={playerUrl} title={playerTitle} /> */}
       
       <div className="media-page-layout">
-
-        {/* --- NOVA SEÇÃO DE PLAYER PARA FILMES --- */}
         {type === 'movie' && (
           <section className="series-watch-section">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
-                <div className="player-container">
-                  {activeStreamUrl ? (
-                    <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
-                  ) : (
-                    <div className="player-loader"><div className="spinner"></div><span>Carregando player...</span></div>
-                  )}
-                </div>
+                <PlayerContent />
               </div>
               <div className="episodes-list-wrapper">
-                  {/* Reutiliza o estilo do item de episódio para mostrar as informações do filme */}
-                  <div className="episode-item-button active focusable" style={{ cursor: 'default' }}>
+                  <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
                       <div className="episode-item-thumbnail">
                         <Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} />
                       </div>
@@ -195,30 +199,27 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                         <span className="episode-item-title">{details.title}</span>
                         <p className="episode-item-overview">Filme Completo</p>
                       </div>
+                      {/* --- Adiciona o componente do visualizador aqui --- */}
+                      <div className="visualizer-container">
+                        <AudioVisualizer />
+                      </div>
                   </div>
               </div>
             </div>
           </section>
         )}
 
-        {/* Seção de player para séries (sem alterações) */}
         {type === 'tv' && (
           <section className="series-watch-section">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
-                <div className="player-container">
-                  {activeStreamUrl ? (
-                    <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
-                  ) : (
-                    <div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>
-                  )}
-                </div>
+                <PlayerContent />
               </div>
               <div className="episodes-list-wrapper">
                 <div className="episodes-header">
                   <select className="season-selector focusable" value={selectedSeason} 
                     onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); handleEpisodeClick(newSeason, 1); }}>
-                    {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
                   </select>
                   <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
                 </div>
@@ -241,8 +242,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           </section>
         )}
         
-        {/* O player de filme no mobile foi removido daqui, pois o player integrado já funciona. */}
-        
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
@@ -255,7 +254,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                   <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
                   {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
                 </div>
-                {/* O botão de assistir foi removido, pois o player já está na tela */}
                 <div className="action-buttons-desktop">
                   {details.imdb_id && <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>}
                 </div>

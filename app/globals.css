@@ -621,3 +621,47 @@ main { padding-top: 68px; }
     border-top: 1px solid var(--border-color);
   }
 }
+/* ================================================= */
+/* === NOVOS ESTILOS PARA VISUALIZADOR DE ÁUDIO === */
+/* ================================================= */
+
+.movie-info-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.visualizer-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px;
+  background-color: rgba(13, 13, 13, 0.5);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.audio-visualizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 20px;
+  width: 24px;
+}
+
+.visualizer-bar {
+  width: 4px;
+  height: 100%;
+  background-color: var(--accent-yellow);
+  /* A animação 'beat' cria o efeito de pulsação */
+  animation: beat 1.2s ease-in-out infinite alternate;
+  transform-origin: bottom;
+}
+
+@keyframes beat {
+  0% { transform: scaleY(0.1); }
+  25% { transform: scaleY(1); }
+  50% { transform: scaleY(0.4); }
+  75% { transform: scaleY(0.8); }
+  100% { transform: scaleY(0.2); }
+}
