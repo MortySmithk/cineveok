@@ -17,14 +17,12 @@ export const useAppNavigation = () => {
         document.querySelectorAll<HTMLElement>('.focusable:not([disabled])')
       );
       
-      // Se não houver elementos focáveis, não faz nada.
       if (allFocusables.length === 0) {
         return;
       }
       
       const currentFocused = document.activeElement as HTMLElement;
       
-      // Se nada estiver focado, foca no primeiro elemento da lista e para a execução.
       if (!currentFocused || !allFocusables.includes(currentFocused)) {
         allFocusables[0].focus();
         focusedElementRef.current = allFocusables[0];
@@ -32,15 +30,26 @@ export const useAppNavigation = () => {
         return;
       }
       
-      e.preventDefault();
-
+      // --- CORREÇÃO AQUI ---
+      // A lógica para o 'Enter' foi movida para antes do e.preventDefault()
+      // para permitir que o formulário seja submetido nativamente quando aplicável.
       if (key === 'Enter') {
-        // Trata diferentes elementos que podem ser "clicados"
+        // Se o elemento focado for um campo de texto dentro de um formulário,
+        // não fazemos nada e deixamos o navegador submeter o formulário.
+        if (currentFocused.tagName === 'INPUT' && currentFocused.closest('form')) {
+          return; // Permite a submissão padrão do formulário
+        }
+        
+        // Para outros elementos como botões e links, prevenimos o padrão e clicamos.
+        e.preventDefault();
         if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
           currentFocused.click();
         }
         return;
       }
+
+      // Prevenimos o padrão apenas para as setas de navegação
+      e.preventDefault();
       
       const findNextFocus = (): HTMLElement | null => {
         const currentRect = currentFocused.getBoundingClientRect();
@@ -57,28 +66,25 @@ export const useAppNavigation = () => {
 
           let isValidCandidate = false;
 
-          // Verifica se o candidato está na direção geral do movimento da seta.
-          // Penaliza movimentos no eixo oposto.
           switch (key) {
             case 'ArrowDown':
-              if (dy > 0 && Math.abs(dx) < Math.abs(dy)) isValidCandidate = true;
+              if (dy > 0 && Math.abs(dx) < Math.abs(dy) * 2) isValidCandidate = true;
               break;
             case 'ArrowUp':
-              if (dy < 0 && Math.abs(dx) < Math.abs(dy)) isValidCandidate = true;
+              if (dy < 0 && Math.abs(dx) < Math.abs(dy) * 2) isValidCandidate = true;
               break;
             case 'ArrowRight':
-              if (dx > 0 && Math.abs(dy) < Math.abs(dx)) isValidCandidate = true;
+              if (dx > 0 && Math.abs(dy) < Math.abs(dx) * 2) isValidCandidate = true;
               break;
             case 'ArrowLeft':
-              if (dx < 0 && Math.abs(dy) < Math.abs(dx)) isValidCandidate = true;
+              if (dx < 0 && Math.abs(dy) < Math.abs(dx) * 2) isValidCandidate = true;
               break;
           }
 
           if (isValidCandidate) {
-            // Fórmula de distância com um forte "viés de eixo".
             const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
-                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 2.5, 2)) // Aumenta a penalidade vertical
-                : Math.sqrt(Math.pow(dx * 2.5, 2) + Math.pow(dy, 2)); // Aumenta a penalidade horizontal
+                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 2.5, 2))
+                : Math.sqrt(Math.pow(dx * 2.5, 2) + Math.pow(dy, 2));
             
             if (distance < minDistance) {
               minDistance = distance;
@@ -93,14 +99,12 @@ export const useAppNavigation = () => {
       if (nextFocus) {
         nextFocus.focus();
         focusedElementRef.current = nextFocus;
-        // O scrollIntoView do próprio navegador ao focar já é suficiente na maioria das vezes.
-        // nextFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []); // A dependência foi removida para rodar apenas uma vez
+  }, []);
 
   return focusedElementRef;
 };
