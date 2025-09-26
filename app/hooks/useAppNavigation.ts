@@ -1,27 +1,12 @@
+// cineveo-next/app/hooks/useAppNavigation.ts
 "use client";
+
 import { useEffect, useRef } from 'react';
 
-export const useAppNavigation = (containerSelector = 'body') => {
+export const useAppNavigation = () => {
   const focusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const container = document.querySelector(containerSelector);
-    if (!container) return;
-
-    // Atraso mínimo para garantir que todos os elementos sejam renderizados
-    setTimeout(() => {
-      const focusables = Array.from(
-        container.querySelectorAll<HTMLElement>('.focusable:not([disabled])')
-      );
-
-      if (focusables.length > 0 && !document.activeElement?.closest(containerSelector)) {
-          const firstFocusable = focusables[0];
-          firstFocusable.focus();
-          focusedElementRef.current = firstFocusable;
-      }
-    }, 100);
-
-
     const handleKeyDown = (e: KeyboardEvent) => {
       const { key } = e;
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) {
@@ -31,20 +16,29 @@ export const useAppNavigation = (containerSelector = 'body') => {
       const allFocusables = Array.from(
         document.querySelectorAll<HTMLElement>('.focusable:not([disabled])')
       );
+      
+      // Se não houver elementos focáveis, não faz nada.
+      if (allFocusables.length === 0) {
+        return;
+      }
+      
       const currentFocused = document.activeElement as HTMLElement;
       
+      // Se nada estiver focado, foca no primeiro elemento da lista e para a execução.
       if (!currentFocused || !allFocusables.includes(currentFocused)) {
-        // Se nada estiver focado, foca no primeiro elemento focável
-        if (allFocusables.length > 0) {
-          allFocusables[0].focus();
-        }
+        allFocusables[0].focus();
+        focusedElementRef.current = allFocusables[0];
+        e.preventDefault();
         return;
       }
       
       e.preventDefault();
 
       if (key === 'Enter') {
-        currentFocused.click();
+        // Trata diferentes elementos que podem ser "clicados"
+        if (currentFocused instanceof HTMLButtonElement || currentFocused instanceof HTMLAnchorElement) {
+          currentFocused.click();
+        }
         return;
       }
       
@@ -64,26 +58,27 @@ export const useAppNavigation = (containerSelector = 'body') => {
           let isValidCandidate = false;
 
           // Verifica se o candidato está na direção geral do movimento da seta.
+          // Penaliza movimentos no eixo oposto.
           switch (key) {
             case 'ArrowDown':
-              if (dy > 0) isValidCandidate = true;
+              if (dy > 0 && Math.abs(dx) < Math.abs(dy)) isValidCandidate = true;
               break;
             case 'ArrowUp':
-              if (dy < 0) isValidCandidate = true;
+              if (dy < 0 && Math.abs(dx) < Math.abs(dy)) isValidCandidate = true;
               break;
             case 'ArrowRight':
-              if (dx > 0) isValidCandidate = true;
+              if (dx > 0 && Math.abs(dy) < Math.abs(dx)) isValidCandidate = true;
               break;
             case 'ArrowLeft':
-              if (dx < 0) isValidCandidate = true;
+              if (dx < 0 && Math.abs(dy) < Math.abs(dx)) isValidCandidate = true;
               break;
           }
 
           if (isValidCandidate) {
-            // Nova fórmula de distância com um forte "viés de eixo".
+            // Fórmula de distância com um forte "viés de eixo".
             const distance = (key === 'ArrowLeft' || key === 'ArrowRight') 
-                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 3, 2))
-                : Math.sqrt(Math.pow(dx * 3, 2) + Math.pow(dy, 2));
+                ? Math.sqrt(Math.pow(dx, 2) + Math.pow(dy * 2.5, 2)) // Aumenta a penalidade vertical
+                : Math.sqrt(Math.pow(dx * 2.5, 2) + Math.pow(dy, 2)); // Aumenta a penalidade horizontal
             
             if (distance < minDistance) {
               minDistance = distance;
@@ -98,13 +93,14 @@ export const useAppNavigation = (containerSelector = 'body') => {
       if (nextFocus) {
         nextFocus.focus();
         focusedElementRef.current = nextFocus;
-        nextFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        // O scrollIntoView do próprio navegador ao focar já é suficiente na maioria das vezes.
+        // nextFocus.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [containerSelector]);
+  }, []); // A dependência foi removida para rodar apenas uma vez
 
   return focusedElementRef;
 };
