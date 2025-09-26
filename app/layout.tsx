@@ -11,7 +11,7 @@ import AppInitializer from "./components/AppInitializer"; // Importado
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CineVEO - Assistir Filmes e Séries Online Grátis Em HD Filmes Online, Séries Online.",
+  title: "Assistir Filmes e Séries Online HD, Filmes Online, Séries Online.",
   description: "Se o site não abrir instale uma VPN Gratis e Confiavel, Baixe Acessando: https://1.1.1.1/ - Assista Filmes, Séries, Animes, Novelas, Doramas, Documentários e Muito Mais Somente no CineVEO!",
   icons: {
     icon: "https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png",
