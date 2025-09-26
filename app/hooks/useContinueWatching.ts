@@ -1,7 +1,7 @@
 // cineveo-next/app/hooks/useContinueWatching.ts
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const CW_KEY = 'cineveo_continue_watching';
 
@@ -20,6 +20,9 @@ export interface ContinueWatchingItem {
 
 export const useContinueWatching = () => {
   const [history, setHistory] = useState<ContinueWatchingItem[]>([]);
+  // Usamos uma ref para manter uma referência estável ao histórico mais recente
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
   useEffect(() => {
     try {
@@ -49,10 +52,14 @@ export const useContinueWatching = () => {
     });
   }, []);
 
+  // A função getProgress agora usa a ref.
+  // Como a ref em si nunca muda, e a função não tem dependências,
+  // ela nunca será recriada, quebrando o loop de renderização.
   const getProgress = useCallback((type: 'movie' | 'tv', tmdbId: string) => {
     const id = `${type}-${tmdbId}`;
-    return history.find(item => item.id === id);
-  }, [history]);
+    // Lê o histórico atual diretamente da ref, em vez de depender do estado
+    return historyRef.current.find(item => item.id === id);
+  }, []); // <--- Array de dependências VAZIO é a chave da solução
 
   return { history, saveProgress, getProgress };
 };
