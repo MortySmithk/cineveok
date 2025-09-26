@@ -34,7 +34,6 @@ interface MediaDetails {
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-// O componente agora recebe 'params' como propriedade
 export default function MediaPageClient({ params }: { params: { type: string; id: string } }) {
   const type = params.type as 'movie' | 'tv';
   const id = params.id as string;
@@ -69,7 +68,6 @@ export default function MediaPageClient({ params }: { params: { type: string; id
         };
         setDetails(mediaDetails);
 
-        // ATUALIZA O TÍTULO DA ABA DO NAVEGADOR PARA "ASSISTINDO..."
         const title = mediaDetails.title;
         const typeText = type === 'movie' ? 'Filme Completo' : 'Série Completa';
         document.title = `Assistindo ${title} (${typeText}) - CineVEO`;
@@ -151,127 +149,103 @@ export default function MediaPageClient({ params }: { params: { type: string; id
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': type === 'movie' ? 'Movie' : 'TVSeries',
-    'name': details.title,
-    'description': details.overview,
-    'image': `https://image.tmdb.org/t/p/original${details.poster_path}`,
-    'url': typeof window !== 'undefined' ? window.location.href : '',
-    'datePublished': details.release_date,
-    'aggregateRating': {
-      '@type': 'AggregateRating',
-      'ratingValue': details.vote_average.toFixed(1),
-      'bestRating': '10',
-      'ratingCount': details.id,
-    },
+    'name': details.title, 'description': details.overview, 'image': `https://image.tmdb.org/t/p/original${details.poster_path}`,
+    'url': typeof window !== 'undefined' ? window.location.href : '', 'datePublished': details.release_date,
+    'aggregateRating': { '@type': 'AggregateRating', 'ratingValue': details.vote_average.toFixed(1), 'bestRating': '10', 'ratingCount': details.id },
     'director': { '@type': 'Person', 'name': 'Diretor do Filme' }
   };
-  
-  const TV_WatchComponent = (
-    <section className="series-watch-section">
-      <div className="series-watch-grid">
-        <div className="series-player-wrapper">
-          <div className="player-container">
-            {activeStreamUrl ? (
-              <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
-            ) : (
-                <div className="player-loader">
-                <div className="spinner"></div>
-                <span>Selecione um episódio para começar a assistir.</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="episodes-list-wrapper">
-          <div className="episodes-header">
-            <select 
-              className="season-selector focusable" 
-              value={selectedSeason} 
-              onChange={(e) => {
-                const newSeason = Number(e.target.value);
-                setSelectedSeason(newSeason);
-                handleEpisodeClick(newSeason, 1);
-              }}
-            >
-              {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
-            </select>
-              <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
-          </div>
-          
-          <div className="episode-list-desktop">
-            {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => (
-              <button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
-                <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
-                <div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div>
-                <div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div>
-              </button>
-            ))}
-          </div>
-
-          <div className="episode-grid-mobile">
-            {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button> ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={playerUrl} title={playerTitle} />
       
-      <div className="mobile-only-layout">
-        <div className="mobile-top-content-container">
-          {type === 'movie' && (
-            <div className="mobile-player-container">
+      <div className="media-page-layout">
+        {/* SEÇÃO DE PLAYER/EPISÓDIOS (RENDERIZADA APENAS UMA VEZ) */}
+        {type === 'tv' && (
+          <section className="series-watch-section">
+            <div className="series-watch-grid">
+              <div className="series-player-wrapper">
                 <div className="player-container">
-                    <iframe key={playerUrl} src={playerUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
+                  {activeStreamUrl ? (
+                    <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
+                  ) : (
+                    <div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>
+                  )}
                 </div>
-            </div>
-          )}
-          {type === 'tv' && TV_WatchComponent}
-        </div>
-      </div>
-
-      <main className="details-main-content">
-        <div className="main-container">
-          <div className="details-grid">
-            <div className="details-poster"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
-            <div className="details-info">
-              <h1>{details.title}</h1>
-              <div className="details-meta-bar">
-                <span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span>
-                <span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span>
-                <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
-                {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
               </div>
-              <div className="action-buttons-desktop">
-                {type === 'movie' && <button className='btn-primary focusable' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
-                <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>
-              </div>
-              <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
-            </div>
-          </div>
-          
-          <div className="desktop-only-layout">
-             {type === 'tv' && TV_WatchComponent}
-          </div>
-          
-          <section className="cast-section">
-            <h2>Elenco Principal</h2>
-            <div className="cast-grid">
-              {details.credits?.cast.slice(0, 10).map(member => (
-                <div key={member.id} className='cast-member'>
-                  <div className='cast-member-img'>{member.profile_path ? (<Image src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div>
-                  <strong>{member.name}</strong>
-                  <span>{member.character}</span>
+              <div className="episodes-list-wrapper">
+                <div className="episodes-header">
+                  <select className="season-selector focusable" value={selectedSeason} 
+                    onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); handleEpisodeClick(newSeason, 1); }}>
+                    {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
+                  </select>
+                  <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
                 </div>
-              ))}
+                <div className="episode-list-desktop">
+                  {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                  {!isLoading && seasonEpisodes.map(ep => (
+                    <button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
+                      <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
+                      <div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div>
+                      <div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div>
+                    </button>
+                  ))}
+                </div>
+                <div className="episode-grid-mobile">
+                  {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                  {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button> ))}
+                </div>
+              </div>
             </div>
           </section>
-        </div>
-      </main>
+        )}
+
+        {/* PLAYER DE FILME (APENAS PARA MOBILE, RENDERIZADO UMA VEZ) */}
+        {type === 'movie' && (
+          <div className="mobile-player-wrapper">
+            <div className="player-container">
+              <iframe key={playerUrl} src={playerUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin"></iframe>
+            </div>
+          </div>
+        )}
+
+        {/* CONTEÚDO PRINCIPAL (DETALHES, ELENCO, ETC) */}
+        <main className="details-main-content">
+          <div className="main-container">
+            <div className="details-grid">
+              <div className="details-poster"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
+              <div className="details-info">
+                <h1>{details.title}</h1>
+                <div className="details-meta-bar">
+                  <span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span>
+                  <span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span>
+                  <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
+                  {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
+                </div>
+                <div className="action-buttons-desktop">
+                  {type === 'movie' && <button className='btn-primary focusable' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
+                  <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>
+                </div>
+                <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
+              </div>
+            </div>
+            
+            <section className="cast-section">
+              <h2>Elenco Principal</h2>
+              <div className="cast-grid">
+                {details.credits?.cast.slice(0, 10).map(member => (
+                  <div key={member.id} className='cast-member'>
+                    <div className='cast-member-img'>{member.profile_path ? (<Image src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div>
+                    <strong>{member.name}</strong>
+                    <span>{member.character}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
     </>
   );
 }

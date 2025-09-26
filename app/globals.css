@@ -566,3 +566,58 @@ main { padding-top: 68px; }
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
   z-index: 10;
 }
+/* ================================================= */
+/* === NOVOS ESTILOS PARA CORRIGIR PLAYER DUPLO === */
+/* ================================================= */
+
+/* Novo container principal para a página de mídia */
+.media-page-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Esconde o player de filme mobile por padrão (ele só aparece em telas pequenas) */
+.mobile-player-wrapper {
+  display: none;
+}
+
+/* Regras para telas pequenas (Celulares) */
+@media (max-width: 768px) {
+  /* Remove os layouts antigos de mobile/desktop que não usamos mais nesta página */
+  .mobile-only-layout, .desktop-only-layout {
+    display: none !important;
+  }
+
+  /* 1. Faz o player de SÉRIE aparecer no topo */
+  .series-watch-section {
+    order: -1; /* Mágica do Flexbox: joga o item para o início */
+    margin-top: 112px; /* Altura do header (68px + 44px) */
+    padding: 0 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  /* 2. Faz o player de FILME aparecer no topo */
+  .mobile-player-wrapper {
+    display: block; /* Mostra o container do player de filme */
+    order: -1; /* Também joga para o início */
+    margin-top: 112px;
+    padding: 0 1rem;
+    margin-bottom: 2rem;
+  }
+
+  /* 3. Garante que o conteúdo principal (detalhes, etc) venha depois */
+  .details-main-content {
+    order: 0;
+  }
+}
+
+/* Regras para telas grandes (Desktop) */
+@media (min-width: 769px) {
+  /* No desktop, a seção do player de série volta para o fluxo normal,
+     mas adicionamos o espaçamento e a borda que ela tinha antes. */
+  .series-watch-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+  }
+}
