@@ -212,7 +212,6 @@
             reportResultsContainer: document.getElementById('report-results-container'),
             logoutButton: document.getElementById('logout-button'),
             addMovieUrlBtn: document.getElementById('add-movie-url-btn'),
-            // NOVO ELEMENTO ADICIONADO AO MAPA DA UI
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn')
         };
 
@@ -242,7 +241,6 @@
             }
         };
 
-        // FUNÇÃO MODIFICADA PARA ADICIONAR O NOVO BOTÃO DE CÓPIA
         const createMediaListItemHTML = (item) => {
             const title = item.title || item.name;
             const year = (item.release_date || item.first_air_date || '').substring(0, 4);
@@ -250,7 +248,6 @@
             const tmdbType = item.media_type || (item.type === 'series' ? 'tv' : 'movie');
             const isForced = item.forceFirestore === true;
 
-            // Adiciona o botão "Copiar Links" apenas se for uma série
             const copyButtonHTML = tmdbType === 'tv' 
                 ? `<button class="copy-all-links-btn bg-cyan-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-cyan-700" data-tmdb-id="${item.id}">Copiar Links</button>` 
                 : '';
@@ -318,7 +315,6 @@
                     }
                 } else if (type === 'tv') {
                     ui.seriesSection.classList.remove('hidden');
-                    // Torna o botão de cópia do formulário visível
                     ui.copyAllLinksFormBtn.classList.remove('hidden');
                     ui.seasonSelector.innerHTML = tmdbData.seasons
                         .filter(s => s.season_number > 0)
@@ -346,12 +342,15 @@
                     const existingUrl = existingEpisode?.urls?.[0]?.url || '';
 
                     const div = document.createElement('div');
-                    div.className = 'flex items-center gap-3 p-2 bg-gray-800 rounded';
+                    div.className = 'flex items-center gap-2 p-2 bg-gray-800 rounded';
+                    // *** INÍCIO DA MODIFICAÇÃO: Adicionado o botão "X" para remover ***
                     div.innerHTML = `
                         <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
                         <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
                         <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
+                        <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Limpar link do episódio">X</button>
                     `;
+                    // *** FIM DA MODIFICAÇÃO ***
                     ui.episodesList.appendChild(div);
                 });
                 
@@ -362,7 +361,6 @@
             }
         };
         
-        // FUNÇÃO MODIFICADA PARA ESCONDER O NOVO BOTÃO AO RESETAR
         const resetForm = () => {
             ui.mediaForm.reset();
             ui.mediaTitle.textContent = '-';
@@ -376,7 +374,7 @@
             ui.saveBtn.disabled = true;
             ui.bulkImportTextarea.classList.add('hidden');
             ui.invertOrderBtn.classList.add('hidden');
-            ui.copyAllLinksFormBtn.classList.add('hidden'); // Esconde o botão
+            ui.copyAllLinksFormBtn.classList.add('hidden'); 
             ui.bulkImportTextarea.value = '';
             ui.bulkImportBtn.textContent = 'Importar em Massa';
             ui.forceFirestoreStatus.classList.add('hidden');
@@ -636,7 +634,6 @@
             }
         };
 
-        // --- NOVA FUNÇÃO PARA COPIAR OS LINKS DA SÉRIE ---
         const copyAllSeriesLinksToClipboard = async (seriesId) => {
             if (!seriesId) return;
 
@@ -652,7 +649,6 @@
                 const firestoreData = docSnap.data();
                 let outputText = '';
 
-                // Ordena as temporadas numericamente
                 const sortedSeasonNumbers = Object.keys(firestoreData.seasons).sort((a, b) => parseInt(a) - parseInt(b));
 
                 for (const seasonNumber of sortedSeasonNumbers) {
@@ -660,17 +656,15 @@
                     if (season && season.episodes && season.episodes.length > 0) {
                         outputText += `Temporada ${seasonNumber}\n`;
                         
-                        // Ordena os episódios
                         const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
 
                         sortedEpisodes.forEach(ep => {
                             if (ep.urls && ep.urls.length > 0 && ep.urls[0].url) {
-                                // Formata o número do episódio com zero à esquerda
                                 const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
                                 outputText += `EP${epNumberFormatted}: ${ep.urls[0].url}\n`;
                             }
                         });
-                        outputText += `\n`; // Adiciona uma linha em branco entre as temporadas
+                        outputText += `\n`; 
                     }
                 }
 
@@ -705,7 +699,6 @@
             ui.catalogSearchBtn.addEventListener('click', performSearch);
             ui.catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             
-            // LISTENER MODIFICADO PARA CAPTURAR O CLIQUE NO NOVO BOTÃO
             const universalClickListener = (e) => {
                 const manageButton = e.target.closest('.manage-btn');
                 if (manageButton) {
@@ -717,7 +710,6 @@
                     toggleForceFirestore(forceButton);
                     return;
                 }
-                // Captura o clique no botão de copiar
                 const copyLinksButton = e.target.closest('.copy-all-links-btn');
                 if (copyLinksButton) {
                     copyLinksButton.textContent = 'Copiando...';
@@ -754,7 +746,6 @@
                 await loadEpisodesForSeason(seriesId, e.target.value, firestoreData);
             });
             
-            // NOVO LISTENER PARA O BOTÃO DE CÓPIA DENTRO DO FORMULÁRIO
             ui.copyAllLinksFormBtn.addEventListener('click', () => {
                 const seriesId = ui.tmdbIdInput.value;
                 const button = ui.copyAllLinksFormBtn;
@@ -765,6 +756,19 @@
                     });
                 }
             });
+
+            // *** INÍCIO DA MODIFICAÇÃO: Listener para os botões "X" dos episódios ***
+            ui.episodesList.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-episode-btn');
+                if (removeBtn) {
+                    const episodeRow = removeBtn.parentElement;
+                    const urlInput = episodeRow.querySelector('.episode-url');
+                    if (urlInput) {
+                        urlInput.value = ''; // Limpa o campo de URL
+                    }
+                }
+            });
+            // *** FIM DA MODIFICAÇÃO ***
 
             ui.bulkImportBtn.addEventListener('click', () => {
                 const isHidden = ui.bulkImportTextarea.classList.contains('hidden');
