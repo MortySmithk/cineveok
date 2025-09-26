@@ -558,7 +558,8 @@ main { padding-top: 68px; }
 
 
 /* --- ESTILO DE FOCO GLOBAL PARA NAVEGAÇÃO DE TV --- */
-.focusable:focus {
+/* --- CORREÇÃO: Usando :focus-visible --- */
+.focusable:focus-visible {
   outline: 4px solid #f5c518 !important; /* Amarelo para destaque */
   outline-offset: 3px !important;
   transform: scale(1.05);
