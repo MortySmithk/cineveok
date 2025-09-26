@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from './icons/StarIcon';
 import BookmarkIcon from './icons/BookmarkIcon';
+import { generateSlug } from '../lib/utils'; // Importa a nova função
 
 interface Media {
   id: number;
@@ -38,7 +39,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
   const [totalPages, setTotalPages] = useState(500);
 
   useEffect(() => {
-    if (isSearchPage) return; // Não busca gêneros na página de pesquisa
+    if (isSearchPage) return; 
     const fetchGenres = async () => {
       try {
         const response = await axios.get(`https://api.themoviedb.org/3/genre/${mediaType}/list?api_key=${API_KEY}&language=pt-BR`);
@@ -61,12 +62,10 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
       try {
         const response = await axios.get(url);
         const filteredResults = response.data.results
-          // Garante que cada item tenha um media_type, se não vier da API
           .map((item: Media) => ({
             ...item,
             media_type: item.media_type || mediaType,
           }))
-          // Filtra para remover pessoas dos resultados
           .filter((item: Media) => item.media_type !== 'person' && item.poster_path);
         
         setMediaList(filteredResults);
@@ -109,7 +108,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
           <>
             <div className="responsive-grid">
               {mediaList.map((item) => (
-                <Link href={`/media/${item.media_type}/${item.id}`} key={item.id} className="movie-card focusable">
+                <Link href={`/media/${item.media_type}/${generateSlug(item.title || item.name || '')}-${item.id}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper">
                     <Image
                       src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
@@ -140,7 +139,6 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
                 </Link>
               ))}
             </div>
-            {/* Adicionar botões de paginação focáveis */}
             <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem'}}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary focusable">Anterior</button>
               <span style={{alignSelf: 'center'}}>Página {page} de {totalPages}</span>

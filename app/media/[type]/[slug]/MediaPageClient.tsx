@@ -1,4 +1,4 @@
-// cineveo-next/app/media/[type]/[id]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -34,9 +34,17 @@ interface MediaDetails {
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-export default function MediaPageClient({ params }: { params: { type: string; id: string } }) {
+// Função para extrair o ID do slug
+const getIdFromSlug = (slug: string) => {
+    if (!slug) return null;
+    const parts = slug.split('-');
+    return parts[parts.length - 1];
+};
+
+export default function MediaPageClient({ params }: { params: { type: string; slug: string } }) {
   const type = params.type as 'movie' | 'tv';
-  const id = params.id as string;
+  const slug = params.slug as string;
+  const id = getIdFromSlug(slug);
 
   const { saveProgress, getProgress } = useContinueWatching();
 
@@ -120,7 +128,7 @@ export default function MediaPageClient({ params }: { params: { type: string; id
   };
   
   const openWatchModal = () => {
-    if (!playerUrl) {
+    if (!playerUrl || !id) {
         alert("Nenhum link de streaming disponível para este filme.");
         return;
     }
@@ -161,7 +169,6 @@ export default function MediaPageClient({ params }: { params: { type: string; id
       <VideoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} src={playerUrl} title={playerTitle} />
       
       <div className="media-page-layout">
-        {/* SEÇÃO DE PLAYER/EPISÓDIOS (RENDERIZADA APENAS UMA VEZ) */}
         {type === 'tv' && (
           <section className="series-watch-section">
             <div className="series-watch-grid">
@@ -201,8 +208,6 @@ export default function MediaPageClient({ params }: { params: { type: string; id
           </section>
         )}
 
-        {/* --- CORREÇÃO AQUI --- */}
-        {/* PLAYER DE FILME (SÓ RENDERIZA QUANDO A playerUrl EXISTIR) */}
         {type === 'movie' && playerUrl && (
           <div className="mobile-player-wrapper">
             <div className="player-container">
@@ -211,7 +216,6 @@ export default function MediaPageClient({ params }: { params: { type: string; id
           </div>
         )}
 
-        {/* CONTEÚDO PRINCIPAL (DETALHES, ELENCO, ETC) */}
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
@@ -226,7 +230,7 @@ export default function MediaPageClient({ params }: { params: { type: string; id
                 </div>
                 <div className="action-buttons-desktop">
                   {type === 'movie' && <button className='btn-primary focusable' onClick={openWatchModal}><PlayIcon width={20} height={20} /> Assistir</button>}
-                  <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>
+                  {details.imdb_id && <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>}
                 </div>
                 <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
               </div>

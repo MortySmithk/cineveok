@@ -7,6 +7,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchHistory } from '../hooks/useSearchHistory';
+import { generateSlug } from '../lib/utils'; // Importa a nova função
 
 import SearchIcon from './icons/SearchIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
@@ -14,7 +15,6 @@ import HistoryIcon from './icons/HistoryIcon';
 import XIcon from './icons/XIcon';
 import VoiceSearchOverlay from './VoiceSearchOverlay';
 
-// Definindo a interface para a API de Reconhecimento de Fala do navegador
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -56,7 +56,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchSuggestions(query);
-    }, 300); // Debounce de 300ms
+    }, 300);
     return () => clearTimeout(handler);
   }, [query, fetchSuggestions]);
 
@@ -74,7 +74,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     setQuery('');
     setSuggestions([]);
     setIsActive(false);
-    onSearch?.(); // Chama a função de callback para fechar o overlay mobile
+    onSearch?.();
   };
 
   const handleVoiceSearch = () => {
@@ -129,7 +129,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
       {suggestions.map((item) => {
         if (item.media_type === 'person' || !item.poster_path) return null;
         return (
-          <Link href={`/media/${item.media_type}/${item.id}`} key={item.id} className="suggestion-item" onClick={cleanup}>
+          <Link href={`/media/${item.media_type}/${generateSlug(item.title || item.name || '')}-${item.id}`} key={item.id} className="suggestion-item" onClick={cleanup}>
             <div className="suggestion-image">
               <Image
                 src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
@@ -157,7 +157,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
             onBlur={() => setTimeout(() => setIsActive(false), 200)}
             placeholder="Pesquisar..."
             className="search-input"
-            autoFocus={isMobile} // Foco automático no mobile
+            autoFocus={isMobile}
           />
           <button type="button" className={`voice-search-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceSearch}>
             <MicrophoneIcon width={20} height={20} />
@@ -166,7 +166,6 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
             <SearchIcon width={18} height={18} />
           </button>
         </form>
-        {/* MODIFICAÇÃO: Adicionado "!isMobile" para esconder no celular */}
         {isActive && !isMobile && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
       </div>
     </>
