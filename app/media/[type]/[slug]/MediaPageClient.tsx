@@ -1,8 +1,7 @@
-// CineVEO-Sites/cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Importa o useRouter
 import axios from 'axios';
 import Image from 'next/image';
 
@@ -10,8 +9,7 @@ import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
-import AudioVisualizer from '@/app/components/AudioVisualizer';
-import { generateSlug } from '@/app/lib/utils'; // Importa a função de slug
+import AudioVisualizer from '@/app/components/AudioVisualizer'; // Importa o novo componente
 
 // --- Interfaces (sem alterações) ---
 interface Genre { id: number; name: string; }
@@ -35,19 +33,17 @@ interface MediaDetails {
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-// --- FUNÇÃO MODIFICADA PARA EXTRAIR O ID CORRETAMENTE ---
 const getIdFromSlug = (slug: string) => {
     if (!slug) return null;
-    const match = slug.match(/-(\d+)/);
-    return match ? match[1] : null;
+    const parts = slug.split('-');
+    return parts[parts.length - 1];
 };
 
 export default function MediaPageClient({ params }: { params: { type: string; slug: string } }) {
   const type = params.type as 'movie' | 'tv';
-  const initialSlug = params.slug as string;
-  const router = useRouter(); // Instancia o router
+  const slug = params.slug as string;
+  const id = getIdFromSlug(slug);
 
-  const [id, setId] = useState<string | null>(() => getIdFromSlug(initialSlug));
   const { saveProgress, getProgress } = useContinueWatching();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -58,6 +54,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   
+  // --- OTIMIZAÇÃO: Novo estado para controlar o carregamento do iframe ---
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
   useEffect(() => {
@@ -81,7 +78,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         document.title = `Assistindo ${title} (${typeText}) - CineVEO`;
 
         if (type === 'movie' && mediaDetails.id) {
-          setIsPlayerLoading(true);
+          setIsPlayerLoading(true); // Reseta o loading ao carregar
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
           saveProgress({ mediaType: 'movie', tmdbId: id, title: mediaDetails.title, poster_path: mediaDetails.poster_path });
         }
@@ -117,23 +114,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   }, [id, details, selectedSeason, type]);
 
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && id && details && seasonEpisodes.length > 0) {
-      setIsPlayerLoading(true);
+    if (type === 'tv' && activeEpisode && id && details) {
+      setIsPlayerLoading(true); // Reseta o loading ao trocar de episódio
       const { season, episode } = activeEpisode;
-      
-      const currentEpisode = seasonEpisodes.find(ep => ep.episode_number === episode);
-      if (currentEpisode) {
-        // --- LÓGICA PARA ATUALIZAR A URL ---
-        const seriesSlug = generateSlug(details.title || '');
-        const episodeSlug = generateSlug(currentEpisode.name || `episodio-${episode}`);
-        const newUrl = `/media/tv/${seriesSlug}-${id}-temp${season}-${episodeSlug}`;
-        window.history.pushState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
-      }
-
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
       saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
     }
-  }, [activeEpisode, id, type, details, saveProgress, seasonEpisodes]);
+  }, [activeEpisode, id, type, details, saveProgress]);
 
   const handleEpisodeClick = (season: number, episode: number) => {
     setActiveEpisode({ season, episode });
@@ -166,6 +153,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const PlayerContent = () => (
     <div className="player-container">
+      {/* --- OTIMIZAÇÃO: Mostra o spinner enquanto o isPlayerLoading for true --- */}
       {isPlayerLoading && (
         <div className="player-loader">
           <div className="spinner"></div>
@@ -180,6 +168,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           allow="autoplay; encrypted-media" 
           allowFullScreen 
           referrerPolicy="origin"
+          // --- OTIMIZAÇÃO: Atributos adicionados ---
           loading="lazy"
           onLoad={() => setIsPlayerLoading(false)}
           style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
@@ -210,6 +199,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                         <span className="episode-item-title">{details.title}</span>
                         <p className="episode-item-overview">Filme Completo</p>
                       </div>
+                      {/* --- Adiciona o componente do visualizador aqui --- */}
                       <div className="visualizer-container">
                         <AudioVisualizer />
                       </div>

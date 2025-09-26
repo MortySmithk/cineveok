@@ -1,14 +1,14 @@
-// CineVEO-Sites/cineveo-next/app/media/[type]/[slug]/page.tsx
+// cineveo-next/app/media/[type]/[slug]/page.tsx
 import { Metadata } from 'next';
 import MediaPageClient from './MediaPageClient';
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-// --- FUNÇÃO MODIFICADA PARA EXTRAIR O ID CORRETAMENTE ---
+// Função para extrair o ID do slug
 const getIdFromSlug = (slug: string) => {
     if (!slug) return null;
-    const match = slug.match(/-(\d+)/);
-    return match ? match[1] : null;
+    const parts = slug.split('-');
+    return parts[parts.length - 1];
 };
 
 export async function generateMetadata({ params }: { params: { type: string; slug: string } }): Promise<Metadata> {
