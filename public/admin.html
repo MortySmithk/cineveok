@@ -61,19 +61,22 @@
             <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
 
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                <h2 class="text-xl font-bold text-white mb-4">Relatórios de Links Abyss</h2>
+                <h2 class="text-xl font-bold text-white mb-4">Relatórios de Conteúdo</h2>
                 <div id="report-tabs" class="flex flex-wrap gap-3 border-b border-gray-700 pb-4 mb-4">
                     <button data-report-type="movies-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Filmes Sem Links Abyss (<span id="count-movies-no-links">...</span>)
+                        Filmes Sem Links (<span id="count-movies-no-links">...</span>)
                     </button>
-                    <button data-report-type="series-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Séries Sem Links Abyss (<span id="count-series-no-links">...</span>)
+                     <button data-report-type="movies-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Filmes Com Links (<span id="count-movies-with-links">...</span>)
                     </button>
-                    <button data-report-type="with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Conteúdo Com Links Abyss (<span id="count-with-links">...</span>)
+                    <button data-report-type="series-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Séries Com Links (<span id="count-series-with-links">...</span>)
+                    </button>
+                     <button data-report-type="episodes-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Episódios Com Links (<span id="count-episodes-with-links">...</span>)
                     </button>
                 </div>
-                <div id="report-results-container" class="space-y-3">
+                 <div id="report-results-container" class="space-y-3">
                     <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
                 </div>
             </div>
@@ -174,12 +177,13 @@
 
         const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
-        const ABYSS_DOMAIN = 'short.icu';
 
         let bulkImportData = {};
         let allMediaCache = [];
+        // INÍCIO DA MODIFICAÇÃO: Cache para episódios com links
+        let allEpisodesWithLinksCache = [];
+        // FIM DA MODIFICAÇÃO
 
-        // --- Mapeamento de todos os elementos da UI ---
         const ui = {
             loginScreen: document.getElementById('login-screen'),
             adminPanel: document.getElementById('admin-panel'),
@@ -193,9 +197,7 @@
             mediaForm: document.getElementById('media-form'),
             tmdbIdInput: document.getElementById('tmdb-id'),
             mediaTypeInput: document.getElementById('media-type'),
-            // INÍCIO DA MODIFICAÇÃO: Mapeamento do novo campo de input
             mediaTitleInput: document.getElementById('media-title-input'),
-            // FIM DA MODIFICAÇÃO
             forceFirestoreStatus: document.getElementById('force-firestore-status'),
             movieSection: document.getElementById('movie-section'),
             seriesSection: document.getElementById('series-section'),
@@ -217,7 +219,6 @@
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn')
         };
 
-        // Funções
         const showPanel = async (user) => {
             ui.userEmailSpan.textContent = user.email;
             ui.loginScreen.classList.add('hidden');
@@ -272,6 +273,24 @@
                 </div>
             `;
         }
+
+        // INÍCIO DA MODIFICAÇÃO: Nova função para criar item de lista de episódio
+        const createEpisodeListItemHTML = (episode) => {
+            return `
+                <div class="bg-gray-700 p-3 rounded-md">
+                    <div>
+                        <p class="font-semibold text-white">${episode.seriesTitle}</p>
+                        <p class="text-xs text-gray-400">Temporada ${episode.seasonNumber}, Episódio ${episode.episodeNumber}</p>
+                    </div>
+                    <div class="mt-3 flex items-center justify-end gap-2">
+                        <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" data-tmdb-id="${episode.seriesId}" data-tmdb-type="tv">
+                            Gerenciar Série
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+        // FIM DA MODIFICAÇÃO
         
         const displaySearchResults = (results) => {
             ui.catalogList.innerHTML = '';
@@ -285,9 +304,7 @@
         
         const prepareFormForEditing = async (id, type) => {
             resetForm();
-            // INÍCIO DA MODIFICAÇÃO: Atualiza o input de título
             ui.mediaTitleInput.value = "Carregando...";
-            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = id;
             ui.mediaTypeInput.value = type;
             ui.saveBtn.disabled = false;
@@ -301,9 +318,7 @@
                 const docSnap = await getDoc(firestoreDocRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
                 
-                // INÍCIO DA MODIFICAÇÃO: Prioriza o título do Firestore, senão usa o do TMDB
                 ui.mediaTitleInput.value = firestoreData.title || tmdbData.title || tmdbData.name;
-                // FIM DA MODIFICAÇÃO
                 
                 if (firestoreData.forceFirestore) {
                     ui.forceFirestoreStatus.textContent = 'Usando Apenas Firestore';
@@ -368,9 +383,7 @@
         
         const resetForm = () => {
             ui.mediaForm.reset();
-            // INÍCIO DA MODIFICAÇÃO: Limpa o input de título
             ui.mediaTitleInput.value = '';
-            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = '';
             ui.mediaTypeInput.value = '';
             ui.movieSection.classList.add('hidden');
@@ -402,12 +415,10 @@
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
             const type = ui.mediaTypeInput.value;
-            // INÍCIO DA MODIFICAÇÃO: Pega o título do input
             const title = ui.mediaTitleInput.value.trim();
 
             if (!id || !type) return alert('Nenhum item selecionado.');
             if (!title) return alert('O campo de título não pode estar vazio.');
-            // FIM DA MODIFICAÇÃO
 
             ui.saveBtn.querySelector('.btn-text').textContent = 'Salvando...';
             ui.saveBtn.querySelector('.loader').classList.remove('hidden');
@@ -422,9 +433,7 @@
                 const mediaData = { 
                     ...existingData, 
                     type: type === 'tv' ? 'series' : 'movie',
-                    // INÍCIO DA MODIFICAÇÃO: Salva o título do input
                     title: title
-                    // FIM DA MODIFICAÇÃO
                 };
 
                 if (type === 'movie') {
@@ -516,7 +525,6 @@
             alert('Links processados. Verifique os campos e salve.');
         };
 
-
         const populateFromBulkData = (seasonNumber) => {
             const seasonData = bulkImportData[seasonNumber];
             if (seasonData) {
@@ -532,34 +540,51 @@
             ui.bulkImportTextarea.value = lines.reverse().join('\n');
         };
 
-        const hasAbyssLink = (docData) => {
-            if (docData.type === 'movie' && Array.isArray(docData.urls)) {
-                return docData.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN));
-            }
-            if (docData.type === 'series' && docData.seasons) {
-                return Object.values(docData.seasons).some(season => 
-                    season && Array.isArray(season.episodes) && season.episodes.some(ep => 
-                        ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url && u.url.includes(ABYSS_DOMAIN))
-                    )
-                );
-            }
-            return false;
-        };
-
+        // INÍCIO DA MODIFICAÇÃO: Lógica de processamento de mídia e relatórios
         const loadAndProcessAllMedia = async () => {
             const mediaCollection = collection(firestore, 'media');
             try {
                 const querySnapshot = await getDocs(mediaCollection);
                 allMediaCache = [];
+                allEpisodesWithLinksCache = []; // Limpa o cache de episódios
+
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    allMediaCache.push({
+                    const cacheItem = {
                         id: doc.id,
                         type: data.type,
                         title: data.title,
-                        hasAbyssLink: hasAbyssLink(data),
-                        forceFirestore: data.forceFirestore || false
-                    });
+                        forceFirestore: data.forceFirestore || false,
+                        hasLinks: false, // Padrão
+                        episodesWithLinksCount: 0 // Padrão
+                    };
+
+                    if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.some(u => u && u.url)) {
+                        cacheItem.hasLinks = true;
+                    }
+
+                    if (data.type === 'series' && data.seasons) {
+                        let count = 0;
+                        Object.keys(data.seasons).forEach(seasonNumber => {
+                            const season = data.seasons[seasonNumber];
+                            if (season && Array.isArray(season.episodes)) {
+                                season.episodes.forEach(ep => {
+                                    if (ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url)) {
+                                        count++;
+                                        // Adiciona ao cache de episódios
+                                        allEpisodesWithLinksCache.push({
+                                            seriesId: doc.id,
+                                            seriesTitle: data.title,
+                                            seasonNumber: seasonNumber,
+                                            episodeNumber: ep.episode_number
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                        cacheItem.episodesWithLinksCount = count;
+                    }
+                    allMediaCache.push(cacheItem);
                 });
                 updateReportCounts();
             } catch (error) {
@@ -569,28 +594,35 @@
         };
 
         const updateReportCounts = () => {
-            const moviesNoLinks = allMediaCache.filter(m => m.type === 'movie' && !m.hasAbyssLink).length;
-            const seriesNoLinks = allMediaCache.filter(m => m.type === 'series' && !m.hasAbyssLink).length;
-            const withLinks = allMediaCache.filter(m => m.hasAbyssLink).length;
+            const moviesNoLinks = allMediaCache.filter(m => m.type === 'movie' && !m.hasLinks).length;
+            const moviesWithLinks = allMediaCache.filter(m => m.type === 'movie' && m.hasLinks).length;
+            const seriesWithLinks = allMediaCache.filter(m => m.type === 'series' && m.episodesWithLinksCount > 0).length;
+            const episodesWithLinks = allEpisodesWithLinksCache.length;
 
             document.getElementById('count-movies-no-links').textContent = moviesNoLinks;
-            document.getElementById('count-series-no-links').textContent = seriesNoLinks;
-            document.getElementById('count-with-links').textContent = withLinks;
+            document.getElementById('count-movies-with-links').textContent = moviesWithLinks;
+            document.getElementById('count-series-with-links').textContent = seriesWithLinks;
+            document.getElementById('count-episodes-with-links').textContent = episodesWithLinks;
         };
         
         const displayReportResults = (reportType) => {
             let filteredMedia = [];
             let reportTitle = "";
+            let useEpisodeRenderer = false; // Flag para usar o renderizador de episódios
 
             if (reportType === 'movies-no-links') {
-                filteredMedia = allMediaCache.filter(m => m.type === 'movie' && !m.hasAbyssLink);
-                reportTitle = "Filmes Sem Links Abyss";
-            } else if (reportType === 'series-no-links') {
-                filteredMedia = allMediaCache.filter(m => m.type === 'series' && !m.hasAbyssLink);
-                reportTitle = "Séries Sem Links Abyss";
-            } else if (reportType === 'with-links') {
-                filteredMedia = allMediaCache.filter(m => m.hasAbyssLink);
-                reportTitle = "Conteúdo Com Links Abyss";
+                filteredMedia = allMediaCache.filter(m => m.type === 'movie' && !m.hasLinks);
+                reportTitle = "Filmes Sem Links";
+            } else if (reportType === 'movies-with-links') {
+                filteredMedia = allMediaCache.filter(m => m.type === 'movie' && m.hasLinks);
+                reportTitle = "Filmes Com Links";
+            } else if (reportType === 'series-with-links') {
+                filteredMedia = allMediaCache.filter(m => m.type === 'series' && m.episodesWithLinksCount > 0);
+                reportTitle = "Séries Com Links";
+            } else if (reportType === 'episodes-with-links') {
+                filteredMedia = allEpisodesWithLinksCache;
+                reportTitle = "Episódios Com Links";
+                useEpisodeRenderer = true;
             }
 
             if (filteredMedia.length === 0) {
@@ -600,11 +632,12 @@
             
             let listHtml = `<div id="report-results-list" class="space-y-2 max-h-96 overflow-y-auto pr-2">`;
             filteredMedia.forEach(item => {
-                listHtml += createMediaListItemHTML(item);
+                listHtml += useEpisodeRenderer ? createEpisodeListItemHTML(item) : createMediaListItemHTML(item);
             });
             listHtml += `</div>`;
             ui.reportResultsContainer.innerHTML = listHtml;
         };
+        // FIM DA MODIFICAÇÃO
         
         const toggleForceFirestore = async (button) => {
             const id = button.dataset.tmdbId;
