@@ -115,7 +115,7 @@
                                 <div>
                                     <label for="media-title-input" class="block text-sm font-medium text-gray-400">Título (Editável)</label>
                                     <input type="text" id="media-title-input" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500" placeholder="Título do filme ou série">
-                                </div>
+                                    </div>
                                 <div id="force-firestore-status" class="hidden text-xs font-bold p-2 rounded-md"></div>
                             </div>
                         </div>
@@ -179,6 +179,7 @@
         let bulkImportData = {};
         let allMediaCache = [];
 
+        // --- Mapeamento de todos os elementos da UI ---
         const ui = {
             loginScreen: document.getElementById('login-screen'),
             adminPanel: document.getElementById('admin-panel'),
@@ -192,7 +193,9 @@
             mediaForm: document.getElementById('media-form'),
             tmdbIdInput: document.getElementById('tmdb-id'),
             mediaTypeInput: document.getElementById('media-type'),
+            // INÍCIO DA MODIFICAÇÃO: Mapeamento do novo campo de input
             mediaTitleInput: document.getElementById('media-title-input'),
+            // FIM DA MODIFICAÇÃO
             forceFirestoreStatus: document.getElementById('force-firestore-status'),
             movieSection: document.getElementById('movie-section'),
             seriesSection: document.getElementById('series-section'),
@@ -214,6 +217,7 @@
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn')
         };
 
+        // Funções
         const showPanel = async (user) => {
             ui.userEmailSpan.textContent = user.email;
             ui.loginScreen.classList.add('hidden');
@@ -238,22 +242,16 @@
                 ui.catalogList.innerHTML = '<p class="text-red-400">Erro ao buscar.</p>';
             }
         };
-        
-        // const createMediaListItemHTML = (item) => {
+
+        const createMediaListItemHTML = (item) => {
             const title = item.title || item.name;
             const year = (item.release_date || item.first_air_date || '').substring(0, 4);
             const typeLabel = item.type === 'series' || item.media_type === 'tv' ? 'Série' : 'Filme';
             const tmdbType = item.media_type || (item.type === 'series' ? 'tv' : 'movie');
             const isForced = item.forceFirestore === true;
-            const hasLinks = item.hasAbyssLink === true;
 
             const copyButtonHTML = tmdbType === 'tv' 
                 ? `<button class="copy-all-links-btn bg-cyan-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-cyan-700" data-tmdb-id="${item.id}">Copiar Links</button>` 
-                : '';
-            
-            // Só mostra o botão "Ver Links" se o item tiver links
-            const viewLinksButtonHTML = hasLinks
-                ? `<button class="view-links-btn bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-blue-700" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">Ver Links</button>`
                 : '';
 
             return `
@@ -262,8 +260,7 @@
                         <p class="font-semibold text-white">${title} ${year ? `(${year})` : ''}</p>
                         <p class="text-xs text-gray-400">${typeLabel} - ID: ${item.id}</p>
                     </div>
-                    <div class="mt-3 flex items-center justify-end gap-2 flex-wrap">
-                        ${viewLinksButtonHTML}
+                    <div class="mt-3 flex items-center justify-end gap-2">
                         ${copyButtonHTML} 
                         <button class="force-firestore-btn text-xs font-bold px-3 py-1 rounded transition ${isForced ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-300'}" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
                             ${isForced ? 'Forçando Firestore' : 'Padrão API'}
@@ -272,11 +269,11 @@
                             Gerenciar
                         </button>
                     </div>
-                    <div class="links-details-container mt-2 hidden p-2 bg-gray-800 rounded"></div>
                 </div>
             `;
         }
-        // const displaySearchResults = (results) => {
+        
+        const displaySearchResults = (results) => {
             ui.catalogList.innerHTML = '';
             results
                 .filter(r => r.media_type === 'movie' || r.media_type === 'tv')
@@ -288,7 +285,9 @@
         
         const prepareFormForEditing = async (id, type) => {
             resetForm();
+            // INÍCIO DA MODIFICAÇÃO: Atualiza o input de título
             ui.mediaTitleInput.value = "Carregando...";
+            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = id;
             ui.mediaTypeInput.value = type;
             ui.saveBtn.disabled = false;
@@ -302,7 +301,9 @@
                 const docSnap = await getDoc(firestoreDocRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
                 
+                // INÍCIO DA MODIFICAÇÃO: Prioriza o título do Firestore, senão usa o do TMDB
                 ui.mediaTitleInput.value = firestoreData.title || tmdbData.title || tmdbData.name;
+                // FIM DA MODIFICAÇÃO
                 
                 if (firestoreData.forceFirestore) {
                     ui.forceFirestoreStatus.textContent = 'Usando Apenas Firestore';
@@ -367,7 +368,9 @@
         
         const resetForm = () => {
             ui.mediaForm.reset();
+            // INÍCIO DA MODIFICAÇÃO: Limpa o input de título
             ui.mediaTitleInput.value = '';
+            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = '';
             ui.mediaTypeInput.value = '';
             ui.movieSection.classList.add('hidden');
@@ -399,10 +402,12 @@
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
             const type = ui.mediaTypeInput.value;
+            // INÍCIO DA MODIFICAÇÃO: Pega o título do input
             const title = ui.mediaTitleInput.value.trim();
 
             if (!id || !type) return alert('Nenhum item selecionado.');
             if (!title) return alert('O campo de título não pode estar vazio.');
+            // FIM DA MODIFICAÇÃO
 
             ui.saveBtn.querySelector('.btn-text').textContent = 'Salvando...';
             ui.saveBtn.querySelector('.loader').classList.remove('hidden');
@@ -417,7 +422,9 @@
                 const mediaData = { 
                     ...existingData, 
                     type: type === 'tv' ? 'series' : 'movie',
+                    // INÍCIO DA MODIFICAÇÃO: Salva o título do input
                     title: title
+                    // FIM DA MODIFICAÇÃO
                 };
 
                 if (type === 'movie') {
@@ -688,78 +695,8 @@
             }
         };
 
-        // const toggleLinksView = async (button) => {
-            const id = button.dataset.tmdbId;
-            const type = button.dataset.tmdbType;
-            const itemContainer = button.closest('.bg-gray-700');
-            const detailsContainer = itemContainer.querySelector('.links-details-container');
-
-            if (!detailsContainer.classList.contains('hidden')) {
-                detailsContainer.classList.add('hidden');
-                detailsContainer.innerHTML = '';
-                button.textContent = 'Ver Links';
-                return;
-            }
-
-            detailsContainer.classList.remove('hidden');
-            detailsContainer.innerHTML = '<div class="loader mx-auto my-2"></div>';
-            button.textContent = 'Ocultar Links';
-
-            try {
-                const docRef = doc(firestore, "media", id);
-                const docSnap = await getDoc(docRef);
-                if (!docSnap.exists()) {
-                    detailsContainer.innerHTML = '<p class="text-xs text-red-400">Dados não encontrados.</p>';
-                    return;
-                }
-
-                const data = docSnap.data();
-                let html = '';
-
-                if (type === 'movie') {
-                    if (data.urls && data.urls.length > 0) {
-                        html = data.urls.map(u => `
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="font-semibold text-gray-400">Link:</span>
-                                <input type="text" readonly value="${u.url}" class="flex-grow bg-gray-900 border-gray-700 text-gray-300 p-1 rounded text-xs">
-                            </div>
-                        `).join('');
-                    } else {
-                        html = '<p class="text-xs text-gray-400">Nenhum link de filme encontrado.</p>';
-                    }
-                } else if (type === 'tv') {
-                    if (data.seasons && Object.keys(data.seasons).length > 0) {
-                        const sortedSeasons = Object.keys(data.seasons).sort((a, b) => parseInt(a) - parseInt(b));
-                        sortedSeasons.forEach(seasonNum => {
-                            const season = data.seasons[seasonNum];
-                            html += `<h4 class="font-bold text-sm text-yellow-500 mt-2">Temporada ${seasonNum}</h4>`;
-                            if (season.episodes && season.episodes.length > 0) {
-                                const sortedEpisodes = season.episodes.sort((a,b) => a.episode_number - b.episode_number);
-                                sortedEpisodes.forEach(ep => {
-                                    const url = ep.urls?.[0]?.url || 'N/A';
-                                    html += `
-                                        <div class="flex items-center gap-2 text-xs mt-1">
-                                            <span class="font-semibold text-gray-400 w-10">EP ${ep.episode_number}:</span>
-                                            <input type="text" readonly value="${url}" class="flex-grow bg-gray-900 border-gray-700 text-gray-300 p-1 rounded text-xs">
-                                        </div>
-                                    `;
-                                });
-                            } else {
-                                html += '<p class="text-xs text-gray-400">Nenhum episódio encontrado para esta temporada.</p>';
-                            }
-                        });
-                    } else {
-                        html = '<p class="text-xs text-gray-400">Nenhuma temporada encontrada para esta série.</p>';
-                    }
-                }
-                detailsContainer.innerHTML = html;
-
-            } catch(error) {
-                console.error("Erro ao buscar detalhes dos links:", error);
-                detailsContainer.innerHTML = '<p class="text-xs text-red-400">Erro ao carregar links.</p>';
-            }
-        };
-        // document.addEventListener('DOMContentLoaded', () => {
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
                 if (user && ADMIN_UIDS.includes(user.uid)) {
                     showPanel(user);
@@ -776,12 +713,7 @@
             ui.catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             
             const universalClickListener = (e) => {
-                // const viewLinksButton = e.target.closest('.view-links-btn');
-                if (viewLinksButton) {
-                    toggleLinksView(viewLinksButton);
-                    return;
-                }
-                // const manageButton = e.target.closest('.manage-btn');
+                const manageButton = e.target.closest('.manage-btn');
                 if (manageButton) {
                     prepareFormForEditing(manageButton.dataset.tmdbId, manageButton.dataset.tmdbType);
                     return;
