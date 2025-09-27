@@ -413,6 +413,7 @@
             ui.movieUrlsList.appendChild(div);
         };
         
+        // INÍCIO DA MODIFICAÇÃO: Função de salvamento otimizada
         const handleMediaFormSubmit = async (e) => {
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
@@ -469,7 +470,8 @@
                 
                 await setDoc(docRef, mediaData, { merge: true });
                 
-                await loadAndProcessAllMedia();
+                // Em vez de recarregar TUDO, apenas atualiza o item em cache e a UI
+                updateCacheAndUI(id, mediaData);
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
@@ -483,6 +485,7 @@
                 ui.saveBtn.disabled = false;
             }
         };
+        // FIM DA MODIFICAÇÃO
 
         const handleBulkImport = () => {
             const text = ui.bulkImportTextarea.value.trim();
@@ -537,7 +540,6 @@
             ui.bulkImportTextarea.value = lines.reverse().join('\n');
         };
 
-        // INÍCIO DA MODIFICAÇÃO: Lógica de verificação de links
         const loadAndProcessAllMedia = async () => {
             const mediaCollection = collection(firestore, 'media');
             try {
@@ -552,8 +554,8 @@
                         type: data.type,
                         title: data.title,
                         forceFirestore: data.forceFirestore || false,
-                        hasLinks: false, // Critério geral para relatórios (qualquer link)
-                        meetsMp4Criteria: false, // Critério específico para o botão (só .mp4, sem domínios proibidos)
+                        hasLinks: false, 
+                        meetsMp4Criteria: false,
                         episodesWithLinksCount: 0
                     };
 
@@ -609,7 +611,6 @@
                 alert("Não foi possível carregar os dados para os relatórios.");
             }
         };
-        // FIM DA MODIFICAÇÃO
 
         const updateReportCounts = () => {
             const moviesNoLinks = allMediaCache.filter(m => m.type === 'movie' && !m.hasLinks).length;
@@ -623,6 +624,68 @@
             document.getElementById('count-episodes-with-links').textContent = episodesWithLinks;
         };
         
+        // INÍCIO DA MODIFICAÇÃO: Nova função para atualização rápida do cache e UI
+        const updateCacheAndUI = (id, mediaData) => {
+            let itemInCache = allMediaCache.find(item => item.id === id);
+
+            // Se for um item novo, cria o objeto base
+            if (!itemInCache) {
+                itemInCache = { id, type: mediaData.type };
+                allMediaCache.push(itemInCache);
+            }
+
+            // Atualiza as propriedades comuns
+            itemInCache.title = mediaData.title;
+            itemInCache.forceFirestore = mediaData.forceFirestore || false;
+
+            if (mediaData.type === 'movie') {
+                let hasAnyLink = false;
+                let hasMp4Link = false;
+                let hasForbiddenLink = false;
+
+                if (Array.isArray(mediaData.urls) && mediaData.urls.length > 0) {
+                     for (const urlData of mediaData.urls) {
+                        if (urlData && urlData.url) {
+                            hasAnyLink = true;
+                            const url = urlData.url.toLowerCase();
+                            if (url.endsWith('.mp4')) hasMp4Link = true;
+                            if (url.includes('abyss') || url.includes('short.icu') || url.includes('superflix')) hasForbiddenLink = true;
+                        }
+                    }
+                }
+                itemInCache.hasLinks = hasAnyLink;
+                itemInCache.meetsMp4Criteria = hasMp4Link && !hasForbiddenLink;
+            } else if (mediaData.type === 'series') {
+                // Remove episódios antigos desta série do cache global
+                allEpisodesWithLinksCache = allEpisodesWithLinksCache.filter(ep => ep.seriesId !== id);
+                
+                let count = 0;
+                if (mediaData.seasons) {
+                    Object.keys(mediaData.seasons).forEach(seasonNumber => {
+                        const season = mediaData.seasons[seasonNumber];
+                        if (season && Array.isArray(season.episodes)) {
+                             season.episodes.forEach(ep => {
+                                if (ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url)) {
+                                    count++;
+                                    // Adiciona os novos episódios ao cache global
+                                    allEpisodesWithLinksCache.push({
+                                        seriesId: id,
+                                        seriesTitle: mediaData.title,
+                                        seasonNumber: seasonNumber,
+                                        episodeNumber: ep.episode_number
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                itemInCache.episodesWithLinksCount = count;
+            }
+
+            updateReportCounts();
+        };
+        // FIM DA MODIFICAÇÃO
+
         const displayReportResults = (reportType) => {
             let filteredMedia = [];
             let reportTitle = "";
@@ -674,8 +737,6 @@
                 const cachedItem = allMediaCache.find(item => item.id == id);
                 if (cachedItem) {
                     cachedItem.forceFirestore = newStatus;
-                } else { 
-                    allMediaCache.push({ id, forceFirestore: newStatus });
                 }
 
                 button.textContent = newStatus ? 'Forçando Firestore' : 'Padrão API';
@@ -697,7 +758,6 @@
             }
         };
 
-        // INÍCIO DA MODIFICAÇÃO: Função de ação em massa com nova lógica e aviso
         const forceFirestoreForAllLinkedMovies = async () => {
             const confirmation = confirm("Você tem certeza que deseja ativar 'Forçar Firestore' para TODOS os filmes que possuem link .mp4 e que não sejam de domínios como abyss, short.icu ou superflix?");
             if (!confirmation) {
@@ -737,7 +797,6 @@
                 button.textContent = originalText;
             }
         };
-        // FIM DA MODIFICAÇÃO
 
         const copyAllSeriesLinksToClipboard = async (seriesId) => {
             if (!seriesId) return;
@@ -758,7 +817,7 @@
 
                 for (const seasonNumber of sortedSeasonNumbers) {
                     const season = firestoreData.seasons[seasonNumber];
-                    if (season && episodes && season.episodes.length > 0) {
+                    if (season && season.episodes && season.episodes.length > 0) {
                         outputText += `Temporada ${seasonNumber}\n`;
                         
                         const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
