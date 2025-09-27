@@ -76,7 +76,7 @@
                         Episódios Com Links (<span id="count-episodes-with-links">...</span>)
                     </button>
                 </div>
-                 <div id="report-results-container" class="space-y-3">
+                <div id="report-results-container" class="space-y-3">
                     <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
                 </div>
             </div>
@@ -180,9 +180,7 @@
 
         let bulkImportData = {};
         let allMediaCache = [];
-        // INÍCIO DA MODIFICAÇÃO: Cache para episódios com links
         let allEpisodesWithLinksCache = [];
-        // FIM DA MODIFICAÇÃO
 
         const ui = {
             loginScreen: document.getElementById('login-screen'),
@@ -273,8 +271,7 @@
                 </div>
             `;
         }
-
-        // INÍCIO DA MODIFICAÇÃO: Nova função para criar item de lista de episódio
+        
         const createEpisodeListItemHTML = (episode) => {
             return `
                 <div class="bg-gray-700 p-3 rounded-md">
@@ -290,7 +287,6 @@
                 </div>
             `;
         };
-        // FIM DA MODIFICAÇÃO
         
         const displaySearchResults = (results) => {
             ui.catalogList.innerHTML = '';
@@ -467,12 +463,8 @@
                 
                 await setDoc(docRef, mediaData, { merge: true });
                 
-                const updatedCacheItem = allMediaCache.find(item => item.id === id);
-                if (updatedCacheItem) {
-                    updatedCacheItem.title = mediaData.title;
-                } else {
-                     allMediaCache.push({ id: id, type: mediaData.type, title: mediaData.title });
-                }
+                // Recarrega os dados e atualiza os relatórios automaticamente
+                await loadAndProcessAllMedia();
                 
                 alert('Dados salvos com sucesso!');
                 resetForm();
@@ -540,13 +532,12 @@
             ui.bulkImportTextarea.value = lines.reverse().join('\n');
         };
 
-        // INÍCIO DA MODIFICAÇÃO: Lógica de processamento de mídia e relatórios
         const loadAndProcessAllMedia = async () => {
             const mediaCollection = collection(firestore, 'media');
             try {
                 const querySnapshot = await getDocs(mediaCollection);
                 allMediaCache = [];
-                allEpisodesWithLinksCache = []; // Limpa o cache de episódios
+                allEpisodesWithLinksCache = [];
 
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
@@ -555,8 +546,8 @@
                         type: data.type,
                         title: data.title,
                         forceFirestore: data.forceFirestore || false,
-                        hasLinks: false, // Padrão
-                        episodesWithLinksCount: 0 // Padrão
+                        hasLinks: false,
+                        episodesWithLinksCount: 0
                     };
 
                     if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.some(u => u && u.url)) {
@@ -571,7 +562,6 @@
                                 season.episodes.forEach(ep => {
                                     if (ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url)) {
                                         count++;
-                                        // Adiciona ao cache de episódios
                                         allEpisodesWithLinksCache.push({
                                             seriesId: doc.id,
                                             seriesTitle: data.title,
@@ -608,7 +598,7 @@
         const displayReportResults = (reportType) => {
             let filteredMedia = [];
             let reportTitle = "";
-            let useEpisodeRenderer = false; // Flag para usar o renderizador de episódios
+            let useEpisodeRenderer = false;
 
             if (reportType === 'movies-no-links') {
                 filteredMedia = allMediaCache.filter(m => m.type === 'movie' && !m.hasLinks);
@@ -637,7 +627,6 @@
             listHtml += `</div>`;
             ui.reportResultsContainer.innerHTML = listHtml;
         };
-        // FIM DA MODIFICAÇÃO
         
         const toggleForceFirestore = async (button) => {
             const id = button.dataset.tmdbId;
