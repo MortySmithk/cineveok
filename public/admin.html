@@ -113,9 +113,9 @@
                         <div>
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-400">Título</label>
-                                    <p id="media-title" class="text-lg font-semibold text-white mt-1">-</p>
-                                </div>
+                                    <label for="media-title-input" class="block text-sm font-medium text-gray-400">Título (Editável)</label>
+                                    <input type="text" id="media-title-input" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500" placeholder="Título do filme ou série">
+                                    </div>
                                 <div id="force-firestore-status" class="hidden text-xs font-bold p-2 rounded-md"></div>
                             </div>
                         </div>
@@ -193,7 +193,9 @@
             mediaForm: document.getElementById('media-form'),
             tmdbIdInput: document.getElementById('tmdb-id'),
             mediaTypeInput: document.getElementById('media-type'),
-            mediaTitle: document.getElementById('media-title'),
+            // INÍCIO DA MODIFICAÇÃO: Mapeamento do novo campo de input
+            mediaTitleInput: document.getElementById('media-title-input'),
+            // FIM DA MODIFICAÇÃO
             forceFirestoreStatus: document.getElementById('force-firestore-status'),
             movieSection: document.getElementById('movie-section'),
             seriesSection: document.getElementById('series-section'),
@@ -283,7 +285,9 @@
         
         const prepareFormForEditing = async (id, type) => {
             resetForm();
-            ui.mediaTitle.textContent = "Carregando...";
+            // INÍCIO DA MODIFICAÇÃO: Atualiza o input de título
+            ui.mediaTitleInput.value = "Carregando...";
+            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = id;
             ui.mediaTypeInput.value = type;
             ui.saveBtn.disabled = false;
@@ -292,11 +296,14 @@
                 const tmdbResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
                 if (!tmdbResponse.ok) throw new Error('Conteúdo não encontrado no TMDB.');
                 const tmdbData = await tmdbResponse.json();
-                ui.mediaTitle.textContent = tmdbData.title || tmdbData.name;
-
+                
                 const firestoreDocRef = doc(firestore, "media", id.toString());
                 const docSnap = await getDoc(firestoreDocRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
+                
+                // INÍCIO DA MODIFICAÇÃO: Prioriza o título do Firestore, senão usa o do TMDB
+                ui.mediaTitleInput.value = firestoreData.title || tmdbData.title || tmdbData.name;
+                // FIM DA MODIFICAÇÃO
                 
                 if (firestoreData.forceFirestore) {
                     ui.forceFirestoreStatus.textContent = 'Usando Apenas Firestore';
@@ -361,7 +368,9 @@
         
         const resetForm = () => {
             ui.mediaForm.reset();
-            ui.mediaTitle.textContent = '-';
+            // INÍCIO DA MODIFICAÇÃO: Limpa o input de título
+            ui.mediaTitleInput.value = '';
+            // FIM DA MODIFICAÇÃO
             ui.tmdbIdInput.value = '';
             ui.mediaTypeInput.value = '';
             ui.movieSection.classList.add('hidden');
@@ -393,8 +402,12 @@
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
             const type = ui.mediaTypeInput.value;
+            // INÍCIO DA MODIFICAÇÃO: Pega o título do input
+            const title = ui.mediaTitleInput.value.trim();
 
             if (!id || !type) return alert('Nenhum item selecionado.');
+            if (!title) return alert('O campo de título não pode estar vazio.');
+            // FIM DA MODIFICAÇÃO
 
             ui.saveBtn.querySelector('.btn-text').textContent = 'Salvando...';
             ui.saveBtn.querySelector('.loader').classList.remove('hidden');
@@ -409,7 +422,9 @@
                 const mediaData = { 
                     ...existingData, 
                     type: type === 'tv' ? 'series' : 'movie',
-                    title: ui.mediaTitle.textContent
+                    // INÍCIO DA MODIFICAÇÃO: Salva o título do input
+                    title: title
+                    // FIM DA MODIFICAÇÃO
                 };
 
                 if (type === 'movie') {
@@ -755,19 +770,17 @@
                 }
             });
 
-            // *** INÍCIO DA MODIFICAÇÃO: Ação do botão "X" dos episódios ***
             ui.episodesList.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-episode-btn');
                 if (removeBtn) {
                     const episodeRow = removeBtn.parentElement;
                     const urlInput = episodeRow.querySelector('.episode-url');
                     if (urlInput) {
-                        urlInput.value = ''; // Limpa o campo para garantir que não será salvo
-                        episodeRow.style.display = 'none'; // Esconde a linha do episódio da tela imediatamente
+                        urlInput.value = ''; 
+                        episodeRow.style.display = 'none'; 
                     }
                 }
             });
-            // *** FIM DA MODIFICAÇÃO ***
 
             ui.bulkImportBtn.addEventListener('click', () => {
                 const isHidden = ui.bulkImportTextarea.classList.contains('hidden');
