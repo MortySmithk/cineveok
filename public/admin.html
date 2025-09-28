@@ -413,7 +413,9 @@
             ui.movieUrlsList.appendChild(div);
         };
         
-        // INÍCIO DA MODIFICAÇÃO: Função de salvamento otimizada
+        // =================================================================================
+        // INÍCIO DA MODIFICAÇÃO: Função de salvamento corrigida para importação em massa
+        // =================================================================================
         const handleMediaFormSubmit = async (e) => {
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
@@ -447,30 +449,56 @@
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
-                    const seasonNumber = ui.seasonSelector.value;
-                    const newEpisodes = [];
+                    // Começa com os dados de temporadas já existentes no Firestore
+                    const seasonsToSave = existingData.seasons || {};
+
+                    // Mescla os dados da importação em massa. Isso irá adicionar/sobrescrever
+                    // as temporadas e episódios com base no texto colado.
+                    for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
+                        const newEpisodesForSeason = [];
+                        for (const [epNumber, url] of Object.entries(episodes)) {
+                            if (url) {
+                                newEpisodesForSeason.push({
+                                    episode_number: parseInt(epNumber),
+                                    urls: [{ quality: 'HD', url: url }]
+                                });
+                            }
+                        }
+                        
+                        if (!seasonsToSave[seasonNumber]) {
+                            seasonsToSave[seasonNumber] = {};
+                        }
+                        seasonsToSave[seasonNumber].episodes = newEpisodesForSeason;
+                    }
+
+                    // Agora, processa a temporada ATUALMENTE VISÍVEL no formulário.
+                    // Isso captura quaisquer edições manuais e garante que elas sejam salvas,
+                    // sobrescrevendo os dados da importação em massa apenas para esta temporada.
+                    const currentSeasonNumber = ui.seasonSelector.value;
+                    const currentSeasonEpisodesFromForm = [];
                     document.querySelectorAll('.episode-url').forEach(input => {
                         const url = input.value.trim();
                         if (url) {
-                            newEpisodes.push({
+                            currentSeasonEpisodesFromForm.push({
                                 episode_number: parseInt(input.dataset.episodeNumber),
                                 urls: [{ quality: 'HD', url: url }]
                             });
                         }
                     });
 
-                    if (!mediaData.seasons) mediaData.seasons = {};
-                    const seasonName = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
-                    mediaData.seasons[seasonNumber] = { 
-                        ...mediaData.seasons[seasonNumber], 
-                        episodes: newEpisodes,
-                        name: seasonName
-                    };
+                    if (!seasonsToSave[currentSeasonNumber]) {
+                        seasonsToSave[currentSeasonNumber] = {};
+                    }
+                    
+                    seasonsToSave[currentSeasonNumber].episodes = currentSeasonEpisodesFromForm;
+                    seasonsToSave[currentSeasonNumber].name = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
+                    
+                    // Atribui o objeto final de temporadas para ser salvo
+                    mediaData.seasons = seasonsToSave;
                 }
                 
                 await setDoc(docRef, mediaData, { merge: true });
                 
-                // Em vez de recarregar TUDO, apenas atualiza o item em cache e a UI
                 updateCacheAndUI(id, mediaData);
                 
                 alert('Dados salvos com sucesso!');
@@ -485,7 +513,9 @@
                 ui.saveBtn.disabled = false;
             }
         };
+        // =================================================================================
         // FIM DA MODIFICAÇÃO
+        // =================================================================================
 
         const handleBulkImport = () => {
             const text = ui.bulkImportTextarea.value.trim();
@@ -624,17 +654,14 @@
             document.getElementById('count-episodes-with-links').textContent = episodesWithLinks;
         };
         
-        // INÍCIO DA MODIFICAÇÃO: Nova função para atualização rápida do cache e UI
         const updateCacheAndUI = (id, mediaData) => {
             let itemInCache = allMediaCache.find(item => item.id === id);
 
-            // Se for um item novo, cria o objeto base
             if (!itemInCache) {
                 itemInCache = { id, type: mediaData.type };
                 allMediaCache.push(itemInCache);
             }
 
-            // Atualiza as propriedades comuns
             itemInCache.title = mediaData.title;
             itemInCache.forceFirestore = mediaData.forceFirestore || false;
 
@@ -656,7 +683,6 @@
                 itemInCache.hasLinks = hasAnyLink;
                 itemInCache.meetsMp4Criteria = hasMp4Link && !hasForbiddenLink;
             } else if (mediaData.type === 'series') {
-                // Remove episódios antigos desta série do cache global
                 allEpisodesWithLinksCache = allEpisodesWithLinksCache.filter(ep => ep.seriesId !== id);
                 
                 let count = 0;
@@ -667,7 +693,6 @@
                              season.episodes.forEach(ep => {
                                 if (ep && Array.isArray(ep.urls) && ep.urls.some(u => u && u.url)) {
                                     count++;
-                                    // Adiciona os novos episódios ao cache global
                                     allEpisodesWithLinksCache.push({
                                         seriesId: id,
                                         seriesTitle: mediaData.title,
@@ -684,7 +709,6 @@
 
             updateReportCounts();
         };
-        // FIM DA MODIFICAÇÃO
 
         const displayReportResults = (reportType) => {
             let filteredMedia = [];
