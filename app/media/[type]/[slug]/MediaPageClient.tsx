@@ -40,7 +40,7 @@ interface MediaDetails {
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 const CINEVEO_CHANNEL_ID = "cineveo_oficial";
 
-const getIdFromSlug = (slug: string) => {
+const getIdFromSlug = (slug: string): string | null => { // Added return type for clarity
     if (!slug) return null;
     const parts = slug.split('-');
     return parts[parts.length - 1];
@@ -107,36 +107,28 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
     const statsRef = doc(dbFeatures, 'media_stats', id);
     
-    // Aumenta a contagem de visualizações de forma atômica.
-    // Isso é mais seguro e eficiente para contadores.
-    // Usamos uma transação para criar o documento com valores iniciais se ele não existir.
     runTransaction(dbFeatures, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
-            // Se o documento não existe, cria com 1 view e 0 likes/dislikes.
             transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
         } else {
-            // Se o documento já existe, apenas incrementa as visualizações.
             transaction.update(statsRef, { views: increment(1) });
         }
     }).catch(console.error);
 
-    // Ouve as atualizações de stats (visualizações, likes, etc.) em tempo real.
     const unsubStats = onSnapshot(statsRef, (doc) => {
         const data = doc.data();
         setStats({
-            views: data?.views || 0, // Inicia com 0, o banco de dados corrigirá para o valor real
+            views: data?.views || 0,
             likes: data?.likes || 0,
             dislikes: data?.dislikes || 0,
         });
     });
 
-    // Ouve as atualizações de inscritos do canal.
     const unsubChannel = onSnapshot(doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID), (doc) => {
         setSubscribers(doc.data()?.subscribers || 0);
     });
 
-    // Limpa os listeners quando o componente é desmontado para evitar vazamentos de memória.
     return () => {
       unsubStats();
       unsubChannel();
@@ -173,9 +165,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // Define a URL do player para séries
+  // Define a URL do player para séries e salva o progresso
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && details?.imdb_id) {
+    // AQUI ESTÁ A CORREÇÃO: Verificamos se 'id' não é nulo antes de usá-lo.
+    if (type === 'tv' && activeEpisode && details?.imdb_id && id) {
         setIsPlayerLoading(true);
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`https://player.cineveo.workers.dev/series/${details.imdb_id}/${season}/${episode}`);
@@ -197,7 +190,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return `${hours}h ${remainingMins}m`;
   };
 
-  // --- FUNÇÕES DE INTERAÇÃO CORRIGIDAS ---
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!id) return;
@@ -218,21 +210,21 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             let newUserStatus = null;
 
             if (action === 'like') {
-                if (currentStatus === 'liked') { // Desfazer o like
+                if (currentStatus === 'liked') {
                     newLikes -= 1;
                     newUserStatus = null;
-                } else { // Dar like (ou trocar de dislike para like)
+                } else {
                     newLikes += 1;
                     if (currentStatus === 'disliked') {
                         newDislikes -= 1;
                     }
                     newUserStatus = 'liked';
                 }
-            } else { // Ação de dislike
-                if (currentStatus === 'disliked') { // Desfazer o dislike
+            } else {
+                if (currentStatus === 'disliked') {
                     newDislikes -= 1;
                     newUserStatus = null;
-                } else { // Dar dislike (ou trocar de like para dislike)
+                } else {
                     newDislikes += 1;
                     if (currentStatus === 'liked') {
                         newLikes -= 1;
