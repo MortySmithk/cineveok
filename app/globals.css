@@ -294,7 +294,7 @@ main { padding-top: 68px; }
 
 /* --- PÁGINA DE DETALHES --- */
 .details-main-content { padding-top: 80px; }
-.details-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2.5rem; margin-bottom: 3rem; align-items: start;}
+.details-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2.5rem; align-items: start;}
 .details-poster img { width: 100%; height: auto; border-radius: 8px; }
 .details-info h1 { font-size: 2.5rem; margin-bottom: 1rem; line-height: 1.2; }
 .details-meta-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 1.5rem; color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem; }
@@ -308,9 +308,64 @@ main { padding-top: 68px; }
 .btn-primary:hover { opacity: 0.8; }
 .btn-secondary { background-color: var(--card-color); color: var(--text-primary); border: 1px solid var(--border-color); }
 .btn-secondary:hover { background-color: var(--border-color); }
-.synopsis-box { background-color: var(--card-color); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); }
+
+/* --- NOVOS ESTILOS: Sinopse, Canal e Ações --- */
+.details-interactions-section {
+  padding: 1.5rem 0;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+.channel-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.channel-details { display: flex; align-items: center; gap: 1rem; }
+.channel-avatar { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; }
+.channel-name { font-size: 1.1rem; font-weight: 700; }
+.channel-subs { font-size: 0.9rem; color: var(--text-secondary); }
+.subscribe-btn {
+  background-color: var(--accent-red);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.subscribe-btn:hover { opacity: 0.8; }
+.subscribe-btn.subscribed { background-color: var(--border-color); }
+
+.media-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--card-color);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+.views-info { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); }
+.like-dislike-group { display: flex; align-items: center; background-color: #000; border-radius: 20px; }
+.action-btn {
+  background: none; border: none; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+.action-btn:hover { color: var(--text-primary); }
+.action-btn.active { color: var(--accent-yellow); }
+.action-btn:first-child { border-right: 1px solid var(--border-color); }
+
+.synopsis-box { background-color: var(--card-color); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 2rem; }
 .synopsis-box h3 { font-size: 1.2rem; margin-bottom: 0.75rem; }
 .synopsis-box p { color: var(--text-secondary); line-height: 1.7; }
+/* --- FIM DOS NOVOS ESTILOS --- */
+
 .genre-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
 .genre-tag {
     background-color: var(--border-color); padding: 0.4rem 0.8rem; border-radius: 16px;
@@ -531,6 +586,10 @@ main { padding-top: 68px; }
   .details-info h1 { font-size: 1.8rem; text-align: center; }
   .details-meta-bar { justify-content: center; font-size: 0.8rem; gap: 1rem;}
   .action-buttons-desktop { display: none; }
+
+  /* AJUSTES: Canal e Ações no mobile */
+  .channel-info { flex-direction: column; gap: 1rem; text-align: center;}
+  .media-actions-bar { justify-content: center; }
   
   /* ESTILOS DO NOVO SELETOR DE EPISÓDIOS */
   .episodes-header {

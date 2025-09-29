@@ -4,12 +4,18 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
+import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
+
+import { useAuth } from '@/app/components/AuthProvider';
+import { dbFeatures } from '@/app/firebase-features';
 
 import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
+import LikeIcon from '@/app/components/icons/LikeIcon'; // Novo
+import DislikeIcon from '@/app/components/icons/DislikeIcon'; // Novo
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
-import AudioVisualizer from '@/app/components/AudioVisualizer'; // Importa o novo componente
+import AudioVisualizer from '@/app/components/AudioVisualizer';
 
 // --- Interfaces (sem alterações) ---
 interface Genre { id: number; name: string; }
@@ -32,6 +38,7 @@ interface MediaDetails {
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
+const CINEVEO_CHANNEL_ID = "cineveo_oficial";
 
 const getIdFromSlug = (slug: string) => {
     if (!slug) return null;
@@ -39,11 +46,19 @@ const getIdFromSlug = (slug: string) => {
     return parts[parts.length - 1];
 };
 
+// --- NOVA FUNÇÃO HELPER ---
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return num.toString();
+};
+
 export default function MediaPageClient({ params }: { params: { type: string; slug: string } }) {
   const type = params.type as 'movie' | 'tv';
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
+  const { user } = useAuth();
   const { saveProgress, getProgress } = useContinueWatching();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -53,10 +68,15 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  
-  // --- OTIMIZAÇÃO: Novo estado para controlar o carregamento do iframe ---
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
+  
+  // --- NOVOS ESTADOS PARA AS FUNCIONALIDADES ---
+  const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
+  const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
+  const [subscribers, setSubscribers] = useState(0);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
+  // Efeito para buscar dados do TMDB e definir o player inicial
   useEffect(() => {
     if (!id || !type) return;
     const fetchData = async () => {
@@ -65,24 +85,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       try {
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
         const data = detailsResponse.data;
-        const mediaDetails: MediaDetails = {
-          ...data,
-          title: data.title || data.name,
-          release_date: data.release_date || data.first_air_date,
-          imdb_id: data.external_ids?.imdb_id,
-        };
-        setDetails(mediaDetails);
-
-        const title = mediaDetails.title;
-        const typeText = type === 'movie' ? 'Filme Completo' : 'Série Completa';
-        document.title = `Assistindo ${title} (${typeText}) - CineVEO`;
-
-        if (type === 'movie' && mediaDetails.id) {
-          setIsPlayerLoading(true); // Reseta o loading ao carregar
-          setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${mediaDetails.id}`);
-          saveProgress({ mediaType: 'movie', tmdbId: id, title: mediaDetails.title, poster_path: mediaDetails.poster_path });
+        setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
+        if (type === 'movie' && data.id) {
+          setIsPlayerLoading(true);
+          setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
+          saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
         }
-        
         if (type === 'tv') {
           const progress = getProgress('tv', id);
           const startSeason = progress?.progress?.season || 1;
@@ -90,13 +98,65 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           setSelectedSeason(startSeason);
           setActiveEpisode({ season: startSeason, episode: startEpisode });
         }
-      } catch (error) {
-        setStatus("Não foi possível carregar os detalhes.");
-      }
+      } catch (error) { setStatus("Não foi possível carregar os detalhes."); }
     };
     fetchData();
   }, [id, type, getProgress, saveProgress]);
 
+  // Efeito para incrementar visualizações e ouvir dados em tempo real do Firestore
+  useEffect(() => {
+    if (!id) return;
+
+    // Incrementa a visualização
+    const viewRef = doc(dbFeatures, 'media_stats', id);
+    runTransaction(dbFeatures, async (transaction) => {
+      transaction.set(viewRef, { views: increment(1) }, { merge: true });
+    }).catch(console.error);
+    
+    // Ouve as atualizações de stats do conteúdo
+    const unsubStats = onSnapshot(doc(dbFeatures, "media_stats", id), (doc) => {
+        const data = doc.data();
+        setStats({
+            views: data?.views || 1,
+            likes: data?.likes || 0,
+            dislikes: data?.dislikes || 0,
+        });
+    });
+
+    // Ouve as atualizações de inscritos do canal
+    const unsubChannel = onSnapshot(doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID), (doc) => {
+        setSubscribers(doc.data()?.subscribers || 0);
+    });
+
+    return () => {
+      unsubStats();
+      unsubChannel();
+    };
+  }, [id]);
+  
+  // Efeito para verificar o status de like e inscrição do usuário logado
+  useEffect(() => {
+      if (!id || !user) {
+          setUserLikeStatus(null);
+          setIsSubscribed(false);
+          return;
+      };
+
+      const unsubUserInteraction = onSnapshot(doc(dbFeatures, `users/${user.uid}/interactions`, id), (doc) => {
+          setUserLikeStatus(doc.data()?.status || null);
+      });
+      
+      const unsubUserSubscription = onSnapshot(doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
+          setIsSubscribed(doc.exists());
+      });
+
+      return () => {
+          unsubUserInteraction();
+          unsubUserSubscription();
+      };
+  }, [id, user]);
+
+  // Busca episódios quando a temporada muda
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) return;
     const fetchSeasonData = async () => {
@@ -104,18 +164,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         setSeasonEpisodes(seasonResponse.data.episodes);
-      } catch (error) {
-        setSeasonEpisodes([]);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch (error) { setSeasonEpisodes([]);
+      } finally { setIsLoading(false); }
     };
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
+  // Define a URL do player para séries
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
-      setIsPlayerLoading(true); // Reseta o loading ao trocar de episódio
+      setIsPlayerLoading(true);
       const { season, episode } = activeEpisode;
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
       saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
@@ -135,74 +193,125 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return `${hours}h ${remainingMins}m`;
   };
 
+  // --- NOVAS FUNÇÕES DE INTERAÇÃO ---
+  const handleLikeDislike = async (action: 'like' | 'dislike') => {
+    if (!user) { alert("Você precisa estar logado para avaliar."); return; }
+    if (!id) return;
+
+    const statsRef = doc(dbFeatures, 'media_stats', id);
+    const userInteractionRef = doc(dbFeatures, `users/${user.uid}/interactions`, id);
+
+    await runTransaction(dbFeatures, async (transaction) => {
+      const userInteractionDoc = await transaction.get(userInteractionRef);
+      const currentStatus = userInteractionDoc.data()?.status;
+
+      const newStats = { likes: increment(0), dislikes: increment(0) };
+      let newUserStatus = null;
+
+      if (action === 'like') {
+          if (currentStatus === 'liked') { // Clicou no like de novo para remover
+              newStats.likes = increment(-1);
+              newUserStatus = null;
+          } else {
+              newStats.likes = increment(1);
+              if(currentStatus === 'disliked') newStats.dislikes = increment(-1);
+              newUserStatus = 'liked';
+          }
+      } else { // dislike
+          if (currentStatus === 'disliked') { // Clicou no dislike de novo para remover
+              newStats.dislikes = increment(-1);
+              newUserStatus = null;
+          } else {
+              newStats.dislikes = increment(1);
+              if(currentStatus === 'liked') newStats.likes = increment(-1);
+              newUserStatus = 'disliked';
+          }
+      }
+      
+      transaction.set(statsRef, newStats, { merge: true });
+      if (newUserStatus) {
+        transaction.set(userInteractionRef, { status: newUserStatus });
+      } else {
+        transaction.delete(userInteractionRef);
+      }
+    });
+  };
+
+  const handleSubscribe = async () => {
+    if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
+    
+    const channelRef = doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID);
+    const subscriptionRef = doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID);
+    
+    await runTransaction(dbFeatures, async (transaction) => {
+        const subscriptionDoc = await transaction.get(subscriptionRef);
+        if (subscriptionDoc.exists()) {
+            transaction.update(channelRef, { subscribers: increment(-1) });
+            transaction.delete(subscriptionRef);
+        } else {
+            transaction.set(channelRef, { subscribers: increment(1) }, { merge: true });
+            transaction.set(subscriptionRef, { subscribedAt: new Date() });
+        }
+    });
+  };
+
+
   if (isLoading && !details) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
   }
   if (!details) {
     return <div className="loading-container">{status}</div>;
   }
-
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': type === 'movie' ? 'Movie' : 'TVSeries',
-    'name': details.title, 'description': details.overview, 'image': `https://image.tmdb.org/t/p/original${details.poster_path}`,
-    'url': typeof window !== 'undefined' ? window.location.href : '', 'datePublished': details.release_date,
-    'aggregateRating': { '@type': 'AggregateRating', 'ratingValue': details.vote_average.toFixed(1), 'bestRating': '10', 'ratingCount': details.id },
-    'director': { '@type': 'Person', 'name': 'Diretor do Filme' }
-  };
-
+  
   const PlayerContent = () => (
     <div className="player-container">
-      {/* --- OTIMIZAÇÃO: Mostra o spinner enquanto o isPlayerLoading for true --- */}
-      {isPlayerLoading && (
-        <div className="player-loader">
-          <div className="spinner"></div>
-          <span>Carregando player...</span>
-        </div>
-      )}
+      {isPlayerLoading && <div className="player-loader"><div className="spinner"></div><span>Carregando player...</span></div>}
       {activeStreamUrl ? (
-        <iframe 
-          key={activeStreamUrl} 
-          src={activeStreamUrl} 
-          title={`CineVEO Player - ${details.title}`} 
-          allow="autoplay; encrypted-media" 
-          allowFullScreen 
-          referrerPolicy="origin"
-          // --- OTIMIZAÇÃO: Atributos adicionados ---
-          loading="lazy"
-          onLoad={() => setIsPlayerLoading(false)}
-          style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
-        ></iframe>
-      ) : (
-        <div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>
-      )}
+        <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin" loading="lazy" onLoad={() => setIsPlayerLoading(false)} style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}></iframe>
+      ) : (<div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>)}
     </div>
   );
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      
       <div className="media-page-layout">
         {type === 'movie' && (
           <section className="series-watch-section">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
+                {/* SEÇÃO DE INTERAÇÕES ABAIXO DO PLAYER */}
+                <div className="details-interactions-section">
+                    <div className="channel-info">
+                        <div className="channel-details">
+                            <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
+                            <div>
+                                <h3 className="channel-name">CineVEO Oficial</h3>
+                                <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
+                            </div>
+                        </div>
+                        <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
+                            {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
+                        </button>
+                    </div>
+                    <div className="media-actions-bar">
+                        <span className="views-info">{formatNumber(stats.views)} visualizações</span>
+                        <div className="like-dislike-group">
+                            <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
+                                <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
+                            </button>
+                            <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
+                                <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
+                            </button>
+                        </div>
+                    </div>
+                </div>
               </div>
               <div className="episodes-list-wrapper">
                   <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
-                      <div className="episode-item-thumbnail">
-                        <Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} />
-                      </div>
-                      <div className="episode-item-info">
-                        <span className="episode-item-title">{details.title}</span>
-                        <p className="episode-item-overview">Filme Completo</p>
-                      </div>
-                      {/* --- Adiciona o componente do visualizador aqui --- */}
-                      <div className="visualizer-container">
-                        <AudioVisualizer />
-                      </div>
+                      <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
+                      <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
+                      <div className="visualizer-container"><AudioVisualizer /></div>
                   </div>
               </div>
             </div>
@@ -214,24 +323,43 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
+                 {/* SEÇÃO DE INTERAÇÕES ABAIXO DO PLAYER */}
+                 <div className="details-interactions-section">
+                    <div className="channel-info">
+                        <div className="channel-details">
+                            <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
+                            <div>
+                                <h3 className="channel-name">CineVEO Oficial</h3>
+                                <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
+                            </div>
+                        </div>
+                        <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
+                            {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
+                        </button>
+                    </div>
+                    <div className="media-actions-bar">
+                        <span className="views-info">{formatNumber(stats.views)} visualizações</span>
+                        <div className="like-dislike-group">
+                            <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
+                                <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
+                            </button>
+                            <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
+                                <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
+                            </button>
+                        </div>
+                    </div>
+                </div>
               </div>
               <div className="episodes-list-wrapper">
                 <div className="episodes-header">
-                  <select className="season-selector focusable" value={selectedSeason} 
-                    onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); handleEpisodeClick(newSeason, 1); }}>
+                  <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); handleEpisodeClick(newSeason, 1); }}>
                     {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
                   </select>
                   <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
                 </div>
                 <div className="episode-list-desktop">
                   {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                  {!isLoading && seasonEpisodes.map(ep => (
-                    <button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
-                      <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
-                      <div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div>
-                      <div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div>
-                    </button>
-                  ))}
+                  {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
                 </div>
                 <div className="episode-grid-mobile">
                   {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
@@ -248,15 +376,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
               <div className="details-poster"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
               <div className="details-info">
                 <h1>{details.title}</h1>
-                <div className="details-meta-bar">
-                  <span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span>
-                  <span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span>
-                  <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
-                  {type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}
-                </div>
-                <div className="action-buttons-desktop">
-                  {details.imdb_id && <a href={`https://www.imdb.com/title/${details.imdb_id}`} target="_blank" rel="noopener noreferrer" className='btn-secondary focusable'>IMDb</a>}
-                </div>
+                <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
                 <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
               </div>
             </div>
@@ -264,13 +384,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <section className="cast-section">
               <h2>Elenco Principal</h2>
               <div className="cast-grid">
-                {details.credits?.cast.slice(0, 10).map(member => (
-                  <div key={member.id} className='cast-member'>
-                    <div className='cast-member-img'>{member.profile_path ? (<Image src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div>
-                    <strong>{member.name}</strong>
-                    <span>{member.character}</span>
-                  </div>
-                ))}
+                {details.credits?.cast.slice(0, 10).map(member => (<div key={member.id} className='cast-member'><div className='cast-member-img'>{member.profile_path ? (<Image src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div><strong>{member.name}</strong><span>{member.character}</span></div>))}
               </div>
             </section>
           </div>
