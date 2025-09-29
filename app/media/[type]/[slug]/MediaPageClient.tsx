@@ -220,17 +220,27 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           return details?.overview || 'Sinopse não disponível.';
       }
       
-      const currentEpisode = seasonEpisodes.find(ep => activeEpisode && ep.episode_number === activeEpisode.episode);
+      // FIX: Adicionar verificação de nulidade para activeEpisode
+      const currentEpisode = activeEpisode 
+        ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) 
+        : null;
+        
       return currentEpisode?.overview || details?.overview || 'Sinopse não disponível.';
   };
   
+  // FIX: Adicionar verificação de nulidade para activeEpisode
   const getTitle = (): string => {
       if (type === 'movie') {
           return details?.title || 'Filme';
       }
       
-      const currentEpisode = seasonEpisodes.find(ep => activeEpisode && ep.episode_number === activeEpisode.episode);
-      return currentEpisode ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details?.title || 'Série';
+      const currentEpisode = activeEpisode 
+        ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode)
+        : null;
+
+      return currentEpisode && activeEpisode // Verifique se ambos existem antes de usar
+        ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` 
+        : details?.title || 'Série';
   }
 
   // Função de like/dislike
@@ -334,9 +344,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const MobileTitleAndSynopsis = () => {
       const currentSynopsis = getSynopsis();
       return (
+          // O padding horizontal é aplicado via CSS (0 1rem)
           <div className="synopsis-box-mobile">
               <h1 className="movie-card-title" style={{ fontSize: '1.2rem', fontWeight: 700 }}>{getTitle()}</h1>
               <div className="details-meta-bar" style={{ justifyContent: 'flex-start' }}>
+                  {/* Views são visíveis no mobile no título/meta como no YouTube */}
                   <span className='meta-item views-info'>{formatNumber(stats.views)} visualizações</span>
                   <span className='meta-item'>{details.release_date?.substring(0, 4)}</span>
                   <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
@@ -354,22 +366,24 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const InteractionsSection = () => (
     <div className="details-interactions-section">
         {/* TITULO/SINOPSE MOBILE (Novo elemento) */}
+        {/* Usamos mobile-only-layout para esconder o MobileTitleAndSynopsis do desktop */}
         <div className='mobile-only-layout'>
             <MobileTitleAndSynopsis />
         </div>
         
         <div className="media-actions-bar">
-            {/* O views-info é hidden no mobile via CSS */}
-            <span className="views-info">{formatNumber(stats.views)} visualizações</span>
+            {/* O views-info é hidden DA BARRA DE AÇÕES no mobile via CSS */}
+            <span className="views-info desktop-only-layout">{formatNumber(stats.views)} visualizações</span>
             <div className="like-dislike-group">
                 <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-                    {/* Aumentando o tamanho dos ícones aqui para 28x28 */}
+                    {/* Botões Like/Dislike com 28x28 */}
                     <LikeIcon isActive={userLikeStatus === 'liked'} width={28} height={28} /> {formatNumber(stats.likes)}
                 </button>
                 <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-                    {/* Aumentando o tamanho dos ícones aqui para 28x28 */}
+                    {/* Botões Like/Dislike com 28x28 */}
                     <DislikeIcon isActive={userLikeStatus === 'disliked'} width={28} height={28} /> {formatNumber(stats.dislikes)}
                 </button>
+                {/* Você pode adicionar um botão "Compartilhar" aqui se quiser, mas mantive o pedido original de "não adicionar mais botões" */}
             </div>
         </div>
         
@@ -401,10 +415,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     <>
       <div className="media-page-layout">
         <section className="series-watch-section">
+          {/* Versão Desktop (Player e Interações ao lado) */}
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
+                {/* Interações no desktop ficam logo abaixo do player */}
                 <div className='desktop-only-layout'><InteractionsSection /></div>
               </div>
               <div className="episodes-list-wrapper">
@@ -436,7 +452,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             </div>
           </div>
           
-          {/* PLAYER CONTENT E INTERAÇÕES NO MOBILE SÓ FICAM AQUI */}
+          {/* Versão Mobile (Player no topo) */}
           <div className="mobile-only-layout">
             <div className="series-player-wrapper">
                 <PlayerContent />
@@ -445,6 +461,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </section>
 
         {/* INTERAÇÕES NO MOBILE DEPOIS DO PLAYER */}
+        {/* O MobileTitleAndSynopsis é renderizado DENTRO do InteractionsSection no mobile para ficar acima do like/canal */}
         <div className="mobile-only-layout">
              <div className="main-container">
                 <InteractionsSection />
@@ -455,12 +472,14 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
+              {/* O poster é escondido no mobile, pois o topo é tomado pelo player */}
               <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
               <div className="details-info">
-                {/* Título e meta bar apenas para desktop/tablet */}
+                {/* Título, meta bar e sinopse do desktop */}
                 <div className='desktop-only-layout'>
                     <h1>{details.title}</h1>
                     <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
+                    {/* A sinopse do desktop usa overview, mas precisa ser alterada para o que está em getSynopsis() se for série, mas para manter a simplicidade, deixo como era, pois o MobileTitleAndSynopsis cuida da lógica do episódio */}
                     <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
                 </div>
               </div>

@@ -553,8 +553,8 @@ main { padding-top: 68px; }
 
 /* Telas Pequenas (Celulares) */
 @media (max-width: 768px) {
-  .desktop-only-layout { display: none; }
-  .mobile-only-layout { display: block; }
+  .desktop-only-layout { display: none !important; }
+  .mobile-only-layout { display: block !important; }
   
   main { padding-top: 0 !important; } /* Remove padding do main no mobile */
 
@@ -627,12 +627,14 @@ main { padding-top: 68px; }
   .details-interactions-section { border-top: none; border-bottom: none; }
   /* Reorganiza a seção de interações no mobile */
   .media-actions-bar {
-    order: 1; /* Coloca a barra de ações depois do canal */
+    order: 2; /* Coloca a barra de ações depois do título/sinopse mobile */
     background-color: transparent;
     padding: 0;
     border-radius: 0;
     justify-content: flex-start; /* Alinha à esquerda */
     gap: 0.5rem; /* Reduz o gap */
+    width: 100%;
+    margin-bottom: 1rem;
   }
   .views-info { border: none; padding: 0; margin: 0; display: none; } /* Oculta visualizações da barra de ações */
   
@@ -640,7 +642,7 @@ main { padding-top: 68px; }
   .like-dislike-group { 
     background-color: var(--card-color); 
     border-radius: 20px;
-    padding: 0.5rem 0.5rem;
+    padding: 0.2rem 0.5rem;
     gap: 0.5rem;
     align-self: flex-start; /* Ajusta o alinhamento do grupo */
   }
@@ -651,18 +653,20 @@ main { padding-top: 68px; }
     font-size: 1rem;
     font-weight: 700;
   }
+  /* Estilo do SVG para o tamanho real */
   .action-btn svg {
-      width: 24px !important; 
-      height: 24px !important;
+      width: 28px !important; 
+      height: 28px !important;
   }
 
   .channel-info { 
-    order: 2; /* Coloca a info do canal abaixo da barra de ações */
+    order: 3; /* Coloca a info do canal abaixo da barra de ações */
     flex-direction: row; 
     gap: 0;
     justify-content: space-between;
     padding: 1rem 0;
     border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
   }
   .channel-details { text-align: left; }
   .channel-name-wrapper { margin-top: 0.1rem; }
