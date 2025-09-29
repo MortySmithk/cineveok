@@ -40,7 +40,7 @@ interface MediaDetails {
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 const CINEVEO_CHANNEL_ID = "cineveo_oficial";
 
-const getIdFromSlug = (slug: string): string | null => { // Added return type for clarity
+const getIdFromSlug = (slug: string): string | null => {
     if (!slug) return null;
     const parts = slug.split('-');
     return parts[parts.length - 1];
@@ -84,9 +84,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
         const data = detailsResponse.data;
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
-        if (type === 'movie' && data.imdb_id) {
+        
+        if (type === 'movie' && data.id) { // Usando ID do TMDB para o filme
           setIsPlayerLoading(true);
-          setActiveStreamUrl(`https://player.cineveo.workers.dev/movie/${data.imdb_id}`);
+          setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
           saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
         }
         if (type === 'tv') {
@@ -167,11 +168,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   // Define a URL do player para séries e salva o progresso
   useEffect(() => {
-    // AQUI ESTÁ A CORREÇÃO: Verificamos se 'id' não é nulo antes de usá-lo.
-    if (type === 'tv' && activeEpisode && details?.imdb_id && id) {
+    if (type === 'tv' && activeEpisode && id && details) { // Usando id (TMDB ID)
         setIsPlayerLoading(true);
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://player.cineveo.workers.dev/series/${details.imdb_id}/${season}/${episode}`);
+        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
     }
 }, [activeEpisode, id, type, details, saveProgress]);
@@ -398,3 +398,4 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     </>
   );
 }
+
