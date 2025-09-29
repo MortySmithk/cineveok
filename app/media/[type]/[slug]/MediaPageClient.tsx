@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/firebase'; // MODIFICADO: Importa do firebase.ts principal
+import { db } from '@/app/firebase'; // GARANTA QUE ESTA LINHA ESTÁ CORRETA
 
 import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
@@ -136,9 +136,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
     setStats({ views: 0, likes: 0, dislikes: 0 });
 
-    const statsRef = doc(db, 'media_stats', currentStatsId); // MODIFICADO
+    const statsRef = doc(db, 'media_stats', currentStatsId);
     
-    runTransaction(db, async (transaction) => { // MODIFICADO
+    runTransaction(db, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
             transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
@@ -156,7 +156,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         });
     });
 
-    const unsubChannel = onSnapshot(doc(db, "channels", CINEVEO_CHANNEL_ID), (doc) => { // MODIFICADO
+    const unsubChannel = onSnapshot(doc(db, "channels", CINEVEO_CHANNEL_ID), (doc) => {
         setSubscribers(doc.data()?.subscribers || 0);
     });
 
@@ -174,11 +174,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           return;
       };
 
-      const unsubUserInteraction = onSnapshot(doc(db, `users/${user.uid}/interactions`, currentStatsId), (doc) => { // MODIFICADO
+      const unsubUserInteraction = onSnapshot(doc(db, `users/${user.uid}/interactions`, currentStatsId), (doc) => {
           setUserLikeStatus(doc.data()?.status || null);
       });
       
-      const unsubUserSubscription = onSnapshot(doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => { // MODIFICADO
+      const unsubUserSubscription = onSnapshot(doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
           setIsSubscribed(doc.exists());
       });
       return () => { unsubUserInteraction(); unsubUserSubscription(); };
@@ -218,11 +218,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!currentStatsId) return;
 
-    const statsRef = doc(db, 'media_stats', currentStatsId); // MODIFICADO
-    const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId); // MODIFICADO
+    const statsRef = doc(db, 'media_stats', currentStatsId);
+    const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
 
     try {
-        await runTransaction(db, async (transaction) => { // MODIFICADO
+        await runTransaction(db, async (transaction) => {
             const statsDoc = await transaction.get(statsRef);
             const userInteractionDoc = await transaction.get(userInteractionRef);
             
@@ -271,11 +271,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const handleSubscribe = async () => {
     if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
     
-    const channelRef = doc(db, "channels", CINEVEO_CHANNEL_ID); // MODIFICADO
-    const subscriptionRef = doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID); // MODIFICADO
+    const channelRef = doc(db, "channels", CINEVEO_CHANNEL_ID);
+    const subscriptionRef = doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID);
     
     try {
-        await runTransaction(db, async (transaction) => { // MODIFICADO
+        await runTransaction(db, async (transaction) => {
             const channelDoc = await transaction.get(channelRef);
             const subscriptionDoc = await transaction.get(subscriptionRef);
             
