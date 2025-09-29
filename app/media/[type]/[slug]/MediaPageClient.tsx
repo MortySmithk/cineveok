@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { dbFeatures } from '@/app/firebase-features';
+import { db } from '@/app/firebase'; // MODIFICADO: Importa do firebase.ts principal
 
 import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
@@ -69,7 +69,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
   
-  // NOVO: ID usado para buscar stats (pode ser de um filme ou de um episódio)
   const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
 
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
@@ -115,7 +114,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const episodes: Episode[] = seasonResponse.data.episodes;
         setSeasonEpisodes(episodes);
 
-        // Define o statsId para o episódio ativo (ou o primeiro da lista)
         if (episodes.length > 0 && activeEpisode) {
              const episodeToTrack = episodes.find(ep => ep.episode_number === activeEpisode.episode) || episodes[0];
              setCurrentStatsId(episodeToTrack.id.toString());
@@ -129,21 +127,18 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type, activeEpisode]);
 
-  // NOVO EFEITO: Ouve as estatísticas com base no currentStatsId
+  // Efeito para ouvir as estatísticas
   useEffect(() => {
-    // Se não houver um ID para buscar (ex: série carregando), não faz nada
     if (!currentStatsId) {
-      setStats({ views: 0, likes: 0, dislikes: 0 }); // Zera as estatísticas
+      setStats({ views: 0, likes: 0, dislikes: 0 });
       return;
     }
 
-    // Zera os stats atuais para evitar mostrar dados do episódio anterior
     setStats({ views: 0, likes: 0, dislikes: 0 });
 
-    const statsRef = doc(dbFeatures, 'media_stats', currentStatsId);
+    const statsRef = doc(db, 'media_stats', currentStatsId); // MODIFICADO
     
-    // Incrementa a visualização para o ID atual (filme ou episódio)
-    runTransaction(dbFeatures, async (transaction) => {
+    runTransaction(db, async (transaction) => { // MODIFICADO
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
             transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
@@ -152,7 +147,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         }
     }).catch(console.error);
 
-    // Ouve as atualizações de stats em tempo real
     const unsubStats = onSnapshot(statsRef, (doc) => {
         const data = doc.data();
         setStats({
@@ -162,8 +156,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         });
     });
 
-    // Ouve as atualizações de inscritos (isso não muda)
-    const unsubChannel = onSnapshot(doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID), (doc) => {
+    const unsubChannel = onSnapshot(doc(db, "channels", CINEVEO_CHANNEL_ID), (doc) => { // MODIFICADO
         setSubscribers(doc.data()?.subscribers || 0);
     });
 
@@ -171,21 +164,21 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       unsubStats();
       unsubChannel();
     };
-  }, [currentStatsId]); // Este efeito roda sempre que o filme ou episódio mudar
+  }, [currentStatsId]);
   
-  // EFEITO CORRIGIDO: Ouve as interações do usuário para o ID atual
+  // Efeito para ouvir as interações do usuário
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
-          setIsSubscribed(false); // Mantém a lógica de inscrição separada
+          setIsSubscribed(false);
           return;
       };
 
-      const unsubUserInteraction = onSnapshot(doc(dbFeatures, `users/${user.uid}/interactions`, currentStatsId), (doc) => {
+      const unsubUserInteraction = onSnapshot(doc(db, `users/${user.uid}/interactions`, currentStatsId), (doc) => { // MODIFICADO
           setUserLikeStatus(doc.data()?.status || null);
       });
       
-      const unsubUserSubscription = onSnapshot(doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
+      const unsubUserSubscription = onSnapshot(doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => { // MODIFICADO
           setIsSubscribed(doc.exists());
       });
       return () => { unsubUserInteraction(); unsubUserSubscription(); };
@@ -205,7 +198,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     setActiveEpisode({ season, episode: episodeNumber });
-    // NOVO: Atualiza o ID de stats para o novo episódio
     const clickedEpisode = seasonEpisodes.find(ep => ep.episode_number === episodeNumber);
     if (clickedEpisode) {
         setCurrentStatsId(clickedEpisode.id.toString());
@@ -221,16 +213,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return `${hours}h ${remainingMins}m`;
   };
 
-  // FUNÇÃO DE LIKE/DISLIKE TOTALMENTE REESCRITA E CORRIGIDA
+  // Função de like/dislike
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!currentStatsId) return;
 
-    const statsRef = doc(dbFeatures, 'media_stats', currentStatsId);
-    const userInteractionRef = doc(dbFeatures, `users/${user.uid}/interactions`, currentStatsId);
+    const statsRef = doc(db, 'media_stats', currentStatsId); // MODIFICADO
+    const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId); // MODIFICADO
 
     try {
-        await runTransaction(dbFeatures, async (transaction) => {
+        await runTransaction(db, async (transaction) => { // MODIFICADO
             const statsDoc = await transaction.get(statsRef);
             const userInteractionDoc = await transaction.get(userInteractionRef);
             
@@ -275,15 +267,15 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
-  // FUNÇÃO DE INSCRIÇÃO REESCRITA E CORRIGIDA
+  // Função de inscrição
   const handleSubscribe = async () => {
     if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
     
-    const channelRef = doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID);
-    const subscriptionRef = doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID);
+    const channelRef = doc(db, "channels", CINEVEO_CHANNEL_ID); // MODIFICADO
+    const subscriptionRef = doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID); // MODIFICADO
     
     try {
-        await runTransaction(dbFeatures, async (transaction) => {
+        await runTransaction(db, async (transaction) => { // MODIFICADO
             const channelDoc = await transaction.get(channelRef);
             const subscriptionDoc = await transaction.get(subscriptionRef);
             
