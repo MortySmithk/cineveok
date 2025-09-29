@@ -12,8 +12,8 @@ import { dbFeatures } from '@/app/firebase-features';
 import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import LikeIcon from '@/app/components/icons/LikeIcon'; // Novo
-import DislikeIcon from '@/app/components/icons/DislikeIcon'; // Novo
+import LikeIcon from '@/app/components/icons/LikeIcon';
+import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
 import AudioVisualizer from '@/app/components/AudioVisualizer';
 
@@ -46,7 +46,6 @@ const getIdFromSlug = (slug: string) => {
     return parts[parts.length - 1];
 };
 
-// --- NOVA FUNÇÃO HELPER ---
 const formatNumber = (num: number): string => {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -70,13 +69,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
   
-  // --- NOVOS ESTADOS PARA AS FUNCIONALIDADES ---
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [subscribers, setSubscribers] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Efeito para buscar dados do TMDB e definir o player inicial
+  // Efeito para buscar dados do TMDB
   useEffect(() => {
     if (!id || !type) return;
     const fetchData = async () => {
@@ -86,9 +84,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
         const data = detailsResponse.data;
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
-        if (type === 'movie' && data.id) {
+        if (type === 'movie' && data.imdb_id) {
           setIsPlayerLoading(true);
-          setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
+          setActiveStreamUrl(`https://player.cineveo.workers.dev/movie/${data.imdb_id}`);
           saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
         }
         if (type === 'tv') {
@@ -107,53 +105,58 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   useEffect(() => {
     if (!id) return;
 
-    // Incrementa a visualização
-    const viewRef = doc(dbFeatures, 'media_stats', id);
-    runTransaction(dbFeatures, async (transaction) => {
-      transaction.set(viewRef, { views: increment(1) }, { merge: true });
-    }).catch(console.error);
+    const statsRef = doc(dbFeatures, 'media_stats', id);
     
-    // Ouve as atualizações de stats do conteúdo
-    const unsubStats = onSnapshot(doc(dbFeatures, "media_stats", id), (doc) => {
+    // Aumenta a contagem de visualizações de forma atômica.
+    // Isso é mais seguro e eficiente para contadores.
+    // Usamos uma transação para criar o documento com valores iniciais se ele não existir.
+    runTransaction(dbFeatures, async (transaction) => {
+        const statsDoc = await transaction.get(statsRef);
+        if (!statsDoc.exists()) {
+            // Se o documento não existe, cria com 1 view e 0 likes/dislikes.
+            transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
+        } else {
+            // Se o documento já existe, apenas incrementa as visualizações.
+            transaction.update(statsRef, { views: increment(1) });
+        }
+    }).catch(console.error);
+
+    // Ouve as atualizações de stats (visualizações, likes, etc.) em tempo real.
+    const unsubStats = onSnapshot(statsRef, (doc) => {
         const data = doc.data();
         setStats({
-            views: data?.views || 1,
+            views: data?.views || 0, // Inicia com 0, o banco de dados corrigirá para o valor real
             likes: data?.likes || 0,
             dislikes: data?.dislikes || 0,
         });
     });
 
-    // Ouve as atualizações de inscritos do canal
+    // Ouve as atualizações de inscritos do canal.
     const unsubChannel = onSnapshot(doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID), (doc) => {
         setSubscribers(doc.data()?.subscribers || 0);
     });
 
+    // Limpa os listeners quando o componente é desmontado para evitar vazamentos de memória.
     return () => {
       unsubStats();
       unsubChannel();
     };
   }, [id]);
   
-  // Efeito para verificar o status de like e inscrição do usuário logado
+  // Efeito para verificar o status de interação do usuário logado
   useEffect(() => {
       if (!id || !user) {
           setUserLikeStatus(null);
           setIsSubscribed(false);
           return;
       };
-
       const unsubUserInteraction = onSnapshot(doc(dbFeatures, `users/${user.uid}/interactions`, id), (doc) => {
           setUserLikeStatus(doc.data()?.status || null);
       });
-      
       const unsubUserSubscription = onSnapshot(doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
           setIsSubscribed(doc.exists());
       });
-
-      return () => {
-          unsubUserInteraction();
-          unsubUserSubscription();
-      };
+      return () => { unsubUserInteraction(); unsubUserSubscription(); };
   }, [id, user]);
 
   // Busca episódios quando a temporada muda
@@ -172,13 +175,14 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   // Define a URL do player para séries
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && id && details) {
-      setIsPlayerLoading(true);
-      const { season, episode } = activeEpisode;
-      setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
-      saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
+    if (type === 'tv' && activeEpisode && details?.imdb_id) {
+        setIsPlayerLoading(true);
+        const { season, episode } = activeEpisode;
+        setActiveStreamUrl(`https://player.cineveo.workers.dev/series/${details.imdb_id}/${season}/${episode}`);
+        saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
     }
-  }, [activeEpisode, id, type, details, saveProgress]);
+}, [activeEpisode, id, type, details, saveProgress]);
+
 
   const handleEpisodeClick = (season: number, episode: number) => {
     setActiveEpisode({ season, episode });
@@ -193,7 +197,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return `${hours}h ${remainingMins}m`;
   };
 
-  // --- NOVAS FUNÇÕES DE INTERAÇÃO ---
+  // --- FUNÇÕES DE INTERAÇÃO CORRIGIDAS ---
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!id) return;
@@ -201,40 +205,54 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     const statsRef = doc(dbFeatures, 'media_stats', id);
     const userInteractionRef = doc(dbFeatures, `users/${user.uid}/interactions`, id);
 
-    await runTransaction(dbFeatures, async (transaction) => {
-      const userInteractionDoc = await transaction.get(userInteractionRef);
-      const currentStatus = userInteractionDoc.data()?.status;
+    try {
+        await runTransaction(dbFeatures, async (transaction) => {
+            const statsDoc = await transaction.get(statsRef);
+            const userInteractionDoc = await transaction.get(userInteractionRef);
+            
+            const currentStats = statsDoc.data() || { likes: 0, dislikes: 0 };
+            const currentStatus = userInteractionDoc.data()?.status;
 
-      const newStats = { likes: increment(0), dislikes: increment(0) };
-      let newUserStatus = null;
+            let newLikes = currentStats.likes;
+            let newDislikes = currentStats.dislikes;
+            let newUserStatus = null;
 
-      if (action === 'like') {
-          if (currentStatus === 'liked') { // Clicou no like de novo para remover
-              newStats.likes = increment(-1);
-              newUserStatus = null;
-          } else {
-              newStats.likes = increment(1);
-              if(currentStatus === 'disliked') newStats.dislikes = increment(-1);
-              newUserStatus = 'liked';
-          }
-      } else { // dislike
-          if (currentStatus === 'disliked') { // Clicou no dislike de novo para remover
-              newStats.dislikes = increment(-1);
-              newUserStatus = null;
-          } else {
-              newStats.dislikes = increment(1);
-              if(currentStatus === 'liked') newStats.likes = increment(-1);
-              newUserStatus = 'disliked';
-          }
-      }
-      
-      transaction.set(statsRef, newStats, { merge: true });
-      if (newUserStatus) {
-        transaction.set(userInteractionRef, { status: newUserStatus });
-      } else {
-        transaction.delete(userInteractionRef);
-      }
-    });
+            if (action === 'like') {
+                if (currentStatus === 'liked') { // Desfazer o like
+                    newLikes -= 1;
+                    newUserStatus = null;
+                } else { // Dar like (ou trocar de dislike para like)
+                    newLikes += 1;
+                    if (currentStatus === 'disliked') {
+                        newDislikes -= 1;
+                    }
+                    newUserStatus = 'liked';
+                }
+            } else { // Ação de dislike
+                if (currentStatus === 'disliked') { // Desfazer o dislike
+                    newDislikes -= 1;
+                    newUserStatus = null;
+                } else { // Dar dislike (ou trocar de like para dislike)
+                    newDislikes += 1;
+                    if (currentStatus === 'liked') {
+                        newLikes -= 1;
+                    }
+                    newUserStatus = 'disliked';
+                }
+            }
+            
+            transaction.set(statsRef, { ...currentStats, likes: Math.max(0, newLikes), dislikes: Math.max(0, newDislikes) }, { merge: true });
+
+            if (newUserStatus) {
+                transaction.set(userInteractionRef, { status: newUserStatus });
+            } else if (userInteractionDoc.exists()) {
+                transaction.delete(userInteractionRef);
+            }
+        });
+    } catch (error) {
+        console.error("Falha na transação de like/dislike: ", error);
+        alert("Ocorreu um erro ao processar sua avaliação. Tente novamente.");
+    }
   };
 
   const handleSubscribe = async () => {
@@ -243,18 +261,26 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     const channelRef = doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID);
     const subscriptionRef = doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID);
     
-    await runTransaction(dbFeatures, async (transaction) => {
-        const subscriptionDoc = await transaction.get(subscriptionRef);
-        if (subscriptionDoc.exists()) {
-            transaction.update(channelRef, { subscribers: increment(-1) });
-            transaction.delete(subscriptionRef);
-        } else {
-            transaction.set(channelRef, { subscribers: increment(1) }, { merge: true });
-            transaction.set(subscriptionRef, { subscribedAt: new Date() });
-        }
-    });
-  };
+    try {
+        await runTransaction(dbFeatures, async (transaction) => {
+            const channelDoc = await transaction.get(channelRef);
+            const subscriptionDoc = await transaction.get(subscriptionRef);
+            
+            const currentSubscribers = channelDoc.data()?.subscribers || 0;
 
+            if (subscriptionDoc.exists()) {
+                transaction.update(channelRef, { subscribers: Math.max(0, currentSubscribers - 1) });
+                transaction.delete(subscriptionRef);
+            } else {
+                transaction.set(channelRef, { subscribers: currentSubscribers + 1 }, { merge: true });
+                transaction.set(subscriptionRef, { subscribedAt: new Date() });
+            }
+        });
+    } catch (error) {
+        console.error("Falha na transação de inscrição: ", error);
+        alert("Ocorreu um erro ao processar sua inscrição. Tente novamente.");
+    }
+  };
 
   if (isLoading && !details) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
@@ -272,6 +298,43 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     </div>
   );
 
+  const InteractionsSection = () => (
+    <div className="details-interactions-section">
+        <div className="channel-info">
+            <div className="channel-details">
+                <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
+                <div>
+                    <div className="channel-name-wrapper">
+                        <h3 className="channel-name">CineVEO</h3>
+                        <Image 
+                            className="verified-badge" 
+                            src="https://i.ibb.co/mr16xgYy/Chat-GPT-Image-18-de-ago-de-2025-01-35-17-removebg-preview.png" 
+                            alt="Verificado"
+                            width={16}
+                            height={16}
+                        />
+                    </div>
+                    <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
+                </div>
+            </div>
+            <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
+                {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
+            </button>
+        </div>
+        <div className="media-actions-bar">
+            <span className="views-info">{formatNumber(stats.views)} visualizações</span>
+            <div className="like-dislike-group">
+                <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
+                    <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
+                </button>
+                <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
+                    <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+
   return (
     <>
       <div className="media-page-layout">
@@ -280,32 +343,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
-                {/* SEÇÃO DE INTERAÇÕES ABAIXO DO PLAYER */}
-                <div className="details-interactions-section">
-                    <div className="channel-info">
-                        <div className="channel-details">
-                            <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
-                            <div>
-                                <h3 className="channel-name">CineVEO Oficial</h3>
-                                <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
-                            </div>
-                        </div>
-                        <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
-                            {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
-                        </button>
-                    </div>
-                    <div className="media-actions-bar">
-                        <span className="views-info">{formatNumber(stats.views)} visualizações</span>
-                        <div className="like-dislike-group">
-                            <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-                                <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
-                            </button>
-                            <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-                                <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <InteractionsSection />
               </div>
               <div className="episodes-list-wrapper">
                   <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
@@ -323,32 +361,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
-                 {/* SEÇÃO DE INTERAÇÕES ABAIXO DO PLAYER */}
-                 <div className="details-interactions-section">
-                    <div className="channel-info">
-                        <div className="channel-details">
-                            <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
-                            <div>
-                                <h3 className="channel-name">CineVEO Oficial</h3>
-                                <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
-                            </div>
-                        </div>
-                        <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
-                            {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
-                        </button>
-                    </div>
-                    <div className="media-actions-bar">
-                        <span className="views-info">{formatNumber(stats.views)} visualizações</span>
-                        <div className="like-dislike-group">
-                            <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-                                <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
-                            </button>
-                            <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-                                <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <InteractionsSection />
               </div>
               <div className="episodes-list-wrapper">
                 <div className="episodes-header">
@@ -363,7 +376,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 </div>
                 <div className="episode-grid-mobile">
                   {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                  {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button> ))}
+                  {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button>))}
                 </div>
               </div>
             </div>
