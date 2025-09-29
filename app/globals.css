@@ -1,4 +1,4 @@
-/* cineveo-next/app/globals.css */
+/* app/globals.css */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
@@ -553,6 +553,7 @@ main { padding-top: 68px; }
 
 /* Telas Pequenas (Celulares) */
 @media (max-width: 768px) {
+  /* GARANTIDO que mobile-only-layout e desktop-only-layout funcionem para alternar a visibilidade */
   .desktop-only-layout { display: none !important; }
   .mobile-only-layout { display: block !important; }
   
@@ -624,7 +625,11 @@ main { padding-top: 68px; }
 
   /* AJUSTES: Canal e Ações no mobile */
   /* Remove a borda no mobile */
-  .details-interactions-section { border-top: none; border-bottom: none; }
+  .details-interactions-section { 
+    border-top: none; 
+    border-bottom: none; 
+    padding-top: 0.5rem; /* Ajuste para ter espaço acima da primeira linha (título/sinopse) */
+  }
   /* Reorganiza a seção de interações no mobile */
   .media-actions-bar {
     order: 2; /* Coloca a barra de ações depois do título/sinopse mobile */
@@ -675,6 +680,13 @@ main { padding-top: 68px; }
   .subscribe-btn { align-self: center; }
   
   /* ESTILOS DO NOVO SELETOR DE EPISÓDIOS */
+  .episodes-list-wrapper {
+    /* Torna o seletor de episódio visível no mobile, e remove a margem superior desnecessária */
+    display: block !important; 
+    margin-top: 0;
+    /* Ajuste de margem/padding para que o seletor de temporada fique ok */
+    padding-bottom: 1rem;
+  }
   .episodes-header {
     flex-direction: row;
     align-items: center;
@@ -683,17 +695,28 @@ main { padding-top: 68px; }
   }
   .series-watch-section .season-selector { flex-grow: 1; }
   .episode-count-info { font-size: 0.9rem; color: var(--text-secondary); white-space: nowrap; }
-  .episode-list-desktop { display: none; }
+  .episode-list-desktop { display: none; } /* Garantido que a lista grande seja escondida */
+  
+  /* ESTILO PARA LISTA DE EPISÓDIOS COM ROLAGEM HORIZONTAL */
   .episode-grid-mobile {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    display: flex !important; /* Muda para flexbox para rolagem horizontal */
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding-bottom: 0.5rem; /* Espaço para a sombra da barra de rolagem */
     gap: 0.75rem;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
+  .episode-grid-mobile::-webkit-scrollbar { display: none; } /* Chrome, Safari and Opera */
+  
   .episode-grid-button {
+    flex: 0 0 auto; /* Impede que os botões se expandam ou encolham */
+    width: 60px; /* Largura fixa para os "mini-quadrados" */
+    height: 60px; /* Altura fixa */
     background-color: var(--card-color);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
-    aspect-ratio: 1 / 1;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 500;
@@ -733,6 +756,30 @@ main { padding-top: 68px; }
       padding-top: 1.5rem;
       border-top: 1px solid var(--border-color);
   }
+  
+  /* NOVO: Ordem do Título/Sinopse Mobile - precisa estar no topo do flexbox 'details-interactions-section' */
+  .synopsis-box-mobile {
+    order: 1; /* Garante que fique antes dos botões de like/canal */
+    padding-left: 0;
+    padding-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  /* REAJUSTE DE LAYOUT DO PLAYER NO MOBILE */
+  .series-watch-section {
+    order: -1; 
+    margin-top: 112px !important; /* Altura do header (68px + 44px) */
+    padding: 0; /* Remove padding lateral que atrapalha o full width do player */
+    border-top: none;
+    padding-top: 0;
+  }
+  .series-player-wrapper {
+    padding: 0; /* Removendo padding para tentar o full-width */
+  }
+  .player-container {
+      border-radius: 0; /* Remove o border-radius do player no mobile */
+  }
+
 }
 
 
@@ -764,42 +811,48 @@ main { padding-top: 68px; }
 /* Regras para telas pequenas (Celulares) */
 @media (max-width: 768px) {
   /* Remove os layouts antigos de mobile/desktop que não usamos mais nesta página */
-  .mobile-only-layout, .desktop-only-layout {
+  .mobile-only-layout {
+    display: block !important;
+  }
+  .desktop-only-layout {
     display: none !important;
   }
 
   /* 1. Faz o player de SÉRIE aparecer no topo */
   .series-watch-section {
     order: -1; /* Mágica do Flexbox: joga o item para o início */
-    margin-top: 112px; /* Altura do header (68px + 44px) */
-    padding: 0 1rem;
-    margin-bottom: 0; /* Remove a margem para ficar mais compacto */
+    /* Este margin-top é crucial para o player ficar visível abaixo do header fixo */
+    margin-top: 112px !important; /* Altura do header (68px + 44px) */
+    padding: 0 0; /* Remove padding lateral para o player ser full-width */
+    margin-bottom: 0; 
   }
   
   /* 2. Faz o player de FILME aparecer no topo */
   .mobile-player-wrapper {
-    display: block; /* Mostra o container do player de filme */
-    order: -1; /* Também joga para o início */
-    margin-top: 112px;
-    padding: 0 1rem;
-    margin-bottom: 0; /* Remove a margem para ficar mais compacto */
-  }
-
-  /* 3. Garante que o conteúdo principal (detalhes, etc) venha depois */
-  .details-main-content {
-    order: 0;
+    display: block !important; /* Mostra o container do player de filme */
+    order: -1; 
+    margin-top: 112px !important;
+    padding: 0;
+    margin-bottom: 0; 
   }
   
-  /* 4. Esconde a lista de episódios (movie-info-card) no mobile */
+  /* O main-container dentro do mobile-only-layout após o player é onde está a seção de interações */
+  .media-actions-bar {
+      order: 2;
+  }
+  .channel-info {
+      order: 3;
+  }
+  .synopsis-box-mobile {
+      order: 1;
+  }
   .episodes-list-wrapper {
-      display: none;
+      display: block !important;
   }
 }
 
 /* Regras para telas grandes (Desktop) */
 @media (min-width: 769px) {
-  /* No desktop, a seção do player de série volta para o fluxo normal,
-     mas adicionamos o espaçamento e a borda que ela tinha antes. */
   .series-watch-section {
     margin-top: 3rem;
     padding-top: 2rem;

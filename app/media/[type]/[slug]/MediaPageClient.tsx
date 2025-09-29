@@ -1,4 +1,4 @@
-// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
+// app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -364,6 +364,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   };
 
   const InteractionsSection = () => (
+    // Foi removido o padding horizontal desta div, pois o main-container externo irá gerenciar o padding
     <div className="details-interactions-section">
         {/* TITULO/SINOPSE MOBILE (Novo elemento) */}
         {/* Usamos mobile-only-layout para esconder o MobileTitleAndSynopsis do desktop */}
@@ -372,7 +373,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </div>
         
         <div className="media-actions-bar">
-            {/* O views-info é hidden DA BARRA DE AÇÕES no mobile via CSS */}
+            {/* O views-info é hidden DA BARRA DE AÇÕES no mobile via CSS, mas visível no desktop */}
             <span className="views-info desktop-only-layout">{formatNumber(stats.views)} visualizações</span>
             <div className="like-dislike-group">
                 <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
@@ -383,7 +384,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                     {/* Botões Like/Dislike com 28x28 */}
                     <DislikeIcon isActive={userLikeStatus === 'disliked'} width={28} height={28} /> {formatNumber(stats.dislikes)}
                 </button>
-                {/* Você pode adicionar um botão "Compartilhar" aqui se quiser, mas mantive o pedido original de "não adicionar mais botões" */}
             </div>
         </div>
         
@@ -410,61 +410,79 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </div>
     </div>
   );
+  
+  const EpisodeSelector = () => (
+    // Esta div é sempre renderizada para series no mobile
+    <div className="episodes-list-wrapper">
+        <div className="episodes-header">
+            <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
+                {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
+            </select>
+            <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
+        </div>
+        
+        {/* Lista de Episódios para Desktop */}
+        <div className="episode-list-desktop desktop-only-layout">
+            {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+        </div>
+
+        {/* Grid de Episódios para Mobile (Botões quadrados e rolagem horizontal) */}
+        <div className="episode-grid-mobile mobile-only-layout">
+            {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+            {!isLoading && seasonEpisodes.map(ep => ( 
+              <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
+                {ep.episode_number}
+              </button>
+            ))}
+        </div>
+    </div>
+  );
+
+  const MovieSelector = () => (
+    // Apenas a versão desktop do card de filme é necessária aqui
+    <div className="episodes-list-wrapper desktop-only-layout">
+        <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
+            <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
+            <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
+            <div className="visualizer-container"><AudioVisualizer /></div>
+        </div>
+    </div>
+  );
+
 
   return (
     <>
       <div className="media-page-layout">
+        
+        {/* --- SEÇÃO DO PLAYER (UNIVERSAL) --- */}
         <section className="series-watch-section">
-          {/* Versão Desktop (Player e Interações ao lado) */}
+          {/* Player e a coluna de detalhes/episódios para Desktop/Tablet */}
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
-                {/* Interações no desktop ficam logo abaixo do player */}
                 <div className='desktop-only-layout'><InteractionsSection /></div>
               </div>
-              <div className="episodes-list-wrapper">
-                {type === 'movie' ? (
-                   <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
-                      <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
-                      <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
-                      <div className="visualizer-container"><AudioVisualizer /></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="episodes-header">
-                      <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
-                        {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
-                      </select>
-                      <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
-                    </div>
-                    <div className="episode-list-desktop">
-                      {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                      {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
-                    </div>
-                    <div className="episode-grid-mobile">
-                      {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                      {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button>))}
-                    </div>
-                  </>
-                )}
-              </div>
+              {/* Lista/Seletor de Episódios para Desktop (ou card de filme) */}
+              {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
             </div>
           </div>
           
-          {/* Versão Mobile (Player no topo) */}
+          {/* Player no Mobile (deve ser full-width no topo) */}
           <div className="mobile-only-layout">
-            <div className="series-player-wrapper">
-                <PlayerContent />
-            </div>
+            <PlayerContent />
           </div>
         </section>
 
-        {/* INTERAÇÕES NO MOBILE DEPOIS DO PLAYER */}
-        {/* O MobileTitleAndSynopsis é renderizado DENTRO do InteractionsSection no mobile para ficar acima do like/canal */}
+        {/* --- INTERAÇÕES E SELEÇÃO DE EPISÓDIO NO MOBILE --- */}
         <div className="mobile-only-layout">
              <div className="main-container">
+                {/* 1. Título/Sinopse, 2. Likes/Dislikes, 3. Canal/Inscrição */}
                 <InteractionsSection />
+                
+                {/* 4. Seletor de Episódios (Apenas para TV/Séries) no Mobile */}
+                {type === 'tv' && <EpisodeSelector />}
             </div>
         </div>
 
@@ -472,14 +490,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
-              {/* O poster é escondido no mobile, pois o topo é tomado pelo player */}
+              {/* Poster no Desktop/Tablet */}
               <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
               <div className="details-info">
-                {/* Título, meta bar e sinopse do desktop */}
+                {/* Detalhes para Desktop/Tablet (Escondidos no mobile) */}
                 <div className='desktop-only-layout'>
                     <h1>{details.title}</h1>
                     <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
-                    {/* A sinopse do desktop usa overview, mas precisa ser alterada para o que está em getSynopsis() se for série, mas para manter a simplicidade, deixo como era, pois o MobileTitleAndSynopsis cuida da lógica do episódio */}
                     <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
                 </div>
               </div>
