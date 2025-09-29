@@ -1,22 +1,28 @@
 // app/components/icons/DislikeIcon.tsx
 import React from 'react';
+import Image from 'next/image';
 
-const DislikeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...props}
-  >
-    <path d="M7 14V2" />
-    <path d="M15 18.12 14 14H8.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 10.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" />
-  </svg>
-);
+interface DislikeIconProps {
+  isActive: boolean;
+  width?: number;
+  height?: number;
+}
+
+const DislikeIcon: React.FC<DislikeIconProps> = ({ isActive, width = 24, height = 24 }) => {
+  const src = isActive
+    ? "https://i.ibb.co/qF4H1Mkv/Gemini-Generated-Image-slk0hgslk0hgslk0-1.png"
+    : "https://i.ibb.co/kgDvQpLX/Gemini-Generated-Image-uqjfysuqjfysuqjf-1.png";
+
+  return (
+    <Image
+      src={src}
+      alt="Dislike"
+      width={width}
+      height={height}
+      style={{ objectFit: 'contain' }}
+      unoptimized // Adicionado para garantir que as imagens externas carreguem sem configuração extra
+    />
+  );
+};
 
 export default DislikeIcon;

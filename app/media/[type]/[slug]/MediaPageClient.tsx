@@ -75,6 +75,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [subscribers, setSubscribers] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false); // Novo estado
 
   // Efeito para buscar dados do TMDB
   useEffect(() => {
@@ -212,6 +213,25 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     const remainingMins = mins % 60;
     return `${hours}h ${remainingMins}m`;
   };
+  
+  // Obtém a sinopse correta (filme, ou episódio)
+  const getSynopsis = (): string => {
+      if (type === 'movie') {
+          return details?.overview || 'Sinopse não disponível.';
+      }
+      
+      const currentEpisode = seasonEpisodes.find(ep => activeEpisode && ep.episode_number === activeEpisode.episode);
+      return currentEpisode?.overview || details?.overview || 'Sinopse não disponível.';
+  };
+  
+  const getTitle = (): string => {
+      if (type === 'movie') {
+          return details?.title || 'Filme';
+      }
+      
+      const currentEpisode = seasonEpisodes.find(ep => activeEpisode && ep.episode_number === activeEpisode.episode);
+      return currentEpisode ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details?.title || 'Série';
+  }
 
   // Função de like/dislike
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
@@ -310,9 +330,49 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       ) : (<div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>)}
     </div>
   );
+  
+  const MobileTitleAndSynopsis = () => {
+      const currentSynopsis = getSynopsis();
+      return (
+          <div className="synopsis-box-mobile">
+              <h1 className="movie-card-title" style={{ fontSize: '1.2rem', fontWeight: 700 }}>{getTitle()}</h1>
+              <div className="details-meta-bar" style={{ justifyContent: 'flex-start' }}>
+                  <span className='meta-item views-info'>{formatNumber(stats.views)} visualizações</span>
+                  <span className='meta-item'>{details.release_date?.substring(0, 4)}</span>
+                  <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
+              </div>
+              <div className={`synopsis-text-container ${isSynopsisExpanded ? 'expanded' : ''}`}>
+                  <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>{currentSynopsis}</p>
+              </div>
+              <button onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)} className="expand-synopsis-btn focusable">
+                  {isSynopsisExpanded ? 'Mostrar menos' : '...mais'}
+              </button>
+          </div>
+      );
+  };
 
   const InteractionsSection = () => (
     <div className="details-interactions-section">
+        {/* TITULO/SINOPSE MOBILE (Novo elemento) */}
+        <div className='mobile-only-layout'>
+            <MobileTitleAndSynopsis />
+        </div>
+        
+        <div className="media-actions-bar">
+            {/* O views-info é hidden no mobile via CSS */}
+            <span className="views-info">{formatNumber(stats.views)} visualizações</span>
+            <div className="like-dislike-group">
+                <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
+                    {/* Aumentando o tamanho dos ícones aqui para 28x28 */}
+                    <LikeIcon isActive={userLikeStatus === 'liked'} width={28} height={28} /> {formatNumber(stats.likes)}
+                </button>
+                <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
+                    {/* Aumentando o tamanho dos ícones aqui para 28x28 */}
+                    <DislikeIcon isActive={userLikeStatus === 'disliked'} width={28} height={28} /> {formatNumber(stats.dislikes)}
+                </button>
+            </div>
+        </div>
+        
         <div className="channel-info">
             <div className="channel-details">
                 <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
@@ -334,76 +394,75 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
             </button>
         </div>
-        <div className="media-actions-bar">
-            <span className="views-info">{formatNumber(stats.views)} visualizações</span>
-            <div className="like-dislike-group">
-                <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-                    <LikeIcon width={20} height={20} /> {formatNumber(stats.likes)}
-                </button>
-                <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-                    <DislikeIcon width={20} height={20} /> {formatNumber(stats.dislikes)}
-                </button>
-            </div>
-        </div>
     </div>
   );
 
   return (
     <>
       <div className="media-page-layout">
-        {type === 'movie' && (
-          <section className="series-watch-section">
+        <section className="series-watch-section">
+          <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
-                <InteractionsSection />
+                <div className='desktop-only-layout'><InteractionsSection /></div>
               </div>
               <div className="episodes-list-wrapper">
-                  <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
+                {type === 'movie' ? (
+                   <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
                       <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
                       <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
                       <div className="visualizer-container"><AudioVisualizer /></div>
                   </div>
+                ) : (
+                  <>
+                    <div className="episodes-header">
+                      <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
+                        {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
+                      </select>
+                      <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
+                    </div>
+                    <div className="episode-list-desktop">
+                      {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                      {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+                    </div>
+                    <div className="episode-grid-mobile">
+                      {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+                      {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button>))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-          </section>
-        )}
-
-        {type === 'tv' && (
-          <section className="series-watch-section">
-            <div className="series-watch-grid">
-              <div className="series-player-wrapper">
+          </div>
+          
+          {/* PLAYER CONTENT E INTERAÇÕES NO MOBILE SÓ FICAM AQUI */}
+          <div className="mobile-only-layout">
+            <div className="series-player-wrapper">
                 <PlayerContent />
-                <InteractionsSection />
-              </div>
-              <div className="episodes-list-wrapper">
-                <div className="episodes-header">
-                  <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
-                    {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
-                  </select>
-                  <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
-                </div>
-                <div className="episode-list-desktop">
-                  {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                  {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
-                </div>
-                <div className="episode-grid-mobile">
-                  {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-                  {!isLoading && seasonEpisodes.map(ep => ( <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>{ep.episode_number}</button>))}
-                </div>
-              </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
+
+        {/* INTERAÇÕES NO MOBILE DEPOIS DO PLAYER */}
+        <div className="mobile-only-layout">
+             <div className="main-container">
+                <InteractionsSection />
+            </div>
+        </div>
+
         
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
-              <div className="details-poster"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
+              <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
               <div className="details-info">
-                <h1>{details.title}</h1>
-                <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
-                <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
+                {/* Título e meta bar apenas para desktop/tablet */}
+                <div className='desktop-only-layout'>
+                    <h1>{details.title}</h1>
+                    <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
+                    <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
+                </div>
               </div>
             </div>
             
