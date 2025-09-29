@@ -69,6 +69,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
   
+  // NOVO: ID usado para buscar stats (pode ser de um filme ou de um episódio)
+  const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
+
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [subscribers, setSubscribers] = useState(0);
@@ -85,7 +88,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const data = detailsResponse.data;
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
         
-        if (type === 'movie' && data.id) { // Usando ID do TMDB para o filme
+        if (type === 'movie' && data.id) {
           setIsPlayerLoading(true);
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
           saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
@@ -101,13 +104,45 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     };
     fetchData();
   }, [id, type, getProgress, saveProgress]);
-
-  // Efeito para incrementar visualizações e ouvir dados em tempo real do Firestore
+  
+  // Efeito para buscar episódios quando a temporada muda
   useEffect(() => {
-    if (!id) return;
+    if (type !== 'tv' || !id || !details?.seasons) return;
+    const fetchSeasonData = async () => {
+      setIsLoading(true);
+      try {
+        const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
+        const episodes: Episode[] = seasonResponse.data.episodes;
+        setSeasonEpisodes(episodes);
 
-    const statsRef = doc(dbFeatures, 'media_stats', id);
+        // Define o statsId para o episódio ativo (ou o primeiro da lista)
+        if (episodes.length > 0 && activeEpisode) {
+             const episodeToTrack = episodes.find(ep => ep.episode_number === activeEpisode.episode) || episodes[0];
+             setCurrentStatsId(episodeToTrack.id.toString());
+        }
+      } catch (error) { 
+        setSeasonEpisodes([]);
+      } finally { 
+        setIsLoading(false); 
+      }
+    };
+    fetchSeasonData();
+  }, [id, details, selectedSeason, type, activeEpisode]);
+
+  // NOVO EFEITO: Ouve as estatísticas com base no currentStatsId
+  useEffect(() => {
+    // Se não houver um ID para buscar (ex: série carregando), não faz nada
+    if (!currentStatsId) {
+      setStats({ views: 0, likes: 0, dislikes: 0 }); // Zera as estatísticas
+      return;
+    }
+
+    // Zera os stats atuais para evitar mostrar dados do episódio anterior
+    setStats({ views: 0, likes: 0, dislikes: 0 });
+
+    const statsRef = doc(dbFeatures, 'media_stats', currentStatsId);
     
+    // Incrementa a visualização para o ID atual (filme ou episódio)
     runTransaction(dbFeatures, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
@@ -117,6 +152,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         }
     }).catch(console.error);
 
+    // Ouve as atualizações de stats em tempo real
     const unsubStats = onSnapshot(statsRef, (doc) => {
         const data = doc.data();
         setStats({
@@ -126,6 +162,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         });
     });
 
+    // Ouve as atualizações de inscritos (isso não muda)
     const unsubChannel = onSnapshot(doc(dbFeatures, "channels", CINEVEO_CHANNEL_ID), (doc) => {
         setSubscribers(doc.data()?.subscribers || 0);
     });
@@ -134,41 +171,30 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       unsubStats();
       unsubChannel();
     };
-  }, [id]);
+  }, [currentStatsId]); // Este efeito roda sempre que o filme ou episódio mudar
   
-  // Efeito para verificar o status de interação do usuário logado
+  // EFEITO CORRIGIDO: Ouve as interações do usuário para o ID atual
   useEffect(() => {
-      if (!id || !user) {
+      if (!currentStatsId || !user) {
           setUserLikeStatus(null);
-          setIsSubscribed(false);
+          setIsSubscribed(false); // Mantém a lógica de inscrição separada
           return;
       };
-      const unsubUserInteraction = onSnapshot(doc(dbFeatures, `users/${user.uid}/interactions`, id), (doc) => {
+
+      const unsubUserInteraction = onSnapshot(doc(dbFeatures, `users/${user.uid}/interactions`, currentStatsId), (doc) => {
           setUserLikeStatus(doc.data()?.status || null);
       });
+      
       const unsubUserSubscription = onSnapshot(doc(dbFeatures, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
           setIsSubscribed(doc.exists());
       });
       return () => { unsubUserInteraction(); unsubUserSubscription(); };
-  }, [id, user]);
+  }, [currentStatsId, user]);
 
-  // Busca episódios quando a temporada muda
-  useEffect(() => {
-    if (type !== 'tv' || !id || !details?.seasons) return;
-    const fetchSeasonData = async () => {
-      setIsLoading(true);
-      try {
-        const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
-        setSeasonEpisodes(seasonResponse.data.episodes);
-      } catch (error) { setSeasonEpisodes([]);
-      } finally { setIsLoading(false); }
-    };
-    fetchSeasonData();
-  }, [id, details, selectedSeason, type]);
 
   // Define a URL do player para séries e salva o progresso
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && id && details) { // Usando id (TMDB ID)
+    if (type === 'tv' && activeEpisode && id && details) {
         setIsPlayerLoading(true);
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
@@ -177,8 +203,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 }, [activeEpisode, id, type, details, saveProgress]);
 
 
-  const handleEpisodeClick = (season: number, episode: number) => {
-    setActiveEpisode({ season, episode });
+  const handleEpisodeClick = (season: number, episodeNumber: number) => {
+    setActiveEpisode({ season, episode: episodeNumber });
+    // NOVO: Atualiza o ID de stats para o novo episódio
+    const clickedEpisode = seasonEpisodes.find(ep => ep.episode_number === episodeNumber);
+    if (clickedEpisode) {
+        setCurrentStatsId(clickedEpisode.id.toString());
+    }
   };
   
   const formatRuntime = (minutes?: number | number[]) => {
@@ -190,19 +221,20 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return `${hours}h ${remainingMins}m`;
   };
 
+  // FUNÇÃO DE LIKE/DISLIKE TOTALMENTE REESCRITA E CORRIGIDA
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
-    if (!id) return;
+    if (!currentStatsId) return;
 
-    const statsRef = doc(dbFeatures, 'media_stats', id);
-    const userInteractionRef = doc(dbFeatures, `users/${user.uid}/interactions`, id);
+    const statsRef = doc(dbFeatures, 'media_stats', currentStatsId);
+    const userInteractionRef = doc(dbFeatures, `users/${user.uid}/interactions`, currentStatsId);
 
     try {
         await runTransaction(dbFeatures, async (transaction) => {
             const statsDoc = await transaction.get(statsRef);
             const userInteractionDoc = await transaction.get(userInteractionRef);
             
-            const currentStats = statsDoc.data() || { likes: 0, dislikes: 0 };
+            const currentStats = statsDoc.data() || { likes: 0, dislikes: 0, views: 0 };
             const currentStatus = userInteractionDoc.data()?.status;
 
             let newLikes = currentStats.likes;
@@ -215,20 +247,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                     newUserStatus = null;
                 } else {
                     newLikes += 1;
-                    if (currentStatus === 'disliked') {
-                        newDislikes -= 1;
-                    }
+                    if (currentStatus === 'disliked') newDislikes -= 1;
                     newUserStatus = 'liked';
                 }
-            } else {
+            } else { // 'dislike'
                 if (currentStatus === 'disliked') {
                     newDislikes -= 1;
                     newUserStatus = null;
                 } else {
                     newDislikes += 1;
-                    if (currentStatus === 'liked') {
-                        newLikes -= 1;
-                    }
+                    if (currentStatus === 'liked') newLikes -= 1;
                     newUserStatus = 'disliked';
                 }
             }
@@ -247,6 +275,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
+  // FUNÇÃO DE INSCRIÇÃO REESCRITA E CORRIGIDA
   const handleSubscribe = async () => {
     if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
     
@@ -261,7 +290,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             const currentSubscribers = channelDoc.data()?.subscribers || 0;
 
             if (subscriptionDoc.exists()) {
-                transaction.update(channelRef, { subscribers: Math.max(0, currentSubscribers - 1) });
+                transaction.set(channelRef, { subscribers: Math.max(0, currentSubscribers - 1) }, { merge: true });
                 transaction.delete(subscriptionRef);
             } else {
                 transaction.set(channelRef, { subscribers: currentSubscribers + 1 }, { merge: true });
@@ -357,7 +386,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
               </div>
               <div className="episodes-list-wrapper">
                 <div className="episodes-header">
-                  <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); handleEpisodeClick(newSeason, 1); }}>
+                  <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
                     {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
                   </select>
                   <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
@@ -398,4 +427,3 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     </>
   );
 }
-
