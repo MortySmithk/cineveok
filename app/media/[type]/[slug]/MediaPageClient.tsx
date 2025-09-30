@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react'; // Importar o 'memo'
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -9,9 +9,6 @@ import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 import { useAuth } from '@/app/components/AuthProvider';
 import { db } from '@/app/firebase';
 
-import StarIcon from '@/app/components/icons/StarIcon';
-import CalendarIcon from '@/app/components/icons/CalendarIcon';
-import ClockIcon from '@/app/components/icons/ClockIcon';
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
@@ -52,6 +49,51 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
+// ==================================================================
+// INÍCIO DA CORREÇÃO: Player memorizado para não reiniciar
+// ==================================================================
+const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
+  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
+
+  // Efeito para resetar o loading quando a URL do stream muda
+  useEffect(() => {
+    setIsPlayerLoading(true);
+  }, [activeStreamUrl]);
+
+  return (
+    <div className="player-container">
+      {isPlayerLoading && (
+        <div className="player-loader">
+          <div className="spinner"></div>
+          <span>Carregando player...</span>
+        </div>
+      )}
+      {activeStreamUrl ? (
+        <iframe
+          key={activeStreamUrl} // A chave ainda é importante para trocar de episódio
+          src={activeStreamUrl}
+          title={`CineVEO Player - ${title}`}
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+          referrerPolicy="origin"
+          loading="lazy"
+          onLoad={() => setIsPlayerLoading(false)}
+          style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
+        ></iframe>
+      ) : (
+        <div className="player-loader">
+          <div className="spinner"></div>
+          <span>Selecione um episódio para começar a assistir.</span>
+        </div>
+      )}
+    </div>
+  );
+});
+// ==================================================================
+// FIM DA CORREÇÃO
+// ==================================================================
+
+
 export default function MediaPageClient({ params }: { params: { type: string; slug: string } }) {
   const type = params.type as 'movie' | 'tv';
   const slug = params.slug as string;
@@ -67,7 +109,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
   
   const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
 
@@ -89,10 +130,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
         
         if (type === 'movie' && data.id) {
-          setIsPlayerLoading(true);
-          // *** CORREÇÃO AQUI: Usando a sua API para filmes ***
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
-          saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
+          if (user) {
+            saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
+          }
         }
         if (type === 'tv') {
           const progress = getProgress('tv', id);
@@ -104,7 +145,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       } catch (error) { setStatus("Não foi possível carregar os detalhes."); }
     };
     fetchData();
-  }, [id, type, getProgress, saveProgress]);
+  }, [id, type, getProgress, saveProgress, user]);
   
   // Efeito para buscar episódios quando a temporada muda
   useEffect(() => {
@@ -129,7 +170,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type, activeEpisode]);
 
-  // Efeito para ouvir as estatísticas
+  // Efeito para ouvir as estatísticas (incluindo visualizações)
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -137,9 +178,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
 
     setStats({ views: 0, likes: 0, dislikes: 0 });
-
     const statsRef = doc(db, 'media_stats', currentStatsId);
     
+    // Incrementa a visualização para todos os usuários
     runTransaction(db, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
@@ -168,7 +209,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     };
   }, [currentStatsId]);
   
-  // Efeito para ouvir as interações do usuário
+  // Efeito para ouvir as interações do usuário (apenas se logado)
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
@@ -190,13 +231,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   // Define a URL do player para séries e salva o progresso
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
-        setIsPlayerLoading(true);
         const { season, episode } = activeEpisode;
-        // *** CORREÇÃO AQUI: Usando a sua API para séries ***
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
-        saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
+        if (user) {
+          saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
+        }
     }
-}, [activeEpisode, id, type, details, saveProgress]);
+  }, [activeEpisode, id, type, details, saveProgress, user]);
 
 
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
@@ -320,15 +361,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return <div className="loading-container">{status}</div>;
   }
   
-  const PlayerContent = () => (
-    <div className="player-container">
-      {isPlayerLoading && <div className="player-loader"><div className="spinner"></div><span>Carregando player...</span></div>}
-      {activeStreamUrl ? (
-        <iframe key={activeStreamUrl} src={activeStreamUrl} title={`CineVEO Player - ${details.title}`} allow="autoplay; encrypted-media" allowFullScreen referrerPolicy="origin" loading="lazy" onLoad={() => setIsPlayerLoading(false)} style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}></iframe>
-      ) : (<div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>)}
-    </div>
-  );
-
   const InfoBox = () => {
     const currentSynopsis = getSynopsis();
     return (
@@ -389,7 +421,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </div>
       </div>
       
-      {/* A InfoBox só aparece aqui para filmes */}
       {type === 'movie' && <InfoBox />}
     </div>
   );
@@ -434,12 +465,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   return (
     <>
       <div className="media-page-layout">
-        
         <section className="series-watch-section">
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
-                <PlayerContent />
+                <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
               </div>
               <div>
@@ -450,7 +480,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           </div>
           
           <div className="mobile-only-layout">
-            <PlayerContent />
+            <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
           </div>
         </section>
 

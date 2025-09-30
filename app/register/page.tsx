@@ -41,44 +41,50 @@ export default function RegisterPage() {
     }
   };
   
-  const authFormContainer: React.CSSProperties = {
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh',
-  };
-  
-  const authForm: React.CSSProperties = {
-      width: '100%', maxWidth: '400px', padding: '2.5rem',
-      backgroundColor: 'var(--card-color)', border: '1px solid var(--border-color)', borderRadius: '12px',
-  };
-
   return (
-    <div style={authFormContainer}>
-      <div style={authForm}>
-        <h1 style={{ textAlign: 'center', marginBottom: '0.5rem', fontSize: '1.8rem' }}>Criar conta</h1>
+    <div className="auth-page-container">
+      <div className="auth-form-wrapper">
+        <h1>Criar conta</h1>
         
-        {error && <p style={{ color: 'var(--accent-red)', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
+        {error && <p className="error-message">{error}</p>}
         
-        <form onSubmit={handleEmailRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <input type="text" placeholder="Nome de utilizador" value={username} onChange={(e) => setUsername(e.target.value)} required 
-            className="focusable"
-            style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
-          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required 
-            className="focusable"
-            style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
-          <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required 
-            className="focusable"
-            style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: '#0d0d0d', color: 'white' }} />
-          <button type="submit" className='stream-button active focusable' style={{border: 'none', padding: '0.9rem'}}>Criar conta</button>
+        <form onSubmit={handleEmailRegister} className="auth-form">
+          <input 
+            type="text" 
+            placeholder="Nome de utilizador" 
+            value={username} 
+            onChange={(e) => setUsername(e.target.value)} 
+            required 
+            className="form-input focusable"
+          />
+          <input 
+            type="email" 
+            placeholder="Email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+            className="form-input focusable"
+          />
+          <input 
+            type="password" 
+            placeholder="Senha" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+            className="form-input focusable"
+          />
+          <button type="submit" className='btn-primary btn-full focusable'>Criar conta</button>
         </form>
 
-        <p style={{ textAlign: 'center', margin: '1.5rem 0', color: 'var(--text-secondary)' }}>ou</p>
+        <p className="separator-text">ou</p>
 
-        <button onClick={handleGoogleLogin} className='details-button focusable' style={{ width: '100%', justifyContent: 'center' }}>
+        <button onClick={handleGoogleLogin} className='btn-secondary btn-full focusable'>
             Continuar com Google
         </button>
 
-        <p style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <p className="link-text">
             Já tem uma conta?{' '}
-            <Link href="/login" className="focusable" style={{ color: 'var(--accent-yellow)', textDecoration: 'underline' }}>
+            <Link href="/login" className="focusable">
                 Entre aqui
             </Link>
         </p>
