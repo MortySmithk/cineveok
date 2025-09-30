@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/firebase'; // GARANTA QUE ESTA LINHA ESTÁ CORRETA
+import { db } from '@/app/firebase';
 
 import StarIcon from '@/app/components/icons/StarIcon';
 import CalendarIcon from '@/app/components/icons/CalendarIcon';
@@ -17,7 +17,7 @@ import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import { useContinueWatching } from '@/app/hooks/useContinueWatching';
 import AudioVisualizer from '@/app/components/AudioVisualizer';
 
-// --- Interfaces (sem alterações) ---
+// --- Interfaces ---
 interface Genre { id: number; name: string; }
 interface Season { id: number; name: string; season_number: number; episode_count: number; }
 interface Episode {
@@ -29,7 +29,7 @@ interface CastMember {
 }
 interface MediaDetails {
   id: number; title: string; overview: string; poster_path: string; backdrop_path: string;
-  release_date: string; genres: Genre[]; vote_average: number; imdb_id?: string;
+  release_date: string; first_air_date?: string; genres: Genre[]; vote_average: number; imdb_id?: string;
   runtime?: number;
   episode_run_time?: number[];
   credits?: { cast: CastMember[] };
@@ -75,7 +75,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [subscribers, setSubscribers] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false); // Novo estado
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
   // Efeito para buscar dados do TMDB
   useEffect(() => {
@@ -90,6 +90,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         
         if (type === 'movie' && data.id) {
           setIsPlayerLoading(true);
+          // *** CORREÇÃO AQUI: Usando a sua API para filmes ***
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
           saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
         }
@@ -191,6 +192,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (type === 'tv' && activeEpisode && id && details) {
         setIsPlayerLoading(true);
         const { season, episode } = activeEpisode;
+        // *** CORREÇÃO AQUI: Usando a sua API para séries ***
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
     }
@@ -205,22 +207,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
   
-  const formatRuntime = (minutes?: number | number[]) => {
-    if (!minutes) return '';
-    const mins = Array.isArray(minutes) ? minutes[0] : minutes;
-    if (!mins) return '';
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    return `${hours}h ${remainingMins}m`;
-  };
-  
-  // Obtém a sinopse correta (filme, ou episódio)
   const getSynopsis = (): string => {
       if (type === 'movie') {
           return details?.overview || 'Sinopse não disponível.';
       }
       
-      // FIX: Adicionar verificação de nulidade para activeEpisode
       const currentEpisode = activeEpisode 
         ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) 
         : null;
@@ -228,7 +219,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return currentEpisode?.overview || details?.overview || 'Sinopse não disponível.';
   };
   
-  // FIX: Adicionar verificação de nulidade para activeEpisode
   const getTitle = (): string => {
       if (type === 'movie') {
           return details?.title || 'Filme';
@@ -238,12 +228,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode)
         : null;
 
-      return currentEpisode && activeEpisode // Verifique se ambos existem antes de usar
+      return currentEpisode && activeEpisode
         ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` 
         : details?.title || 'Série';
   }
 
-  // Função de like/dislike
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!currentStatsId) return;
@@ -297,7 +286,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
-  // Função de inscrição
   const handleSubscribe = async () => {
     if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
     
@@ -340,79 +328,73 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       ) : (<div className="player-loader"><div className="spinner"></div><span>Selecione um episódio para começar a assistir.</span></div>)}
     </div>
   );
-  
-  const MobileTitleAndSynopsis = () => {
-      const currentSynopsis = getSynopsis();
-      return (
-          // O padding horizontal é aplicado via CSS (0 1rem)
-          <div className="synopsis-box-mobile">
-              <h1 className="movie-card-title" style={{ fontSize: '1.2rem', fontWeight: 700 }}>{getTitle()}</h1>
-              <div className="details-meta-bar" style={{ justifyContent: 'flex-start' }}>
-                  {/* Views são visíveis no mobile no título/meta como no YouTube */}
-                  <span className='meta-item views-info'>{formatNumber(stats.views)} visualizações</span>
-                  <span className='meta-item'>{details.release_date?.substring(0, 4)}</span>
-                  <span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>
-              </div>
-              <div className={`synopsis-text-container ${isSynopsisExpanded ? 'expanded' : ''}`}>
-                  <p style={{ color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5 }}>{currentSynopsis}</p>
-              </div>
+
+  const InfoBox = () => {
+    const currentSynopsis = getSynopsis();
+    return (
+        <div className="synopsis-box" style={{ marginTop: '1.5rem' }}>
+          <div className="details-meta-bar" style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', gap: '1rem' }}>
+              <strong style={{ fontWeight: 600 }}>{formatNumber(stats.views)} visualizações</strong>
+              <span style={{color: 'var(--text-secondary)'}}>{(details.release_date || details.first_air_date)?.substring(0, 4)}</span>
+          </div>
+          
+          <div className={`synopsis-text-container ${isSynopsisExpanded ? 'expanded' : ''}`}>
+              <p style={{color: 'var(--text-primary)'}}>{currentSynopsis}</p>
+          </div>
+          {(currentSynopsis || '').length > 150 &&
               <button onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)} className="expand-synopsis-btn focusable">
                   {isSynopsisExpanded ? 'Mostrar menos' : '...mais'}
               </button>
-          </div>
-      );
+          }
+        </div>
+    );
   };
 
   const InteractionsSection = () => (
-    // Foi removido o padding horizontal desta div, pois o main-container externo irá gerenciar o padding
     <div className="details-interactions-section">
-        {/* TITULO/SINOPSE MOBILE (Novo elemento) */}
-        {/* Usamos mobile-only-layout para esconder o MobileTitleAndSynopsis do desktop */}
-        <div className='mobile-only-layout'>
-            <MobileTitleAndSynopsis />
+      <h1 className="movie-card-title" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{getTitle()}</h1>
+      
+      <div className="channel-info">
+          <div className="channel-details">
+              <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
+              <div>
+                  <div className="channel-name-wrapper">
+                      <h3 className="channel-name">CineVEO</h3>
+                      <Image 
+                          className="verified-badge" 
+                          src="https://i.ibb.co/mr16xgYy/Chat-GPT-Image-18-de-ago-de-2025-01-35-17-removebg-preview.png" 
+                          alt="Verificado"
+                          width={16}
+                          height={16}
+                      />
+                  </div>
+                  <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
+              </div>
+          </div>
+          <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
+              {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
+          </button>
+      </div>
+
+      <div className="media-actions-bar">
+        <div className="like-dislike-group">
+          <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
+              <LikeIcon isActive={userLikeStatus === 'liked'} width={24} height={24} /> 
+              <span>{formatNumber(stats.likes)}</span>
+          </button>
+          <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
+              <DislikeIcon isActive={userLikeStatus === 'disliked'} width={24} height={24} />
+               <span>{formatNumber(stats.dislikes)}</span>
+          </button>
         </div>
-        
-        <div className="media-actions-bar">
-            {/* O views-info é hidden DA BARRA DE AÇÕES no mobile via CSS, mas visível no desktop */}
-            <span className="views-info desktop-only-layout">{formatNumber(stats.views)} visualizações</span>
-            <div className="like-dislike-group">
-                <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-                    {/* Botões Like/Dislike com 28x28 */}
-                    <LikeIcon isActive={userLikeStatus === 'liked'} width={28} height={28} /> {formatNumber(stats.likes)}
-                </button>
-                <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-                    {/* Botões Like/Dislike com 28x28 */}
-                    <DislikeIcon isActive={userLikeStatus === 'disliked'} width={28} height={28} /> {formatNumber(stats.dislikes)}
-                </button>
-            </div>
-        </div>
-        
-        <div className="channel-info">
-            <div className="channel-details">
-                <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
-                <div>
-                    <div className="channel-name-wrapper">
-                        <h3 className="channel-name">CineVEO</h3>
-                        <Image 
-                            className="verified-badge" 
-                            src="https://i.ibb.co/mr16xgYy/Chat-GPT-Image-18-de-ago-de-2025-01-35-17-removebg-preview.png" 
-                            alt="Verificado"
-                            width={16}
-                            height={16}
-                        />
-                    </div>
-                    <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
-                </div>
-            </div>
-            <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
-                {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
-            </button>
-        </div>
+      </div>
+      
+      {/* A InfoBox só aparece aqui para filmes */}
+      {type === 'movie' && <InfoBox />}
     </div>
   );
   
   const EpisodeSelector = () => (
-    // Esta div é sempre renderizada para series no mobile
     <div className="episodes-list-wrapper">
         <div className="episodes-header">
             <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); setActiveEpisode({season: newSeason, episode: 1}) }}>
@@ -421,26 +403,25 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
         
-        {/* Lista de Episódios para Desktop */}
         <div className="episode-list-desktop desktop-only-layout">
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
             {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
 
-        {/* Grid de Episódios para Mobile (Botões quadrados e rolagem horizontal) */}
-        <div className="episode-grid-mobile mobile-only-layout">
-            {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => ( 
-              <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
-                {ep.episode_number}
-              </button>
-            ))}
+        <div className="mobile-only-layout">
+          <div className="episode-grid-mobile">
+              {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
+              {!isLoading && seasonEpisodes.map(ep => ( 
+                <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
+                  {ep.episode_number}
+                </button>
+              ))}
+          </div>
         </div>
     </div>
   );
 
   const MovieSelector = () => (
-    // Apenas a versão desktop do card de filme é necessária aqui
     <div className="episodes-list-wrapper desktop-only-layout">
         <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
             <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
@@ -450,54 +431,44 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     </div>
   );
 
-
   return (
     <>
       <div className="media-page-layout">
         
-        {/* --- SEÇÃO DO PLAYER (UNIVERSAL) --- */}
         <section className="series-watch-section">
-          {/* Player e a coluna de detalhes/episódios para Desktop/Tablet */}
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
               <div className="series-player-wrapper">
                 <PlayerContent />
-                <div className='desktop-only-layout'><InteractionsSection /></div>
+                <InteractionsSection />
               </div>
-              {/* Lista/Seletor de Episódios para Desktop (ou card de filme) */}
-              {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
+              <div>
+                {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
+                {type === 'tv' && <InfoBox />}
+              </div>
             </div>
           </div>
           
-          {/* Player no Mobile (deve ser full-width no topo) */}
           <div className="mobile-only-layout">
             <PlayerContent />
           </div>
         </section>
 
-        {/* --- INTERAÇÕES E SELEÇÃO DE EPISÓDIO NO MOBILE --- */}
         <div className="mobile-only-layout">
-             <div className="main-container">
-                {/* 1. Título/Sinopse, 2. Likes/Dislikes, 3. Canal/Inscrição */}
+             <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
-                
-                {/* 4. Seletor de Episódios (Apenas para TV/Séries) no Mobile */}
                 {type === 'tv' && <EpisodeSelector />}
+                {type === 'tv' && <InfoBox />}
             </div>
         </div>
-
         
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
-              {/* Poster no Desktop/Tablet */}
               <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
               <div className="details-info">
-                {/* Detalhes para Desktop/Tablet (Escondidos no mobile) */}
-                <div className='desktop-only-layout'>
-                    <h1>{details.title}</h1>
-                    <div className="details-meta-bar"><span className='meta-item'><CalendarIcon width={16} height={16} /> {details.release_date?.substring(0, 4)}</span><span className='meta-item'><ClockIcon width={16} height={16} /> {formatRuntime(details.runtime || details.episode_run_time)}</span><span className='meta-item'><StarIcon width={16} height={16} /> {details.vote_average > 0 ? details.vote_average.toFixed(1) : "N/A"}</span>{type === 'tv' && details.number_of_seasons && <span className='meta-item'>{details.number_of_seasons} Temporada{details.number_of_seasons > 1 ? 's' : ''}</span>}</div>
-                    <div className="synopsis-box"><h3>Sinopse</h3><p>{details.overview}</p><div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div></div>
+                 <div className='desktop-only-layout'>
+                    <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
                 </div>
               </div>
             </div>
