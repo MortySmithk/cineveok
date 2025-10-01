@@ -134,34 +134,44 @@ main { padding-top: 68px; }
   position: fixed; inset: 0; background-color: var(--background-color); z-index: 1100;
   display: flex; flex-direction: column;
 }
+
+/* --- INÍCIO DA CORREÇÃO --- */
 .search-overlay-header {
-  display: flex; align-items: center; gap: 0.5rem; height: 60px;
-  padding: 0.5rem 1rem; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 60px;
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
   background-color: var(--background-color);
   border-bottom: 1px solid var(--border-color);
+  position: relative; /* Adicionado */
+  z-index: 1102; /* Adicionado */
+  overflow: visible; /* Adicionado */
 }
+/* --- FIM DA CORREÇÃO --- */
+
 .search-overlay-back-btn { background: none; border: none; color: white; padding: 0.5rem;}
 .search-overlay-input-wrapper { flex-grow: 1; }
 .search-overlay .search-input { height: 44px; }
 .search-overlay .search-button, .search-overlay .voice-search-btn { height: 44px; }
-.search-overlay .search-container { position: relative; }
+.search-overlay .search-container { position: static; }
 
 /* --- INÍCIO DA CORREÇÃO --- */
 .search-overlay .suggestions-dropdown {
   position: absolute;
-  top: 54px; /* Altura do input + um respiro */
+  top: 100%; /* Posiciona abaixo do header */
   left: 0;
   right: 0;
-  bottom: 0;
-  border: none;
+  height: calc(100vh - 60px); /* Ocupa o resto da tela */
   background-color: var(--background-color);
-  max-height: none;
   overflow-y: auto;
   padding: 1rem;
-  z-index: 1101;
   border-radius: 0;
+  border: none;
 }
 /* --- FIM DA CORREÇÃO --- */
+
 
 /* --- VOICE SEARCH OVERLAY --- */
 .voice-search-overlay {
