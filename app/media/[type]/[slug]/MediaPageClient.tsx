@@ -1,4 +1,4 @@
-// app/media/[type]/[slug]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect, memo } from 'react'; // Importar o 'memo'
@@ -70,7 +70,6 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
       )}
       {activeStreamUrl ? (
         <iframe
-          key={activeStreamUrl} // A chave ainda é importante para trocar de episódio
           src={activeStreamUrl}
           title={`CineVEO Player - ${title}`}
           allow="autoplay; encrypted-media"
