@@ -23,9 +23,9 @@
         input:focus, select:focus, textarea:focus {
              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
         }
-        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar, #manual-add-modal-content::-webkit-scrollbar { width: 6px; }
-        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track, #manual-add-modal-content::-webkit-scrollbar-track { background: #1f2937; }
-        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb, #manual-add-modal-content::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
         .report-btn.active {
             background-color: #ca8a04;
             color: #111827;
@@ -36,7 +36,7 @@
 
     <div id="login-screen" class="min-h-screen flex items-center justify-center">
         <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
-            <img src="https://i.ibb.co/s91tycz/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
+            <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
             <h2 class="text-2xl font-bold text-center text-white mb-6">Acesso Restrito</h2>
             <form id="login-form" class="space-y-4">
                 <input id="email" type="email" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
@@ -49,7 +49,7 @@
     <div id="admin-panel" class="hidden">
         <header class="bg-gray-800 shadow-md">
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-                <img src="https://i.ibb.co/s91tycz/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-32">
+                <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-32">
                 <div>
                     <span id="user-email" class="text-sm text-gray-400 mr-4"></span>
                     <button id="logout-button" class="bg-red-600 text-white font-semibold px-4 py-2 rounded-md text-sm hover:bg-red-700 transition">Sair</button>
@@ -90,7 +90,7 @@
                 
                 <div class="lg:col-span-1 flex flex-col gap-8">
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold text-white mb-4">Adicionar Conteúdo</h2>
+                        <h2 class="text-xl font-bold text-white mb-4">Adicionar Rápido por ID</h2>
                         <div class="flex flex-col sm:flex-row gap-2">
                             <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB (ex: TMDB: 1053024)" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
                             <select id="quick-add-media-type" class="bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
@@ -98,9 +98,6 @@
                                 <option value="tv">Série</option>
                             </select>
                             <button id="quick-add-btn" class="bg-teal-500 text-white font-bold px-4 py-2 rounded-md hover:bg-teal-600 transition">Carregar</button>
-                        </div>
-                         <div class="mt-4 text-center">
-                            <button id="manual-add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-md transition">Manual</button>
                         </div>
                     </div>
                     
@@ -167,48 +164,6 @@
         </main>
     </div>
 
-    <div id="manual-add-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center">
-        <div class="bg-gray-800 w-full max-w-3xl h-full max-h-[90vh] rounded-lg shadow-xl flex flex-col">
-            <header class="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white">Adicionar Filme Manualmente</h2>
-                <button id="close-manual-modal-btn" class="text-gray-400 hover:text-white text-3xl">&times;</button>
-            </header>
-            <div id="manual-add-modal-content" class="p-6 flex-grow overflow-y-auto">
-                <form id="manual-media-form" class="space-y-4">
-                    <div>
-                        <label for="manual-title" class="block text-sm font-medium text-gray-400">Título do Filme</label>
-                        <input type="text" id="manual-title" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500" required>
-                    </div>
-                     <div>
-                        <label for="manual-year" class="block text-sm font-medium text-gray-400">Ano de Lançamento</label>
-                        <input type="number" id="manual-year" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500" placeholder="Ex: 2023">
-                    </div>
-                    <div>
-                        <label for="manual-poster-url" class="block text-sm font-medium text-gray-400">URL do Pôster</label>
-                        <input type="url" id="manual-poster-url" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500" placeholder="https://exemplo.com/poster.jpg">
-                    </div>
-                     <div>
-                        <label for="manual-overview" class="block text-sm font-medium text-gray-400">Sinopse</label>
-                        <textarea id="manual-overview" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 mt-1 text-white focus:outline-none focus:border-yellow-500"></textarea>
-                    </div>
-
-                    <div class="pt-4">
-                        <h3 class="text-md font-semibold border-b border-gray-700 pb-2">Links do Filme</h3>
-                        <div id="manual-movie-urls-list" class="space-y-2 mt-2">
-                            </div>
-                        <button type="button" id="add-manual-movie-url-btn" class="mt-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded-md transition">+ Adicionar URL</button>
-                    </div>
-                </form>
-            </div>
-            <footer class="p-4 border-t border-gray-700 flex justify-end gap-4">
-                <button type="button" id="cancel-manual-add-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-md transition">Cancelar</button>
-                <button type="submit" form="manual-media-form" id="save-manual-add-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-md transition flex items-center justify-center">
-                    <span class="btn-text">Salvar Filme</span>
-                    <div class="loader hidden ml-2"></div>
-                </button>
-            </footer>
-        </div>
-    </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -265,16 +220,7 @@
             logoutButton: document.getElementById('logout-button'),
             addMovieUrlBtn: document.getElementById('add-movie-url-btn'),
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn'),
-            forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn'),
-            // Elementos da Janela Manual
-            manualAddBtn: document.getElementById('manual-add-btn'),
-            manualAddModal: document.getElementById('manual-add-modal'),
-            closeManualModalBtn: document.getElementById('close-manual-modal-btn'),
-            cancelManualAddBtn: document.getElementById('cancel-manual-add-btn'),
-            manualMediaForm: document.getElementById('manual-media-form'),
-            addManualMovieUrlBtn: document.getElementById('add-manual-movie-url-btn'),
-            manualMovieUrlsList: document.getElementById('manual-movie-urls-list'),
-            saveManualAddBtn: document.getElementById('save-manual-add-btn')
+            forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn')
         };
 
         const showPanel = async (user) => {
@@ -308,13 +254,8 @@
             const typeLabel = item.type === 'series' || item.media_type === 'tv' ? 'Série' : 'Filme';
             const tmdbType = item.media_type || (item.type === 'series' ? 'tv' : 'movie');
             const isForced = item.forceFirestore === true;
-            const isManual = item.id.toString().startsWith('manual_');
 
-            let manageButtonId = isManual ? `data-manual-id="${item.id}"` : `data-tmdb-id="${item.id}"`;
-            let manageButtonType = isManual ? `data-tmdb-type="movie"` : `data-tmdb-type="${tmdbType}"`;
-
-
-            const copyButtonHTML = tmdbType === 'tv' && !isManual
+            const copyButtonHTML = tmdbType === 'tv' 
                 ? `<button class="copy-all-links-btn bg-cyan-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-cyan-700" data-tmdb-id="${item.id}">Copiar Links</button>` 
                 : '';
 
@@ -329,7 +270,7 @@
                         <button class="force-firestore-btn text-xs font-bold px-3 py-1 rounded transition ${isForced ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 hover:bg-gray-500 text-gray-300'}" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
                             ${isForced ? 'Forçando Firestore' : 'Padrão API'}
                         </button>
-                        <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" ${manageButtonId} ${manageButtonType}>
+                        <button class="manage-btn bg-yellow-600 text-white text-xs font-bold px-3 py-1 rounded hover:bg-yellow-700" data-tmdb-id="${item.id}" data-tmdb-type="${tmdbType}">
                             Gerenciar
                         </button>
                     </div>
@@ -371,18 +312,13 @@
             ui.saveBtn.disabled = false;
 
             try {
-                const isManual = id.toString().startsWith('manual_');
-
+                const tmdbResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                if (!tmdbResponse.ok) throw new Error('Conteúdo não encontrado no TMDB.');
+                const tmdbData = await tmdbResponse.json();
+                
                 const firestoreDocRef = doc(firestore, "media", id.toString());
                 const docSnap = await getDoc(firestoreDocRef);
                 const firestoreData = docSnap.exists() ? docSnap.data() : {};
-                
-                let tmdbData = {};
-                if (!isManual) {
-                    const tmdbResponse = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
-                    if (!tmdbResponse.ok) throw new Error('Conteúdo não encontrado no TMDB.');
-                    tmdbData = await tmdbResponse.json();
-                }
                 
                 ui.mediaTitleInput.value = firestoreData.title || tmdbData.title || tmdbData.name;
                 
@@ -467,16 +403,19 @@
             bulkImportData = {};
         };
         
-        const addMovieResolutionUI = (url = '', listElement = ui.movieUrlsList) => {
+        const addMovieResolutionUI = (url = '') => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
                 <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
                 <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold">X</button>
             `;
-            listElement.appendChild(div);
+            ui.movieUrlsList.appendChild(div);
         };
         
+        // =================================================================================
+        // INÍCIO DA MODIFICAÇÃO: Função de salvamento corrigida para importação em massa
+        // =================================================================================
         const handleMediaFormSubmit = async (e) => {
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
@@ -510,7 +449,11 @@
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
+                    // Começa com os dados de temporadas já existentes no Firestore
                     const seasonsToSave = existingData.seasons || {};
+
+                    // Mescla os dados da importação em massa. Isso irá adicionar/sobrescrever
+                    // as temporadas e episódios com base no texto colado.
                     for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
                         const newEpisodesForSeason = [];
                         for (const [epNumber, url] of Object.entries(episodes)) {
@@ -528,6 +471,9 @@
                         seasonsToSave[seasonNumber].episodes = newEpisodesForSeason;
                     }
 
+                    // Agora, processa a temporada ATUALMENTE VISÍVEL no formulário.
+                    // Isso captura quaisquer edições manuais e garante que elas sejam salvas,
+                    // sobrescrevendo os dados da importação em massa apenas para esta temporada.
                     const currentSeasonNumber = ui.seasonSelector.value;
                     const currentSeasonEpisodesFromForm = [];
                     document.querySelectorAll('.episode-url').forEach(input => {
@@ -547,6 +493,7 @@
                     seasonsToSave[currentSeasonNumber].episodes = currentSeasonEpisodesFromForm;
                     seasonsToSave[currentSeasonNumber].name = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
                     
+                    // Atribui o objeto final de temporadas para ser salvo
                     mediaData.seasons = seasonsToSave;
                 }
                 
@@ -566,6 +513,9 @@
                 ui.saveBtn.disabled = false;
             }
         };
+        // =================================================================================
+        // FIM DA MODIFICAÇÃO
+        // =================================================================================
 
         const handleBulkImport = () => {
             const text = ui.bulkImportTextarea.value.trim();
@@ -636,8 +586,7 @@
                         forceFirestore: data.forceFirestore || false,
                         hasLinks: false, 
                         meetsMp4Criteria: false,
-                        episodesWithLinksCount: 0,
-                        release_date: data.release_date || null
+                        episodesWithLinksCount: 0
                     };
 
                     if (data.type === 'movie' && Array.isArray(data.urls) && data.urls.length > 0) {
@@ -715,7 +664,6 @@
 
             itemInCache.title = mediaData.title;
             itemInCache.forceFirestore = mediaData.forceFirestore || false;
-            itemInCache.release_date = mediaData.release_date || null;
 
             if (mediaData.type === 'movie') {
                 let hasAnyLink = false;
@@ -922,75 +870,6 @@
             }
         };
 
-        // --- Funções da Janela Manual ---
-
-        const openManualModal = () => {
-            ui.manualMediaForm.reset();
-            ui.manualMovieUrlsList.innerHTML = '';
-            addMovieResolutionUI('', ui.manualMovieUrlsList);
-            ui.manualAddModal.classList.remove('hidden');
-        };
-
-        const closeManualModal = () => {
-            ui.manualAddModal.classList.add('hidden');
-        };
-
-        const handleManualFormSubmit = async (e) => {
-            e.preventDefault();
-            
-            const title = document.getElementById('manual-title').value.trim();
-            const year = document.getElementById('manual-year').value;
-            const posterUrl = document.getElementById('manual-poster-url').value.trim();
-            const overview = document.getElementById('manual-overview').value.trim();
-
-            if (!title) {
-                return alert('O título é obrigatório.');
-            }
-
-            const saveBtn = ui.saveManualAddBtn;
-            saveBtn.querySelector('.btn-text').textContent = 'Salvando...';
-            saveBtn.querySelector('.loader').classList.remove('hidden');
-            saveBtn.disabled = true;
-
-            const manualId = `manual_${Date.now()}`;
-            const docRef = doc(firestore, "media", manualId);
-
-            const urls = [];
-            ui.manualMovieUrlsList.querySelectorAll('.movie-url').forEach(input => {
-                const url = input.value.trim();
-                if (url) {
-                    urls.push({ quality: 'HD', url: url });
-                }
-            });
-
-            const manualMediaData = {
-                id: manualId,
-                title: title,
-                poster_path: posterUrl,
-                overview: overview,
-                release_date: year ? `${year}-01-01` : '',
-                type: 'movie',
-                urls: urls,
-                forceFirestore: true, // Filmes manuais sempre devem usar Firestore
-                manualEntry: true,
-            };
-            
-            try {
-                await setDoc(docRef, manualMediaData);
-                updateCacheAndUI(manualId, manualMediaData);
-                alert('Filme manual salvo com sucesso!');
-                closeManualModal();
-            } catch (error) {
-                console.error("Erro ao salvar filme manual:", error);
-                alert("Ocorreu um erro ao salvar o filme.");
-            } finally {
-                saveBtn.querySelector('.btn-text').textContent = 'Salvar Filme';
-                saveBtn.querySelector('.loader').classList.add('hidden');
-                saveBtn.disabled = false;
-            }
-        };
-
-
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
@@ -1011,10 +890,7 @@
             const universalClickListener = (e) => {
                 const manageButton = e.target.closest('.manage-btn');
                 if (manageButton) {
-                    const tmdbId = manageButton.dataset.tmdbId;
-                    const manualId = manageButton.dataset.manualId;
-                    const id = tmdbId || manualId;
-                    prepareFormForEditing(id, manageButton.dataset.tmdbType);
+                    prepareFormForEditing(manageButton.dataset.tmdbId, manageButton.dataset.tmdbType);
                     return;
                 }
                 const forceButton = e.target.closest('.force-firestore-btn');
@@ -1046,7 +922,7 @@
 
             ui.mediaForm.addEventListener('submit', handleMediaFormSubmit);
             ui.cancelEditBtn.addEventListener('click', resetForm);
-            ui.addMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI('', ui.movieUrlsList));
+            ui.addMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI());
             ui.movieUrlsList.addEventListener('click', (e) => {
                 if (e.target.closest('.remove-btn')) e.target.closest('.flex').remove();
             });
@@ -1108,16 +984,6 @@
             });
 
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
-            
-            // Listeners da Janela Manual
-            ui.manualAddBtn.addEventListener('click', openManualModal);
-            ui.closeManualModalBtn.addEventListener('click', closeManualModal);
-            ui.cancelManualAddBtn.addEventListener('click', closeManualModal);
-            ui.manualMediaForm.addEventListener('submit', handleManualFormSubmit);
-            ui.addManualMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI('', ui.manualMovieUrlsList));
-            ui.manualMovieUrlsList.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-btn')) e.target.closest('.flex').remove();
-            });
         });
     </script>
 </body>
