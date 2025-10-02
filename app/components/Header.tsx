@@ -96,7 +96,7 @@ export default function Header() {
                   <SearchIcon width={24} height={24} />
                 </button>
                 
-                {/* NOVO BOTÃO DE PERFIL/LOGIN MOBILE */}
+                {/* BOTÃO DE PERFIL/LOGIN MOBILE */}
                 <div className="header-profile-mobile">
                   <button 
                     className="header-profile-mobile-btn focusable" 
@@ -104,13 +104,12 @@ export default function Header() {
                   >
                     {user && user.photoURL ? (
                       <Image src={user.photoURL} alt="User" width={28} height={28} style={{ borderRadius: '50%' }} />
-                    ) : user ? (
-                      <UserIcon width={22} height={22} />
                     ) : (
-                       <UserIcon width={22} height={22} />
+                      <UserIcon width={22} height={22} />
                     )}
                   </button>
 
+                  {/* CORREÇÃO AQUI: O dropdown agora só renderiza se o usuário estiver logado e o perfil aberto */}
                   {user && isProfileOpen && (
                     <div className="header-profile-dropdown">
                       <div className="dropdown-user-info">
