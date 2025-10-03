@@ -1,7 +1,7 @@
 // cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo } from 'react'; // Importar o 'memo'
+import { useState, useEffect, memo, useRef } from 'react'; // Importar o 'memo' e 'useRef'
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -169,14 +169,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type, activeEpisode]);
 
-  // Efeito para ouvir as estatísticas (incluindo visualizações)
+  // ==================================================================
+  // INÍCIO DA CORREÇÃO: Lógica de visualização separada
+  // ==================================================================
+  // Efeito para incrementar a visualização UMA VEZ para QUALQUER usuário
   useEffect(() => {
-    if (!currentStatsId) {
-      setStats({ views: 0, likes: 0, dislikes: 0 });
-      return;
-    }
+    if (!currentStatsId) return;
 
-    setStats({ views: 0, likes: 0, dislikes: 0 });
     const statsRef = doc(db, 'media_stats', currentStatsId);
     
     // Incrementa a visualização para todos os usuários
@@ -189,6 +188,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         }
     }).catch(console.error);
 
+  }, [currentStatsId]); // Roda apenas quando o ID do conteúdo a ser rastreado muda
+
+  // Efeito para OUVIR as estatísticas (likes, dislikes, etc)
+  useEffect(() => {
+    if (!currentStatsId) {
+      setStats({ views: 0, likes: 0, dislikes: 0 });
+      return;
+    }
+
+    const statsRef = doc(db, 'media_stats', currentStatsId);
     const unsubStats = onSnapshot(statsRef, (doc) => {
         const data = doc.data();
         setStats({
@@ -207,6 +216,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       unsubChannel();
     };
   }, [currentStatsId]);
+  // ==================================================================
+  // FIM DA CORREÇÃO
+  // ==================================================================
   
   // Efeito para ouvir as interações do usuário (apenas se logado)
   useEffect(() => {
