@@ -1,7 +1,7 @@
-// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
+// app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo, useRef } from 'react'; // Importar o 'memo' e 'useRef'
+import { useState, useEffect, memo, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -11,7 +11,7 @@ import { db } from '@/app/firebase';
 
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
-import { useContinueWatching } from '@/app/hooks/useContinueWatching';
+import { useWatchHistory } from '@/app/hooks/useWatchHistory'; // ATUALIZADO
 import AudioVisualizer from '@/app/components/AudioVisualizer';
 
 // --- Interfaces ---
@@ -49,13 +49,9 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-// ==================================================================
-// INÍCIO DA CORREÇÃO: Player memorizado para não reiniciar
-// ==================================================================
 const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
 
-  // Efeito para resetar o loading quando a URL do stream muda
   useEffect(() => {
     setIsPlayerLoading(true);
   }, [activeStreamUrl]);
@@ -88,9 +84,6 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
     </div>
   );
 });
-// ==================================================================
-// FIM DA CORREÇÃO
-// ==================================================================
 
 
 export default function MediaPageClient({ params }: { params: { type: string; slug: string } }) {
@@ -99,7 +92,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const id = getIdFromSlug(slug);
 
   const { user } = useAuth();
-  const { saveProgress, getProgress } = useContinueWatching();
+  const { saveHistory, continueWatching } = useWatchHistory(); // ATUALIZADO
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,11 +124,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         if (type === 'movie' && data.id) {
           setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${data.id}`);
           if (user) {
-            saveProgress({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
+            saveHistory({ mediaType: 'movie', tmdbId: id, title: data.title || data.name, poster_path: data.poster_path });
           }
         }
         if (type === 'tv') {
-          const progress = getProgress('tv', id);
+          const progress = continueWatching.find(item => item.tmdbId === id);
           const startSeason = progress?.progress?.season || 1;
           const startEpisode = progress?.progress?.episode || 1;
           setSelectedSeason(startSeason);
@@ -144,7 +137,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       } catch (error) { setStatus("Não foi possível carregar os detalhes."); }
     };
     fetchData();
-  }, [id, type, getProgress, saveProgress, user]);
+  }, [id, type, user, saveHistory, continueWatching]);
   
   // Efeito para buscar episódios quando a temporada muda
   useEffect(() => {
@@ -168,17 +161,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     };
     fetchSeasonData();
   }, [id, details, selectedSeason, type, activeEpisode]);
-
-  // ==================================================================
-  // INÍCIO DA CORREÇÃO: Lógica de visualização separada
-  // ==================================================================
-  // Efeito para incrementar a visualização UMA VEZ para QUALQUER usuário
+  
   useEffect(() => {
     if (!currentStatsId) return;
 
     const statsRef = doc(db, 'media_stats', currentStatsId);
     
-    // Incrementa a visualização para todos os usuários
     runTransaction(db, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
@@ -188,9 +176,8 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         }
     }).catch(console.error);
 
-  }, [currentStatsId]); // Roda apenas quando o ID do conteúdo a ser rastreado muda
+  }, [currentStatsId]);
 
-  // Efeito para OUVIR as estatísticas (likes, dislikes, etc)
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -216,11 +203,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       unsubChannel();
     };
   }, [currentStatsId]);
-  // ==================================================================
-  // FIM DA CORREÇÃO
-  // ==================================================================
   
-  // Efeito para ouvir as interações do usuário (apenas se logado)
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
@@ -245,10 +228,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         if (user) {
-          saveProgress({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
+          saveHistory({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
         }
     }
-  }, [activeEpisode, id, type, details, saveProgress, user]);
+  }, [activeEpisode, id, type, details, saveHistory, user]);
 
 
   const handleEpisodeClick = (season: number, episodeNumber: number) => {

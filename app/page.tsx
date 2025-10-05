@@ -1,4 +1,4 @@
-// cineveo-next/app/page.tsx
+// app/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,7 +8,7 @@ import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
-import { useContinueWatching } from '@/app/hooks/useContinueWatching';
+import { useWatchHistory } from '@/app/hooks/useWatchHistory'; // ATUALIZADO
 import { generateSlug } from '@/app/lib/utils';
 
 interface Media { 
@@ -32,7 +32,7 @@ export default function HomePage() {
   const [popularSeries, setPopularSeries] = useState<Media[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const { history: continueWatchingHistory } = useContinueWatching();
+  const { continueWatching } = useWatchHistory(); // ATUALIZADO
 
 
   useEffect(() => {
@@ -97,11 +97,11 @@ export default function HomePage() {
       </div>
 
       <div className="main-container" style={{ position: 'relative', zIndex: 10 }}>
-        {continueWatchingHistory.length > 0 && (
+        {continueWatching.length > 0 && (
           <section className="movie-section">
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
             <div className="movie-carousel">
-              {continueWatchingHistory.map((item) => (
+              {continueWatching.map((item) => (
                 <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                   <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>

@@ -1,4 +1,4 @@
-// cineveo-next/app/components/Header.tsx
+// app/components/Header.tsx
 "use client";
 
 import Link from 'next/link';
@@ -70,7 +70,7 @@ export default function Header() {
               <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
               <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
               <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
-              <Link href="/doramas" style={getLinkStyle('/doramas')} className="focusable">Doramas</Link>
+              <Link href="/historico" style={getLinkStyle('/historico')} className="focusable">Histórico</Link>
             </nav>
           </div>
 
@@ -109,13 +109,13 @@ export default function Header() {
                     )}
                   </button>
 
-                  {/* CORREÇÃO AQUI: O dropdown agora só renderiza se o usuário estiver logado e o perfil aberto */}
                   {user && isProfileOpen && (
                     <div className="header-profile-dropdown">
                       <div className="dropdown-user-info">
                         <strong>{user.displayName?.split(' ')[0] || 'Utilizador'}</strong>
                         <span>{user.email}</span>
                       </div>
+                       <Link href="/historico" className="dropdown-signout-btn focusable" style={{ color: 'var(--text-primary)', textAlign: 'left' }}>Meu Histórico</Link>
                       <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
                     </div>
                   )}
@@ -130,7 +130,7 @@ export default function Header() {
             <Link href="/filmes" className={getMobileLinkClass('/filmes')}>Filmes</Link>
             <Link href="/series" className={getMobileLinkClass('/series')}>Séries</Link>
             <Link href="/animes" className={getMobileLinkClass('/animes')}>Animes</Link>
-            <Link href="/doramas" className={getMobileLinkClass('/doramas')}>Doramas</Link>
+            <Link href="/historico" className={getMobileLinkClass('/historico')}>Histórico</Link>
         </nav>
       </header>
 
