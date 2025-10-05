@@ -4,15 +4,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../components/AuthProvider';
 import { db } from '../firebase';
-import { doc, setDoc, getDoc, collection, getDocs, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, query, orderBy, limit, collection } from 'firebase/firestore';
 
 export interface WatchItem {
-  id: string; // "type-tmdbId" para filmes ou "type-tmdbId-season-episode" para series
+  id: string; 
   mediaType: 'movie' | 'tv';
   tmdbId: string;
   title: string;
   poster_path: string;
-  lastWatched: number; // timestamp
+  lastWatched: number;
   progress?: {
     season: number;
     episode: number;
@@ -25,31 +25,27 @@ export const useWatchHistory = () => {
   const [fullHistory, setFullHistory] = useState<WatchItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carrega o histórico e o "continuar assistindo" do Firestore quando o usuário loga
+  // Ref para manter a referência mais recente do estado para a função estável
+  const continueWatchingRef = useRef(continueWatching);
+  continueWatchingRef.current = continueWatching;
+
   useEffect(() => {
     if (user) {
       setIsLoading(true);
       
-      // Listener para "Continuar Assistindo" (10 mais recentes)
-      const cwQuery = query(
-        collection(db, `users/${user.uid}/watchHistory`),
-        orderBy('lastWatched', 'desc'),
-        limit(10)
-      );
+      const historyCollection = collection(db, `users/${user.uid}/watchHistory`);
+
+      const cwQuery = query(historyCollection, orderBy('lastWatched', 'desc'), limit(10));
       const unsubscribeCW = onSnapshot(cwQuery, (snapshot) => {
         const items = snapshot.docs.map(doc => doc.data() as WatchItem);
         setContinueWatching(items);
       });
 
-      // Listener para o Histórico Completo
-      const historyQuery = query(
-        collection(db, `users/${user.uid}/watchHistory`),
-        orderBy('lastWatched', 'desc')
-      );
+      const historyQuery = query(historyCollection, orderBy('lastWatched', 'desc'));
       const unsubscribeHistory = onSnapshot(historyQuery, (snapshot) => {
         const items = snapshot.docs.map(doc => doc.data() as WatchItem);
         setFullHistory(items);
-        setIsLoading(false); // Apenas para o histórico completo
+        setIsLoading(false);
       });
       
       return () => {
@@ -57,7 +53,6 @@ export const useWatchHistory = () => {
         unsubscribeHistory();
       };
     } else {
-      // Limpa o estado se o usuário deslogar
       setContinueWatching([]);
       setFullHistory([]);
       setIsLoading(false);
@@ -67,7 +62,6 @@ export const useWatchHistory = () => {
   const saveHistory = useCallback(async (item: Omit<WatchItem, 'id' | 'lastWatched'>) => {
     if (!user) return;
 
-    // ID único para episódios e filmes no histórico
     const id = item.mediaType === 'tv' && item.progress
       ? `${item.mediaType}-${item.tmdbId}-${item.progress.season}-${item.progress.episode}`
       : `${item.mediaType}-${item.tmdbId}`;
@@ -76,19 +70,24 @@ export const useWatchHistory = () => {
 
     try {
       const historyDocRef = doc(db, `users/${user.uid}/watchHistory`, id);
-      await setDoc(historyDocRef, newItem, { merge: true }); // Usar merge para não sobrescrever dados existentes sem necessidade
-
+      await setDoc(historyDocRef, newItem, { merge: true });
     } catch (error) {
       console.error("Falha ao salvar o progresso no Firestore.", error);
     }
   }, [user]);
+
+  // Função estável que não causa re-renderizações em loops
+  const getContinueWatchingItem = useCallback((tmdbId: string) => {
+    if (!tmdbId) return undefined;
+    return continueWatchingRef.current.find(item => item.tmdbId === tmdbId);
+  }, []);
 
   return { 
     continueWatching, 
     fullHistory, 
     isLoading, 
     saveHistory, 
-    // Contagens para a página de histórico
+    getContinueWatchingItem, // Expondo a nova função estável
     movieCount: fullHistory.filter(item => item.mediaType === 'movie').length,
     episodeCount: fullHistory.filter(item => item.mediaType === 'tv').length,
   };
