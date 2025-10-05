@@ -1054,3 +1054,24 @@ main { padding-top: 68px; }
 .btn-full {
     width: 100%;
 }
+/* Adicione ao final do arquivo */
+
+.episode-item-button:disabled,
+.episode-grid-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+  background-color: var(--card-color) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+.episode-item-button:disabled .episode-item-title,
+.episode-item-button:disabled .episode-item-number {
+  color: var(--text-secondary) !important;
+}
+
+.episode-item-button:disabled:hover,
+.episode-grid-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
