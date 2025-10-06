@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo, useRef } from 'react'; // useRef foi importado
+import { useState, useEffect, memo, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -93,7 +93,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
-  const episodeListRef = useRef<HTMLDivElement>(null); // Ref para a lista de episódios
+  const episodeListRef = useRef<HTMLDivElement>(null);
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,13 +179,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // ======================================================================
   // LÓGICA CORRIGIDA: Mantém todos os episódios na lista
-  // ======================================================================
   useEffect(() => {
     setDisplayedEpisodes(seasonEpisodes);
   }, [seasonEpisodes]);
-  // ======================================================================
 
   // Efeito 4: Atualiza a URL do player e o histórico.
   useEffect(() => {
@@ -204,15 +201,20 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // Novo Efeito: Controla o scroll da lista de episódios
+  // ======================================================================
+  // NOVO EFEITO: Controla o scroll para levar o episódio ativo ao TOPO
+  // ======================================================================
   useEffect(() => {
     if (activeEpisode && episodeListRef.current) {
         const activeElement = episodeListRef.current.querySelector(`.episode-item-button.active`);
         if (activeElement) {
-            activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // A mágica acontece aqui: 'start' alinha o topo do elemento com o topo da área visível.
+            activeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
   }, [activeEpisode]);
+  // ======================================================================
+
 
   // Demais efeitos (views, likes, etc.)
   useEffect(() => {
