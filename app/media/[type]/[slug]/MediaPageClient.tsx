@@ -179,7 +179,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // LÓGICA CORRIGIDA: Mantém todos os episódios na lista
+  // Mantém todos os episódios na lista
   useEffect(() => {
     setDisplayedEpisodes(seasonEpisodes);
   }, [seasonEpisodes]);
@@ -202,19 +202,18 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
   // ======================================================================
-  // NOVO EFEITO: Controla o scroll para levar o episódio ativo ao TOPO
+  // EFEITO DE SCROLL CORRIGIDO
   // ======================================================================
   useEffect(() => {
     if (activeEpisode && episodeListRef.current) {
         const activeElement = episodeListRef.current.querySelector(`.episode-item-button.active`);
         if (activeElement) {
-            // A mágica acontece aqui: 'start' alinha o topo do elemento com o topo da área visível.
+            // Alterado de 'nearest' para 'start' para alinhar ao topo.
             activeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
   }, [activeEpisode]);
   // ======================================================================
-
 
   // Demais efeitos (views, likes, etc.)
   useEffect(() => {
