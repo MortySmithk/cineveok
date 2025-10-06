@@ -97,7 +97,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState('Carregando...');
-  const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]);
+  
+  const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]); 
+  const [displayedEpisodes, setDisplayedEpisodes] = useState<Episode[]>([]); 
+  
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
@@ -110,7 +113,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB.
+  // Efeito 1: Busca os detalhes principais da mídia
   useEffect(() => {
     if (!id || !type) return;
 
@@ -118,6 +121,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       setIsLoading(true);
       setDetails(null);
       setSeasonEpisodes([]);
+      setDisplayedEpisodes([]);
       setStatus('Carregando...');
       try {
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
@@ -162,15 +166,38 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       setIsLoading(true);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
-        setSeasonEpisodes(seasonResponse.data.episodes);
+        const episodes: Episode[] = seasonResponse.data.episodes;
+        setSeasonEpisodes(episodes);
       } catch (error) { 
         setSeasonEpisodes([]);
+        setDisplayedEpisodes([]);
       } finally { 
         setIsLoading(false);
       }
     };
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
+
+  // ======================================================================
+  // LÓGICA ATUALIZADA: Cria a lista "A Seguir"
+  // ======================================================================
+  useEffect(() => {
+    if (activeEpisode && seasonEpisodes.length > 0) {
+      // Encontra o índice (posição) do episódio ativo na lista original
+      const currentIndex = seasonEpisodes.findIndex(ep => ep.episode_number === activeEpisode.episode);
+
+      if (currentIndex !== -1) {
+        // Cria uma nova lista que começa no episódio atual e vai até o fim
+        const upcomingEpisodes = seasonEpisodes.slice(currentIndex);
+        setDisplayedEpisodes(upcomingEpisodes);
+      } else {
+        setDisplayedEpisodes(seasonEpisodes);
+      }
+    } else {
+      setDisplayedEpisodes(seasonEpisodes);
+    }
+  }, [activeEpisode, seasonEpisodes]);
+  // ======================================================================
 
   // Efeito 4: Atualiza a URL do player e o histórico.
   useEffect(() => {
@@ -189,7 +216,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // Efeito 5: Incrementa visualizações.
+  // Demais efeitos (views, likes, etc.) permanecem os mesmos...
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -203,7 +230,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }).catch(console.error);
   }, [currentStatsId]);
 
-  // Efeito 6: Ouve mudanças nas estatísticas.
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -220,7 +246,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return () => { unsubStats(); unsubChannel(); };
   }, [currentStatsId]);
   
-  // Efeito 7: Ouve interações do usuário (like/subscribe).
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
@@ -240,8 +265,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
   const handleEpisodeClick = (e: React.MouseEvent<HTMLButtonElement>, season: number, episodeNumber: number) => {
     setActiveEpisode({ season, episode: episodeNumber });
-    // Faz o episódio clicado rolar para o TOPO da lista
-    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   
   const getSynopsis = (): string => {
@@ -383,14 +406,15 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             </select>
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
+        
         <div className="episode-list-desktop desktop-only-layout">
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+            {!isLoading && displayedEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
         <div className="mobile-only-layout">
           <div className="episode-grid-mobile">
               {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-              {!isLoading && seasonEpisodes.map(ep => ( 
+              {!isLoading && displayedEpisodes.map(ep => ( 
                 <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}>
                   {ep.episode_number}
                 </button>
