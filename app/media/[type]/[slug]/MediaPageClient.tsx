@@ -70,7 +70,7 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
           title={`CineVEO Player - ${title}`}
           allow="autoplay; encrypted-media"
           allowFullScreen
-          referrerPolicy="origin"
+          referrerPolicy="origin" // CORREÇÃO: Alterado para 'origin' para corrigir player
           loading="lazy"
           onLoad={() => setIsPlayerLoading(false)}
           style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
@@ -141,6 +141,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (!details || !id) return;
 
     if (type === 'movie') {
+      // ======================================================================
+      // CORREÇÃO DO PLAYER: URL revertida para a API do PrimeVicio
+      // ======================================================================
       setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
@@ -179,49 +182,18 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // ======================================================================
-  // INÍCIO DA MODIFICAÇÃO: Efeito para reordenar a lista de episódios
-  // ======================================================================
+  // Mantém a lista de episódios sempre na ordem correta
   useEffect(() => {
-    // Roda somente para séries, quando houver um episódio ativo e a lista de episódios da temporada estiver carregada.
-    if (type === 'tv' && activeEpisode && seasonEpisodes.length > 0) {
-      const activeEpisodeNumber = activeEpisode.episode;
-      
-      // Encontra o índice do episódio ativo na lista original (não reordenada).
-      const activeIndex = seasonEpisodes.findIndex(ep => ep.episode_number === activeEpisodeNumber);
-
-      // Se o episódio for encontrado na lista...
-      if (activeIndex !== -1) {
-        // Cria uma nova lista reordenada.
-        const newOrderedEpisodes = [
-          ...seasonEpisodes.slice(activeIndex), // Pega do episódio ativo até o final
-          ...seasonEpisodes.slice(0, activeIndex)  // Pega do início até o episódio antes do ativo
-        ];
-        // Atualiza o estado da lista que é exibida na tela.
-        setDisplayedEpisodes(newOrderedEpisodes);
-        
-        // Garante que o contêiner da lista role para o topo.
-        if (episodeListRef.current) {
-          episodeListRef.current.scrollTop = 0;
-        }
-
-      } else {
-        // Se o episódio ativo não for encontrado (ex: ao mudar de temporada), apenas exibe a lista na ordem padrão.
-        setDisplayedEpisodes(seasonEpisodes);
-      }
-    } else if (type === 'tv') {
-      // Garante que a lista seja definida mesmo que não haja um episódio ativo.
-      setDisplayedEpisodes(seasonEpisodes);
-    }
-  }, [activeEpisode, seasonEpisodes, type]);
-  // ======================================================================
-  // FIM DA MODIFICAÇÃO
-  // ======================================================================
+    setDisplayedEpisodes(seasonEpisodes);
+  }, [seasonEpisodes]);
 
   // Efeito 4: Atualiza a URL do player e o histórico.
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
+        // ======================================================================
+        // CORREÇÃO DO PLAYER: URL revertida para a API do PrimeVicio
+        // ======================================================================
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
@@ -235,6 +207,21 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
+  // ======================================================================
+  // CORREÇÃO DO SCROLL: Reimplementado para posicionar o episódio no topo
+  // ======================================================================
+  useEffect(() => {
+    if (activeEpisode && episodeListRef.current) {
+        const activeElement = episodeListRef.current.querySelector(`.episode-item-button.active`);
+        if (activeElement) {
+            activeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+  }, [activeEpisode, displayedEpisodes]);
+  // ======================================================================
+  // FIM DA CORREÇÃO
+  // ======================================================================
+
   // Demais efeitos (views, likes, etc.)
   useEffect(() => {
     if (!currentStatsId) return;
