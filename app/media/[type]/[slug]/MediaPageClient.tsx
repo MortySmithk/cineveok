@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react'; // Import useRef
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -93,6 +93,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
+  const episodeListRef = useRef<HTMLDivElement>(null); // Ref para a lista de episódios
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,24 +180,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   }, [id, details, selectedSeason, type]);
 
   // ======================================================================
-  // LÓGICA ATUALIZADA: Cria a lista "A Seguir"
+  // LÓGICA CORRIGIDA: Mantém todos os episódios na lista
   // ======================================================================
   useEffect(() => {
-    if (activeEpisode && seasonEpisodes.length > 0) {
-      // Encontra o índice (posição) do episódio ativo na lista original
-      const currentIndex = seasonEpisodes.findIndex(ep => ep.episode_number === activeEpisode.episode);
-
-      if (currentIndex !== -1) {
-        // Cria uma nova lista que começa no episódio atual e vai até o fim
-        const upcomingEpisodes = seasonEpisodes.slice(currentIndex);
-        setDisplayedEpisodes(upcomingEpisodes);
-      } else {
-        setDisplayedEpisodes(seasonEpisodes);
-      }
-    } else {
-      setDisplayedEpisodes(seasonEpisodes);
-    }
-  }, [activeEpisode, seasonEpisodes]);
+    setDisplayedEpisodes(seasonEpisodes);
+  }, [seasonEpisodes]);
   // ======================================================================
 
   // Efeito 4: Atualiza a URL do player e o histórico.
@@ -216,7 +204,17 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // Demais efeitos (views, likes, etc.) permanecem os mesmos...
+  // Novo Efeito: Controla o scroll da lista de episódios
+  useEffect(() => {
+    if (activeEpisode && episodeListRef.current) {
+        const activeElement = episodeListRef.current.querySelector(`.episode-item-button.active`);
+        if (activeElement) {
+            activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+  }, [activeEpisode]);
+
+  // Demais efeitos (views, likes, etc.)
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -407,7 +405,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
         
-        <div className="episode-list-desktop desktop-only-layout">
+        <div ref={episodeListRef} className="episode-list-desktop desktop-only-layout">
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
             {!isLoading && displayedEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
