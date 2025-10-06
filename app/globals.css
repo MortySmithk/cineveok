@@ -1080,4 +1080,3 @@ const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default CheckIcon;
-}
