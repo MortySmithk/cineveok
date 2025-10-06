@@ -240,7 +240,8 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
   const handleEpisodeClick = (e: React.MouseEvent<HTMLButtonElement>, season: number, episodeNumber: number) => {
     setActiveEpisode({ season, episode: episodeNumber });
-    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Faz o episódio clicado rolar para o TOPO da lista
+    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   
   const getSynopsis = (): string => {
