@@ -8,7 +8,7 @@ import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
-import { useWatchHistory } from '@/app/hooks/useWatchHistory'; // ATUALIZADO
+import { useWatchHistory } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
 
 interface Media { 
@@ -32,7 +32,7 @@ export default function HomePage() {
   const [popularSeries, setPopularSeries] = useState<Media[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const { continueWatching } = useWatchHistory(); // ATUALIZADO
+  const { continueWatching } = useWatchHistory();
 
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function HomePage() {
       <div className="hero-slider">
         {trending.map((item, index) => (
           <div key={item.id} className={`slide ${index === activeSlide ? 'active' : ''}`}>
-            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt="" fill objectFit="cover" className="slide-bg" />
+            <Image src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt={item.title || item.name || ''} fill style={{ objectFit: 'cover' }} className="slide-bg" priority={index === 0} />
             <div className="slide-overlay"></div>
             <div className="slide-content">
               <h1 className="slide-title">{item.title || item.name}</h1>
@@ -89,7 +89,8 @@ export default function HomePage() {
                 <button className="btn-secondary slide-btn focusable">+ Minha Lista</button>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
         <div className="slide-dots">
           {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={`focusable ${index === activeSlide ? 'active' : ''}`}></button>))}
         </div>

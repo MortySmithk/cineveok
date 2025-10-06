@@ -111,12 +111,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
   // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB.
-  // Roda apenas quando o ID ou o tipo da mídia mudam.
   useEffect(() => {
     if (!id || !type) return;
 
     const fetchData = async () => {
-      setIsLoading(true); // Inicia o carregamento da página
+      setIsLoading(true);
       setDetails(null);
       setSeasonEpisodes([]);
       setStatus('Carregando...');
@@ -126,13 +125,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
       } catch (error) { 
         setStatus("Não foi possível carregar os detalhes.");
-        setIsLoading(false); // Para o loading em caso de erro
+        setIsLoading(false);
       }
     };
     fetchData();
   }, [id, type]);
 
-  // Efeito 2: Configura o player e salva o histórico inicial assim que os detalhes são carregados.
+  // Efeito 2: Configura o player e salva o histórico inicial.
   useEffect(() => {
     if (!details || !id) return;
 
@@ -153,35 +152,32 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [details, id, type, user, saveHistory, getContinueWatchingItem]);
 
-  // Efeito 3: Busca os episódios de uma temporada quando a temporada selecionada muda.
+  // Efeito 3: Busca os episódios de uma temporada.
   useEffect(() => {
-    // Se não for uma série ou não tiver detalhes, não faz nada.
     if (type !== 'tv' || !id || !details?.seasons) {
-        // Se for um filme e já tiver detalhes, podemos parar o carregamento geral.
         if (type === 'movie' && details) setIsLoading(false);
         return;
     }
     const fetchSeasonData = async () => {
-      setIsLoading(true); // Mostra o spinner de loading para a lista de episódios
+      setIsLoading(true);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         setSeasonEpisodes(seasonResponse.data.episodes);
       } catch (error) { 
         setSeasonEpisodes([]);
       } finally { 
-        setIsLoading(false); // Esconde o spinner após carregar ou falhar
+        setIsLoading(false);
       }
     };
     fetchSeasonData();
-  }, [id, details, selectedSeason, type]); // Roda apenas quando a temporada muda
+  }, [id, details, selectedSeason, type]);
 
-  // Efeito 4: Atualiza a URL do player e salva o histórico quando o episódio ativo muda.
+  // Efeito 4: Atualiza a URL do player e o histórico.
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         
-        // Atualiza o ID para rastrear views/likes do episódio específico
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
@@ -193,7 +189,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // --- DEMAIS EFEITOS (VIEWS, LIKES, ETC) ---
+  // Efeito 5: Incrementa visualizações.
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -207,6 +203,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }).catch(console.error);
   }, [currentStatsId]);
 
+  // Efeito 6: Ouve mudanças nas estatísticas.
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -223,6 +220,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     return () => { unsubStats(); unsubChannel(); };
   }, [currentStatsId]);
   
+  // Efeito 7: Ouve interações do usuário (like/subscribe).
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
@@ -338,7 +336,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                   {isSynopsisExpanded ? 'Mostrar menos' : '...mais'}
               </button>
           }
-           <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
+          <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
         </div>
     );
   };
