@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo, useRef } from 'react'; // Import useRef
+import { useState, useEffect, memo, useRef } from 'react'; // useRef foi importado
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
