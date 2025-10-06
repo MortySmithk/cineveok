@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo, useRef } from 'react'; // Importei o 'useRef'
+import { useState, useEffect, memo } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -90,9 +90,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const type = params.type as 'movie' | 'tv';
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
-  
-  // NOVO: Ref para a lista de episódios
-  const episodeListRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
@@ -140,7 +137,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (!details || !id) return;
 
     if (type === 'movie') {
-      setActiveStreamUrl(`https://player3.cineveo.lat/media/movie/${details.id}`);
+      setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
@@ -182,7 +179,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://player3.cineveo.lat/media/tv/${id}/${season}/${episode}`);
+        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         
         // Atualiza o ID para rastrear views/likes do episódio específico
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
@@ -196,23 +193,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // NOVO EFEITO: Rola o episódio ativo para o topo da lista.
-  useEffect(() => {
-    if (type !== 'tv' || !activeEpisode || !episodeListRef.current || seasonEpisodes.length === 0) return;
-
-    const { episode } = activeEpisode;
-    // Encontra o elemento do episódio na lista DOM
-    const episodeElement = episodeListRef.current.querySelector(`[data-episode-number="${episode}"]`);
-
-    // Se o elemento for encontrado, rola a view até ele
-    if (episodeElement) {
-        episodeElement.scrollIntoView({
-            behavior: 'smooth', // Rolagem suave
-            block: 'start',      // Alinha ao topo do container
-        });
-    }
-  }, [activeEpisode, type, seasonEpisodes]); // Roda quando o episódio ativo ou a lista de episódios mudam
-
   // --- DEMAIS EFEITOS (VIEWS, LIKES, ETC) ---
   useEffect(() => {
     if (!currentStatsId) return;
@@ -402,31 +382,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             </select>
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
-        {/* MODIFICADO: Adicionado a ref ao contêiner */}
-        <div className="episode-list-desktop desktop-only-layout" ref={episodeListRef}>
+        <div className="episode-list-desktop desktop-only-layout">
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => (
-              // MODIFICADO: Adicionado 'data-episode-number' para identificar o botão
-              <button 
-                key={ep.id} 
-                data-episode-number={ep.episode_number}
-                className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} 
-                onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}
-              >
-                <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
-                <div className="episode-item-thumbnail">
-                  {ep.still_path ? (
-                    <Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />
-                  ) : (
-                    <div className='thumbnail-placeholder-small'></div>
-                  )}
-                </div>
-                <div className="episode-item-info">
-                  <span className="episode-item-title">{ep.name}</span>
-                  <p className="episode-item-overview">{ep.overview}</p>
-                </div>
-              </button>
-            ))}
+            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
         <div className="mobile-only-layout">
           <div className="episode-grid-mobile">
