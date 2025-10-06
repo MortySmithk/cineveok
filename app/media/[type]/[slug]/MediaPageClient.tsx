@@ -179,10 +179,44 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // Mantém todos os episódios na lista
+  // ======================================================================
+  // INÍCIO DA MODIFICAÇÃO: Efeito para reordenar a lista de episódios
+  // ======================================================================
   useEffect(() => {
-    setDisplayedEpisodes(seasonEpisodes);
-  }, [seasonEpisodes]);
+    // Roda somente para séries, quando houver um episódio ativo e a lista de episódios da temporada estiver carregada.
+    if (type === 'tv' && activeEpisode && seasonEpisodes.length > 0) {
+      const activeEpisodeNumber = activeEpisode.episode;
+      
+      // Encontra o índice do episódio ativo na lista original (não reordenada).
+      const activeIndex = seasonEpisodes.findIndex(ep => ep.episode_number === activeEpisodeNumber);
+
+      // Se o episódio for encontrado na lista...
+      if (activeIndex !== -1) {
+        // Cria uma nova lista reordenada.
+        const newOrderedEpisodes = [
+          ...seasonEpisodes.slice(activeIndex), // Pega do episódio ativo até o final
+          ...seasonEpisodes.slice(0, activeIndex)  // Pega do início até o episódio antes do ativo
+        ];
+        // Atualiza o estado da lista que é exibida na tela.
+        setDisplayedEpisodes(newOrderedEpisodes);
+        
+        // Garante que o contêiner da lista role para o topo.
+        if (episodeListRef.current) {
+          episodeListRef.current.scrollTop = 0;
+        }
+
+      } else {
+        // Se o episódio ativo não for encontrado (ex: ao mudar de temporada), apenas exibe a lista na ordem padrão.
+        setDisplayedEpisodes(seasonEpisodes);
+      }
+    } else if (type === 'tv') {
+      // Garante que a lista seja definida mesmo que não haja um episódio ativo.
+      setDisplayedEpisodes(seasonEpisodes);
+    }
+  }, [activeEpisode, seasonEpisodes, type]);
+  // ======================================================================
+  // FIM DA MODIFICAÇÃO
+  // ======================================================================
 
   // Efeito 4: Atualiza a URL do player e o histórico.
   useEffect(() => {
@@ -201,20 +235,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // ======================================================================
-  // EFEITO DE SCROLL CORRIGIDO
-  // ======================================================================
-  useEffect(() => {
-    if (activeEpisode && episodeListRef.current) {
-        const activeElement = episodeListRef.current.querySelector(`.episode-item-button.active`);
-        if (activeElement) {
-            // Alterado de 'nearest' para 'start' para alinhar ao topo.
-            activeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-  }, [activeEpisode]);
-  // ======================================================================
-
   // Demais efeitos (views, likes, etc.)
   useEffect(() => {
     if (!currentStatsId) return;
