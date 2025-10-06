@@ -318,13 +318,13 @@ main { padding-top: 68px; }
 
 
 /* --- PÁGINA DE DETALHES --- */
-.details-main-content { padding-top: 80px; }
+/* AQUI ESTÁ A CORREÇÃO! A linha "padding-top: 80px;" foi removida. */
+.details-main-content { padding-top: 0; }
 .details-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2.5rem; align-items: start;}
 .details-poster img { width: 100%; height: auto; border-radius: 8px; }
 .details-info h1 { font-size: 2.5rem; margin-bottom: 1rem; line-height: 1.2; }
 .details-meta-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 1.5rem; color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem; }
 .meta-item { display: flex; align-items: center; gap: 0.5rem; }
-.action-buttons-desktop { display: flex; gap: 1rem; margin-bottom: 2rem; }
 .btn-primary, .btn-secondary {
     display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem 1.5rem;
     border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; border: none; font-size: 1rem;
@@ -1053,4 +1053,31 @@ main { padding-top: 68px; }
 /* Modificador para botões de largura total */
 .btn-full {
     width: 100%;
+}
+}
+
+{
+type: uploaded file
+fileName: cineveo-next/app/components/icons/CheckIcon.tsx
+fullContent:
+import React from 'react';
+
+const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+export default CheckIcon;
 }
