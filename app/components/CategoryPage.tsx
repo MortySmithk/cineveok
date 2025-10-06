@@ -66,7 +66,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
             ...item,
             media_type: item.media_type || mediaType,
           }))
-          .filter((item: Media) => item.media_type !== 'person' && item.poster_path);
+          .filter((item: Media) => item.media_type !== 'person' && item.poster_path && (item.title || item.name));
         
         setMediaList(filteredResults);
         setTotalPages(Math.min(response.data.total_pages, 500));

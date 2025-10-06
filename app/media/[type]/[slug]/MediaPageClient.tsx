@@ -240,8 +240,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
 
   // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
-  const handleEpisodeClick = (season: number, episodeNumber: number) => {
+  const handleEpisodeClick = (e: React.MouseEvent<HTMLButtonElement>, season: number, episodeNumber: number) => {
     setActiveEpisode({ season, episode: episodeNumber });
+    // Faz o episódio clicado rolar para a vista do usuário
+    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
   
   const getSynopsis = (): string => {
@@ -336,6 +338,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                   {isSynopsisExpanded ? 'Mostrar menos' : '...mais'}
               </button>
           }
+           <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
         </div>
     );
   };
@@ -384,13 +387,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </div>
         <div className="episode-list-desktop desktop-only-layout">
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
         <div className="mobile-only-layout">
           <div className="episode-grid-mobile">
               {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
               {!isLoading && seasonEpisodes.map(ep => ( 
-                <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
+                <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={(e) => handleEpisodeClick(e, selectedSeason, ep.episode_number)}>
                   {ep.episode_number}
                 </button>
               ))}
@@ -438,14 +441,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         </div>
         <main className="details-main-content">
           <div className="main-container">
-            <div className="details-grid">
-              <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
-              <div className="details-info">
-                 <div className='desktop-only-layout'>
-                    <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
-                </div>
-              </div>
-            </div>
             <section className="cast-section">
               <h2>Elenco Principal</h2>
               <div className="cast-grid">

@@ -45,9 +45,9 @@ export default function HomePage() {
         
         const [trendingResponse, latestMoviesResponse, popularSeriesResponse] = await Promise.all([trendingPromise, latestMoviesPromise, popularSeriesPromise]);
 
-        setTrending(trendingResponse.data.results.slice(0, 5));
-        setLatestMovies(latestMoviesResponse.data.results);
-        setPopularSeries(popularSeriesResponse.data.results);
+        setTrending(trendingResponse.data.results.filter((item: Media) => item.title || item.name).slice(0, 5));
+        setLatestMovies(latestMoviesResponse.data.results.filter((item: Media) => item.title || item.name));
+        setPopularSeries(popularSeriesResponse.data.results.filter((item: Media) => item.title || item.name));
       } catch (error) { console.error("Erro ao buscar mídia:", error);
       } finally { setIsLoading(false); }
     };
@@ -89,8 +89,7 @@ export default function HomePage() {
                 <button className="btn-secondary slide-btn focusable">+ Minha Lista</button>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
         <div className="slide-dots">
           {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={`focusable ${index === activeSlide ? 'active' : ''}`}></button>))}
         </div>
