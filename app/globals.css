@@ -296,9 +296,19 @@ main { padding-top: 68px; }
     padding-bottom: 1.5rem;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    cursor: grab;
+    user-select: none; /* Impede a seleção de texto durante o arraste */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 .movie-carousel::-webkit-scrollbar { display: none; }
 .movie-carousel .movie-card { width: 220px; padding-top: 0; height: 330px; }
+
+/* Estilo para quando o carrossel está sendo arrastado */
+.movie-carousel.active-drag {
+    cursor: grabbing;
+}
 
 
 /* --- PÁGINAS DE CATEGORIA --- */

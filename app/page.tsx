@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,17 +11,17 @@ import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
 import { useWatchHistory } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
 
-interface Media { 
-  id: number; 
-  title?: string; 
-  name?: string; 
-  poster_path: string; 
-  backdrop_path: string; 
-  release_date?: string; 
-  first_air_date?: string; 
-  vote_average: number; 
-  overview: string; 
-  media_type: 'movie' | 'tv'; 
+interface Media {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path: string;
+  backdrop_path: string;
+  release_date?: string;
+  first_air_date?: string;
+  vote_average: number;
+  overview: string;
+  media_type: 'movie' | 'tv';
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
@@ -33,6 +33,11 @@ export default function HomePage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { continueWatching } = useWatchHistory();
+
+  // Refs para os carrosséis
+  const continueWatchingRef = useRef<HTMLDivElement>(null);
+  const latestMoviesRef = useRef<HTMLDivElement>(null);
+  const popularSeriesRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -61,6 +66,50 @@ export default function HomePage() {
     }, 7000);
     return () => clearInterval(interval);
   }, [trending]);
+
+  // Efeito para adicionar a funcionalidade de arrastar para rolar
+  useEffect(() => {
+    const addDragScroll = (element: HTMLElement | null) => {
+      if (!element) return;
+      let isDown = false;
+      let startX: number;
+      let scrollLeft: number;
+
+      const onMouseDown = (e: MouseEvent) => {
+        isDown = true;
+        element.classList.add('active-drag');
+        startX = e.pageX - element.offsetLeft;
+        scrollLeft = element.scrollLeft;
+      };
+
+      const onMouseLeaveOrUp = () => {
+        isDown = false;
+        element.classList.remove('active-drag');
+      };
+
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - element.offsetLeft;
+        const walk = (x - startX) * 2; // Multiplicador para rolagem mais rápida
+        element.scrollLeft = scrollLeft - walk;
+      };
+
+      element.addEventListener('mousedown', onMouseDown);
+      element.addEventListener('mouseleave', onMouseLeaveOrUp);
+      element.addEventListener('mouseup', onMouseLeaveOrUp);
+      element.addEventListener('mousemove', onMouseMove);
+
+      return () => {
+        element.removeEventListener('mousedown', onMouseDown);
+        element.removeEventListener('mouseleave', onMouseLeaveOrUp);
+        element.removeEventListener('mouseup', onMouseLeaveOrUp);
+        element.removeEventListener('mousemove', onMouseMove);
+      };
+    };
+
+    [continueWatchingRef.current, latestMoviesRef.current, popularSeriesRef.current].forEach(addDragScroll);
+  }, [isLoading]); // Executa uma vez após o carregamento
 
   if (isLoading) {
     return (
@@ -100,7 +149,7 @@ export default function HomePage() {
         {continueWatching.length > 0 && (
           <section className="movie-section">
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
-            <div className="movie-carousel">
+            <div className="movie-carousel" ref={continueWatchingRef}>
               {continueWatching.map((item) => (
                 <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
@@ -120,7 +169,7 @@ export default function HomePage() {
             <h2 className="section-title">Filmes Populares</h2>
             <Link href="/filmes" className="section-view-all-link focusable">&gt;</Link>
           </div>
-          <div className="movie-carousel">
+          <div className="movie-carousel" ref={latestMoviesRef}>
             {latestMovies.map((movie) => (
               <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable">
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
@@ -140,7 +189,7 @@ export default function HomePage() {
              <h2 className="section-title">Séries Populares</h2>
              <Link href="/series" className="section-view-all-link focusable">&gt;</Link>
           </div>
-          <div className="movie-carousel">
+          <div className="movie-carousel" ref={popularSeriesRef}>
             {popularSeries.map((series) => (
               <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable">
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
