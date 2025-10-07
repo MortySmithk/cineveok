@@ -151,7 +151,7 @@ export default function HomePage() {
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
             <div className="movie-carousel" ref={continueWatchingRef}>
               {continueWatching.map((item) => (
-                <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable">
+                <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable" draggable={false}>
                   <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                   <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                   <div className="movie-card-info">
@@ -167,11 +167,11 @@ export default function HomePage() {
         <section className="movie-section">
           <div className="section-header">
             <h2 className="section-title">Filmes Populares</h2>
-            <Link href="/filmes" className="section-view-all-link focusable">&gt;</Link>
+            <Link href="/filmes" className="section-view-all-link focusable" draggable={false}>&gt;</Link>
           </div>
           <div className="movie-carousel" ref={latestMoviesRef}>
             {latestMovies.map((movie) => (
-              <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable">
+              <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" draggable={false}>
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
@@ -187,11 +187,11 @@ export default function HomePage() {
          <section className="movie-section">
           <div className="section-header">
              <h2 className="section-title">Séries Populares</h2>
-             <Link href="/series" className="section-view-all-link focusable">&gt;</Link>
+             <Link href="/series" className="section-view-all-link focusable" draggable={false}>&gt;</Link>
           </div>
           <div className="movie-carousel" ref={popularSeriesRef}>
             {popularSeries.map((series) => (
-              <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable">
+              <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" draggable={false}>
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }} /></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
