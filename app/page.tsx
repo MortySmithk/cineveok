@@ -91,7 +91,7 @@ export default function HomePage() {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - element.offsetLeft;
-        const walk = (x - startX) * 2; // Multiplicador para rolagem mais rápida
+        const walk = (x - startX) * 1; // Multiplicador de velocidade ajustado para 1
         element.scrollLeft = scrollLeft - walk;
       };
 
