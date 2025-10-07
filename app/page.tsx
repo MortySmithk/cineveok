@@ -38,6 +38,9 @@ export default function HomePage() {
   const continueWatchingRef = useRef<HTMLDivElement>(null);
   const latestMoviesRef = useRef<HTMLDivElement>(null);
   const popularSeriesRef = useRef<HTMLDivElement>(null);
+  
+  // Ref para controlar se o usuário arrastou ou apenas clicou
+  const hasDragged = useRef(false);
 
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export default function HomePage() {
         element.classList.add('active-drag');
         startX = e.pageX - element.offsetLeft;
         scrollLeft = element.scrollLeft;
+        hasDragged.current = false; // Reseta a flag de arrastar
       };
 
       const onMouseLeaveOrUp = () => {
@@ -91,7 +95,13 @@ export default function HomePage() {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - element.offsetLeft;
-        const walk = (x - startX) * 1; // Multiplicador de velocidade ajustado para 1
+        const walk = (x - startX) * 1; 
+        
+        // Se o movimento for maior que um pequeno threshold, considera como arraste
+        if (Math.abs(walk) > 5) {
+            hasDragged.current = true;
+        }
+        
         element.scrollLeft = scrollLeft - walk;
       };
 
@@ -108,8 +118,23 @@ export default function HomePage() {
       };
     };
 
-    [continueWatchingRef.current, latestMoviesRef.current, popularSeriesRef.current].forEach(addDragScroll);
-  }, [isLoading]); // Executa uma vez após o carregamento
+    const cleanupFunctions = [
+        addDragScroll(continueWatchingRef.current),
+        addDragScroll(latestMoviesRef.current),
+        addDragScroll(popularSeriesRef.current),
+    ];
+    
+    // Função de limpeza para remover os event listeners quando o componente for desmontado
+    return () => {
+        cleanupFunctions.forEach(cleanup => cleanup && cleanup());
+    };
+  }, [isLoading, continueWatching, latestMovies, popularSeries]); // Re-executa se os dados dos carrosséis mudarem
+
+  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (hasDragged.current) {
+          e.preventDefault(); // Impede a navegação se o usuário estava arrastando
+      }
+  };
 
   if (isLoading) {
     return (
@@ -151,7 +176,7 @@ export default function HomePage() {
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
             <div className="movie-carousel" ref={continueWatchingRef}>
               {continueWatching.map((item) => (
-                <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable" draggable={false}>
+                <Link href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable" draggable={false} onClick={handleCardClick}>
                   <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                   <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                   <div className="movie-card-info">
@@ -171,7 +196,7 @@ export default function HomePage() {
           </div>
           <div className="movie-carousel" ref={latestMoviesRef}>
             {latestMovies.map((movie) => (
-              <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" draggable={false}>
+              <Link href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" draggable={false} onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }}/></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
@@ -191,7 +216,7 @@ export default function HomePage() {
           </div>
           <div className="movie-carousel" ref={popularSeriesRef}>
             {popularSeries.map((series) => (
-              <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" draggable={false}>
+              <Link href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" draggable={false} onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper"><Image src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/></div>
                  <div className="movie-card-overlay"><Image src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" alt="Play" width={110} height={110} className="play-button-overlay" style={{ objectFit: 'contain' }} /></div>
                  <div className="movie-card-bookmark"><BookmarkIcon /></div>
