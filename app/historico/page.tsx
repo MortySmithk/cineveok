@@ -75,16 +75,16 @@ export default function HistoricoPage() {
                     className="movie-card-poster"
                     sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                   />
-                </div>
-                <div className="movie-card-overlay">
-                  <Image
-                    src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png"
-                    alt="Play"
-                    width={110}
-                    height={110}
-                    className="play-button-overlay"
-                    style={{ objectFit: 'contain' }}
-                  />
+                   <div className="movie-card-overlay">
+                      <Image
+                        src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png"
+                        alt="Play"
+                        width={110}
+                        height={110}
+                        className="play-button-overlay"
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
                 </div>
                 <div className="movie-card-info">
                   <h3 className="movie-card-title">{getWatchItemTitle(item)}</h3>

@@ -12,6 +12,7 @@ import { auth } from '../firebase';
 import SearchComponent from './SearchComponent';
 import SearchOverlay from './SearchOverlay';
 import SearchIcon from './icons/SearchIcon';
+import ThemeSwitcher from './ThemeSwitcher'; // Importado
 
 // Ícone de usuário para o botão de perfil
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -79,6 +80,8 @@ export default function Header() {
             <div className="header-search-desktop">
               <SearchComponent />
             </div>
+             
+            <ThemeSwitcher /> {/* Botão de tema adicionado */}
             
             <div className="header-auth-desktop">
               {user ? (

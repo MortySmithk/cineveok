@@ -6,7 +6,9 @@ import Link from 'next/link';
 import "./globals.css";
 import Header from "./components/Header";
 import { AuthProvider } from "./components/AuthProvider";
-import AppInitializer from "./components/AppInitializer"; // Importado
+import AppInitializer from "./components/AppInitializer";
+import { ThemeProvider } from "./components/ThemeProvider"; // Importado
+import FloatingTelegramButton from "./components/FloatingTelegramButton"; // Importado
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,51 +49,54 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={inter.className}>
-        <AuthProvider>
-          <AppInitializer> {/* Adicionado */}
-            <Header />
-            <div style={{ minHeight: 'calc(100vh - 280px)' }}>
-              {children}
-            </div>
-            
-            <footer className="site-footer">
-              <div className="main-container">
-                <div className="aviso-legal">
-                  <h3>Aviso Legal</h3>
-                  <p>O Site CineVEO é apenas Um AGREGADOR de Links assim como o Google. Apenas Agrega e Organiza Os Links Externos MP4. Não Somos Responsáveis Pelos Arquivos Aqui Encontrados.</p>
-                </div>
-                <div className="footer-grid">
-                  <div className="footer-section">
-                    <h4>Também Criados Pelo CineVEO:</h4>
-                    <ul>
-                      <li><a href="https://streetflix.pro/" target="_blank" rel="noopener noreferrer">StreetFlix</a></li>
-                      <li><a href="https://www.pipocine.site/" target="_blank" rel="noopener noreferrer">PipoCine</a></li>
-                    </ul>
-                  </div>
-                  <div className="footer-section">
-                    <h4>Parceiros</h4>
-                    <ul>
-                      <li><a href="https://telaoculta.vercel.app/" target="_blank" rel="noopener noreferrer">TelaOculta</a></li>
-                    </ul>
-                  </div>
-                  <div className="footer-section">
-                    <h4>Navegação</h4>
-                    <ul>
-                      <li><Link href="/filmes">Filmes</Link></li>
-                      <li><Link href="/series">Séries</Link></li>
-                      <li><Link href="/animacoes">Animações</Link></li>
-                      <li><Link href="/api-docs">API</Link></li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="footer-bottom">
-                  <p>© 2025 CineVEO. Todos os Direitos Reservados.</p>
-                  <p>Email para contato: cineveok@gmail.com</p>
-                </div>
+        <ThemeProvider> {/* Adicionado */}
+          <AuthProvider>
+            <AppInitializer>
+              <Header />
+              <div style={{ minHeight: 'calc(100vh - 280px)' }}>
+                {children}
               </div>
-            </footer>
-          </AppInitializer> {/* Adicionado */}
-        </AuthProvider>
+              
+              <footer className="site-footer">
+                <div className="main-container">
+                  <div className="aviso-legal">
+                    <h3>Aviso Legal</h3>
+                    <p>O Site CineVEO é apenas Um AGREGADOR de Links assim como o Google. Apenas Agrega e Organiza Os Links Externos MP4. Não Somos Responsáveis Pelos Arquivos Aqui Encontrados.</p>
+                  </div>
+                  <div className="footer-grid">
+                    <div className="footer-section">
+                      <h4>Também Criados Pelo CineVEO:</h4>
+                      <ul>
+                        <li><a href="https://streetflix.pro/" target="_blank" rel="noopener noreferrer">StreetFlix</a></li>
+                        <li><a href="https://www.pipocine.site/" target="_blank" rel="noopener noreferrer">PipoCine</a></li>
+                      </ul>
+                    </div>
+                    <div className="footer-section">
+                      <h4>Parceiros</h4>
+                      <ul>
+                        <li><a href="https://telaoculta.vercel.app/" target="_blank" rel="noopener noreferrer">TelaOculta</a></li>
+                      </ul>
+                    </div>
+                    <div className="footer-section">
+                      <h4>Navegação</h4>
+                      <ul>
+                        <li><Link href="/filmes">Filmes</Link></li>
+                        <li><Link href="/series">Séries</Link></li>
+                        <li><Link href="/animacoes">Animações</Link></li>
+                        <li><Link href="/api-docs">API</Link></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="footer-bottom">
+                    <p>© 2025 CineVEO. Todos os Direitos Reservados.</p>
+                    <p>Email para contato: cineveok@gmail.com</p>
+                  </div>
+                </div>
+              </footer>
+            </AppInitializer>
+          </AuthProvider>
+          <FloatingTelegramButton /> {/* Adicionado */}
+        </ThemeProvider> {/* Adicionado */}
       </body>
     </html>
   );

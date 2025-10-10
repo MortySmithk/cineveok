@@ -1,7 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef, useLayoutEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
@@ -13,6 +13,9 @@ import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import { useWatchHistory } from '@/app/hooks/useWatchHistory';
 import AudioVisualizer from '@/app/components/AudioVisualizer';
+import PlayIcon from '@/app/components/icons/PlayIcon';
+import StarIcon from '@/app/components/icons/StarIcon';
+import ClockIcon from '@/app/components/icons/ClockIcon';
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -109,6 +112,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [subscribers, setSubscribers] = useState(0);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+
+  // Refs para manter a posição do scroll da lista de episódios
+  const episodeListRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef(0);
 
   // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB.
   // Roda apenas quando o ID ou o tipo da mídia mudam.
@@ -238,9 +245,20 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return () => { unsubUserInteraction(); unsubUserSubscription(); };
   }, [currentStatsId, user]);
 
+  // Efeito para restaurar a posição do scroll após a seleção de um episódio
+  useLayoutEffect(() => {
+    if (episodeListRef.current) {
+      episodeListRef.current.scrollTop = scrollPosRef.current;
+    }
+  });
+
 
   // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
+    // Salva a posição do scroll ANTES de atualizar o estado
+    if (episodeListRef.current) {
+      scrollPosRef.current = episodeListRef.current.scrollTop;
+    }
     setActiveEpisode({ season, episode: episodeNumber });
   };
   
@@ -250,7 +268,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return currentEpisode?.overview || details?.overview || 'Sinopse não disponível.';
   };
   
-  const getTitle = (): string => {
+  const getEpisodeTitle = (): string => {
       if (type === 'movie') return details?.title || 'Filme';
       const currentEpisode = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisode && activeEpisode ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details?.title || 'Série';
@@ -342,7 +360,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const InteractionsSection = () => (
     <div className="details-interactions-section">
-      <h1 className="movie-card-title" style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{getTitle()}</h1>
+      <h2 className="episode-title">{getEpisodeTitle()}</h2>
       <div className="channel-info">
           <div className="channel-details">
               <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
@@ -382,7 +400,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             </select>
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
-        <div className="episode-list-desktop desktop-only-layout">
+        <div className="episode-list-desktop desktop-only-layout" ref={episodeListRef}>
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
             {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
@@ -439,9 +457,35 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         <main className="details-main-content">
           <div className="main-container">
             <div className="details-grid">
-              <div className="details-poster desktop-only-layout"><Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ borderRadius: '8px', width: '100%', height: 'auto' }}/></div>
+              <div className="details-poster-container desktop-only-layout">
+                  <div className="details-poster">
+                    <Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
+                  </div>
+                   <div className="poster-info-bar">
+                    <span className="poster-info-title">{details.title}</span>
+                    <span className="poster-info-rating"><StarIcon /> {details.vote_average.toFixed(1)}</span>
+                  </div>
+              </div>
               <div className="details-info">
                  <div className='desktop-only-layout'>
+                    <h1>{details.title}</h1>
+                    <div className="details-meta-bar">
+                      <span className="meta-item"><StarIcon /> {details.vote_average.toFixed(1)}</span>
+                      <span className="meta-item">{(details.release_date || details.first_air_date)?.substring(0, 4)}</span>
+                       { (details.runtime || details.episode_run_time?.[0]) &&
+                        <span className='meta-item'>
+                          <ClockIcon /> {details.runtime || details.episode_run_time?.[0]} min
+                        </span>
+                       }
+                    </div>
+                    <div className="action-buttons-desktop">
+                        <button className="btn-primary focusable"><PlayIcon /> Assistir</button>
+                        <button className="btn-secondary focusable">+ Minha Lista</button>
+                    </div>
+                    <div className="synopsis-box">
+                        <h3>Sinopse</h3>
+                        <p>{details.overview || 'Sinopse não disponível.'}</p>
+                    </div>
                     <div className="genre-tags">{details.genres.map(genre => <span key={genre.id} className="genre-tag">{genre.name}</span>)}</div>
                 </div>
               </div>
