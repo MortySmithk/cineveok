@@ -75,6 +75,7 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
           allowFullScreen
           referrerPolicy="origin"
           loading="lazy"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-autoplay"
           onLoad={() => setIsPlayerLoading(false)}
           style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
         ></iframe>
@@ -342,12 +343,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     const currentSynopsis = getSynopsis();
     return (
         <div className="synopsis-box" style={{ marginTop: '1.5rem' }}>
-          <div className="details-meta-bar" style={{ paddingBottom: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', gap: '1rem' }}>
-              <strong style={{ fontWeight: 600 }}>{formatNumber(stats.views)} visualizações</strong>
-              <span style={{color: 'var(--text-secondary)'}}>{(details.release_date || details.first_air_date)?.substring(0, 4)}</span>
+          <div className="info-box-header">
+              <strong>{formatNumber(stats.views)} visualizações</strong>
+              <span>{(details.release_date || details.first_air_date)?.substring(0, 4)}</span>
           </div>
           <div className={`synopsis-text-container ${isSynopsisExpanded ? 'expanded' : ''}`}>
-              <p style={{color: 'var(--text-primary)'}}>{currentSynopsis}</p>
+              <p>{currentSynopsis}</p>
           </div>
           {(currentSynopsis || '').length > 150 &&
               <button onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)} className="expand-synopsis-btn focusable">
