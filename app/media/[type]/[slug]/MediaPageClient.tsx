@@ -38,7 +38,6 @@ interface MediaDetails {
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
-const CINEVEO_CHANNEL_ID = "cineveo_oficial";
 
 const getIdFromSlug = (slug: string): string | null => {
     if (!slug) return null;
@@ -110,21 +109,18 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
-  const [subscribers, setSubscribers] = useState(0);
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  // Refs para manter a posição do scroll da lista de episódios
+  // --- LÓGICA DE SCROLL CORRIGIDA ---
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
 
   // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB.
-  // Roda apenas quando o ID ou o tipo da mídia mudam.
   useEffect(() => {
     if (!id || !type) return;
 
     const fetchData = async () => {
-      setIsLoading(true); // Inicia o carregamento da página
+      setIsLoading(true);
       setDetails(null);
       setSeasonEpisodes([]);
       setStatus('Carregando...');
@@ -134,13 +130,13 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
       } catch (error) { 
         setStatus("Não foi possível carregar os detalhes.");
-        setIsLoading(false); // Para o loading em caso de erro
+        setIsLoading(false);
       }
     };
     fetchData();
   }, [id, type]);
 
-  // Efeito 2: Configura o player e salva o histórico inicial assim que os detalhes são carregados.
+  // Efeito 2: Configura o player e salva o histórico inicial.
   useEffect(() => {
     if (!details || !id) return;
 
@@ -161,35 +157,33 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [details, id, type, user, saveHistory, getContinueWatchingItem]);
 
-  // Efeito 3: Busca os episódios de uma temporada quando a temporada selecionada muda.
+  // Efeito 3: Busca os episódios de uma temporada.
   useEffect(() => {
-    // Se não for uma série ou não tiver detalhes, não faz nada.
     if (type !== 'tv' || !id || !details?.seasons) {
-        // Se for um filme e já tiver detalhes, podemos parar o carregamento geral.
         if (type === 'movie' && details) setIsLoading(false);
         return;
     }
+    
     const fetchSeasonData = async () => {
-      setIsLoading(true); // Mostra o spinner de loading para a lista de episódios
+      setIsLoading(true);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         setSeasonEpisodes(seasonResponse.data.episodes);
       } catch (error) { 
         setSeasonEpisodes([]);
       } finally { 
-        setIsLoading(false); // Esconde o spinner após carregar ou falhar
+        setIsLoading(false);
       }
     };
     fetchSeasonData();
-  }, [id, details, selectedSeason, type]); // Roda apenas quando a temporada muda
+  }, [id, details, selectedSeason, type]);
 
-  // Efeito 4: Atualiza a URL do player e salva o histórico quando o episódio ativo muda.
+  // Efeito 4: Atualiza a URL do player e salva o histórico.
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         
-        // Atualiza o ID para rastrear views/likes do episódio específico
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
@@ -201,7 +195,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // --- DEMAIS EFEITOS (VIEWS, LIKES, ETC) ---
+  // Efeito 5: Gerencia views, likes e dislikes.
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -225,30 +219,25 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const data = doc.data();
         setStats({ views: data?.views || 0, likes: data?.likes || 0, dislikes: data?.dislikes || 0 });
     });
-    const unsubChannel = onSnapshot(doc(db, "channels", CINEVEO_CHANNEL_ID), (doc) => {
-        setSubscribers(doc.data()?.subscribers || 0);
-    });
-    return () => { unsubStats(); unsubChannel(); };
+
+    return () => unsubStats();
   }, [currentStatsId]);
   
   useEffect(() => {
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
-          setIsSubscribed(false);
           return;
       };
       const unsubUserInteraction = onSnapshot(doc(db, `users/${user.uid}/interactions`, currentStatsId), (doc) => {
           setUserLikeStatus(doc.data()?.status || null);
       });
-      const unsubUserSubscription = onSnapshot(doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID), (doc) => {
-          setIsSubscribed(doc.exists());
-      });
-      return () => { unsubUserInteraction(); unsubUserSubscription(); };
+      return () => unsubUserInteraction();
   }, [currentStatsId, user]);
 
-  // Efeito para restaurar a posição do scroll após a seleção de um episódio
+  // --- LÓGICA DE SCROLL CORRIGIDA (RESTAURAÇÃO) ---
   useLayoutEffect(() => {
     if (episodeListRef.current) {
+      console.log('Restoring scroll position to:', scrollPosRef.current); // DEBUG
       episodeListRef.current.scrollTop = scrollPosRef.current;
     }
   });
@@ -256,11 +245,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
-    // Salva a posição do scroll ANTES de atualizar o estado
     if (episodeListRef.current) {
       scrollPosRef.current = episodeListRef.current.scrollTop;
+      console.log('Saving scroll position:', scrollPosRef.current); // DEBUG
     }
     setActiveEpisode({ season, episode: episodeNumber });
+  };
+  
+  const handleSeasonChange = (newSeason: number) => {
+      scrollPosRef.current = 0;
+      setSelectedSeason(newSeason);
   };
   
   const getSynopsis = (): string => {
@@ -311,29 +305,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
-  const handleSubscribe = async () => {
-    if (!user) { alert("Você precisa estar logado para se inscrever."); return; }
-    const channelRef = doc(db, "channels", CINEVEO_CHANNEL_ID);
-    const subscriptionRef = doc(db, `users/${user.uid}/subscriptions`, CINEVEO_CHANNEL_ID);
-    try {
-        await runTransaction(db, async (transaction) => {
-            const channelDoc = await transaction.get(channelRef);
-            const subscriptionDoc = await transaction.get(subscriptionRef);
-            const currentSubscribers = channelDoc.data()?.subscribers || 0;
-            if (subscriptionDoc.exists()) {
-                transaction.set(channelRef, { subscribers: Math.max(0, currentSubscribers - 1) }, { merge: true });
-                transaction.delete(subscriptionRef);
-            } else {
-                transaction.set(channelRef, { subscribers: currentSubscribers + 1 }, { merge: true });
-                transaction.set(subscriptionRef, { subscribedAt: new Date() });
-            }
-        });
-    } catch (error) {
-        console.error("Falha na transação de inscrição: ", error);
-        alert("Ocorreu um erro ao processar sua inscrição. Tente novamente.");
-    }
-  };
-
   // --- RENDERIZAÇÃO ---
   if (!details) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
@@ -362,21 +333,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const InteractionsSection = () => (
     <div className="details-interactions-section">
       <h2 className="episode-title">{getEpisodeTitle()}</h2>
-      <div className="channel-info">
-          <div className="channel-details">
-              <Image className="channel-avatar" src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Avatar do CineVEO" width={50} height={50} />
-              <div>
-                  <div className="channel-name-wrapper">
-                      <h3 className="channel-name">CineVEO</h3>
-                      <Image className="verified-badge" src="https://i.ibb.co/mr16xgYy/Chat-GPT-Image-18-de-ago-de-2025-01-35-17-removebg-preview.png" alt="Verificado" width={16} height={16}/>
-                  </div>
-                  <p className="channel-subs">{formatNumber(subscribers)} inscritos</p>
-              </div>
-          </div>
-          <button onClick={handleSubscribe} className={`subscribe-btn focusable ${isSubscribed ? 'subscribed' : ''}`}>
-              {isSubscribed ? 'Inscrito' : 'Inscrever-se'}
-          </button>
-      </div>
+      
       <div className="media-actions-bar">
         <div className="like-dislike-group">
           <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
@@ -396,14 +353,14 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const EpisodeSelector = () => (
     <div className="episodes-list-wrapper">
         <div className="episodes-header">
-            <select className="season-selector focusable" value={selectedSeason} onChange={(e) => { const newSeason = Number(e.target.value); setSelectedSeason(newSeason); }}>
+            <select className="season-selector focusable" value={selectedSeason} onChange={(e) => handleSeasonChange(Number(e.target.value))}>
                 {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
             </select>
             <p className='episode-count-info'>Atualizado até o ep {seasonEpisodes.length}</p>
         </div>
         <div className="episode-list-desktop desktop-only-layout" ref={episodeListRef}>
             {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+            {!isLoading && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
         </div>
         <div className="mobile-only-layout">
           <div className="episode-grid-mobile">
@@ -421,7 +378,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const MovieSelector = () => (
     <div className="episodes-list-wrapper desktop-only-layout">
         <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
-            <div className="episode-item-thumbnail"><Image src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
+            <div className="episode-item-thumbnail"><Image draggable="false" src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
             <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
             <div className="visualizer-container"><AudioVisualizer /></div>
         </div>
@@ -460,7 +417,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <div className="details-grid">
               <div className="details-poster-container desktop-only-layout">
                   <div className="details-poster">
-                    <Image src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
+                    <Image draggable="false" src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
                   </div>
                    <div className="poster-info-bar">
                     <span className="poster-info-title">{details.title}</span>
@@ -494,7 +451,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
             <section className="cast-section">
               <h2>Elenco Principal</h2>
               <div className="cast-grid">
-                {details.credits?.cast.slice(0, 10).map(member => (<div key={member.id} className='cast-member'><div className='cast-member-img'>{member.profile_path ? (<Image src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div><strong>{member.name}</strong><span>{member.character}</span></div>))}
+                {details.credits?.cast.slice(0, 10).map(member => (<div key={member.id} className='cast-member'><div className='cast-member-img'>{member.profile_path ? (<Image draggable="false" src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />) : <div className='thumbnail-placeholder person'></div>}</div><strong>{member.name}</strong><span>{member.character}</span></div>))}
               </div>
             </section>
           </div>

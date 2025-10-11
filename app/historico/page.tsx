@@ -1,16 +1,18 @@
 // app/historico/page.tsx
 "use client";
 
+import { useState } from 'react';
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { useAuth } from '@/app/components/AuthProvider';
 import Link from 'next/link';
 import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
-import StarIcon from '@/app/components/icons/StarIcon'; // Reutilizando ícone
+import PlayIcon from '@/app/components/icons/PlayIcon'; // Importado
 
 export default function HistoricoPage() {
   const { user } = useAuth();
   const { fullHistory, isLoading, movieCount, episodeCount } = useWatchHistory();
+  const [searchTerm, setSearchTerm] = useState('');
 
   if (isLoading) {
     return (
@@ -41,6 +43,10 @@ export default function HistoricoPage() {
       return item.title;
   }
 
+  const filteredHistory = fullHistory.filter(item =>
+    getWatchItemTitle(item).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <main style={{ paddingTop: '100px' }}>
       <div className="main-container">
@@ -56,35 +62,44 @@ export default function HistoricoPage() {
                 <p className="text-gray-400">Episódios assistidos</p>
             </div>
         </div>
+        
+        {/* --- BARRA DE PESQUISA DO HISTÓRICO --- */}
+        <div className="search-container mb-8 mx-auto" style={{ maxWidth: '600px', width: '100%' }}>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Pesquisar no seu histórico..."
+              className="search-input"
+            />
+        </div>
+
 
         {fullHistory.length === 0 ? (
           <p>Seu histórico está vazio. Comece a assistir algo!</p>
+        ) : filteredHistory.length === 0 ? (
+          <p>Nenhum item encontrado para "{searchTerm}".</p>
         ) : (
           <div className="responsive-grid">
-            {fullHistory.map((item) => (
+            {filteredHistory.map((item) => (
               <Link
+                draggable="false"
                 href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`}
                 key={item.id}
                 className="movie-card focusable"
               >
                 <div className="movie-card-poster-wrapper">
                   <Image
+                    draggable="false"
                     src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
                     alt={item.title || ''}
                     fill
                     className="movie-card-poster"
                     sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                   />
-                   <div className="movie-card-overlay">
-                      <Image
-                        src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png"
-                        alt="Play"
-                        width={110}
-                        height={110}
-                        className="play-button-overlay"
-                        style={{ objectFit: 'contain' }}
-                      />
-                    </div>
+                  <div className="movie-card-play-icon-overlay">
+                    <PlayIcon />
+                  </div>
                 </div>
                 <div className="movie-card-info">
                   <h3 className="movie-card-title">{getWatchItemTitle(item)}</h3>

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from './icons/StarIcon';
 import BookmarkIcon from './icons/BookmarkIcon';
+import PlayIcon from './icons/PlayIcon'; // Importado
 import { generateSlug } from '../lib/utils';
 
 interface Media {
@@ -108,24 +109,18 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
           <>
             <div className="responsive-grid">
               {mediaList.map((item) => (
-                <Link href={`/media/${item.media_type}/${generateSlug(item.title || item.name || '')}-${item.id}`} key={item.id} className="movie-card focusable">
+                <Link draggable="false" href={`/media/${item.media_type}/${generateSlug(item.title || item.name || '')}-${item.id}`} key={item.id} className="movie-card focusable">
                   <div className="movie-card-poster-wrapper">
                     <Image
+                      draggable="false"
                       src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
                       alt={item.title || item.name || ''}
                       fill
                       className="movie-card-poster"
                       sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                     />
-                    <div className="movie-card-overlay">
-                      <Image 
-                          src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" 
-                          alt="Play" 
-                          width={110}
-                          height={110}
-                          className="play-button-overlay" 
-                          style={{ objectFit: 'contain' }}
-                      />
+                    <div className="movie-card-play-icon-overlay">
+                        <PlayIcon />
                     </div>
                     <div className="movie-card-bookmark"><BookmarkIcon /></div>
                   </div>
