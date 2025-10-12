@@ -51,23 +51,13 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
+// PlayerContent simplificado para remover "Carregando Player"
 const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
-  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
-
-  useEffect(() => {
-    setIsPlayerLoading(true);
-  }, [activeStreamUrl]);
-
   return (
     <div className="player-container">
-      {isPlayerLoading && (
-        <div className="player-loader">
-          <div className="spinner"></div>
-          <span>Carregando player...</span>
-        </div>
-      )}
       {activeStreamUrl ? (
         <iframe
+          key={activeStreamUrl} // ADICIONADO: Força o Iframe a remontar, corrigindo o bug do áudio
           src={activeStreamUrl}
           title={`CineVEO Player - ${title}`}
           allow="autoplay; encrypted-media"
@@ -75,8 +65,6 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
           referrerPolicy="origin"
           loading="lazy"
           sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-autoplay"
-          onLoad={() => setIsPlayerLoading(false)}
-          style={{ visibility: isPlayerLoading ? 'hidden' : 'visible' }}
         ></iframe>
       ) : (
         <div className="player-loader">
@@ -95,7 +83,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const id = getIdFromSlug(slug);
 
   const { user } = useAuth();
-  const { saveHistory, getContinueWatchingItem } = useWatchHistory();
+  const { saveHistory, continueWatching } = useWatchHistory(); // CORREÇÃO: Pega o 'continueWatching' diretamente
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,16 +94,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   
   const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
+  const [isInitialEpisodeSet, setIsInitialEpisodeSet] = useState(false); // CORREÇÃO: Flag para controle do histórico
 
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  // --- LÓGICA DE SCROLL CORRIGIDA ---
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
 
-  // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB.
+  // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB. (Sem alterações)
   useEffect(() => {
     if (!id || !type) return;
 
@@ -136,28 +124,36 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchData();
   }, [id, type]);
 
-  // Efeito 2: Configura o player e salva o histórico inicial.
+  // CORREÇÃO: Efeito 2 foi reescrito para lidar com o carregamento do histórico
   useEffect(() => {
-    if (!details || !id) return;
+    if (!details || !id || isInitialEpisodeSet) return;
 
     if (type === 'movie') {
-      setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`);
+      setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`); // API RESTAURADA
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
-    }
-    
-    if (type === 'tv') {
-      const progress = getContinueWatchingItem(id);
-      const startSeason = progress?.progress?.season || 1;
-      const startEpisode = progress?.progress?.episode || 1;
-      
-      setSelectedSeason(startSeason);
-      setActiveEpisode({ season: startSeason, episode: startEpisode });
-    }
-  }, [details, id, type, user, saveHistory, getContinueWatchingItem]);
+      setIsInitialEpisodeSet(true);
+    } else if (type === 'tv') {
+      const progress = continueWatching.find(item => item.tmdbId === id);
 
-  // Efeito 3: Busca os episódios de uma temporada.
+      // Se o progresso existir no histórico, usa ele
+      if (progress?.progress) {
+        setSelectedSeason(progress.progress.season);
+        setActiveEpisode({ season: progress.progress.season, episode: progress.progress.episode });
+        setIsInitialEpisodeSet(true);
+      } 
+      // Se o histórico já carregou (mesmo que sem progresso para este item), ou se o usuário não está logado, define o padrão
+      else if (continueWatching.length > 0 || !user) {
+        setSelectedSeason(1);
+        setActiveEpisode({ season: 1, episode: 1 });
+        setIsInitialEpisodeSet(true);
+      }
+      // Se o histórico ainda não carregou, este efeito irá rodar novamente quando ele for populado
+    }
+  }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet]);
+
+  // Efeito 3: Busca os episódios de uma temporada. (Sem alterações)
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) {
         if (type === 'movie' && details) setIsLoading(false);
@@ -182,7 +178,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
+        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`); // API RESTAURADA
         
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
@@ -195,7 +191,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
   
-  // Efeito 5: Gerencia views, likes e dislikes.
+  // Efeito 5: Gerencia views, likes e dislikes. (Sem alterações)
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -234,20 +230,16 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return () => unsubUserInteraction();
   }, [currentStatsId, user]);
 
-  // --- LÓGICA DE SCROLL CORRIGIDA (RESTAURAÇÃO) ---
+  // Lógica de Scroll e Handlers (sem alterações)
   useLayoutEffect(() => {
     if (episodeListRef.current) {
-      console.log('Restoring scroll position to:', scrollPosRef.current); // DEBUG
       episodeListRef.current.scrollTop = scrollPosRef.current;
     }
   });
 
-
-  // --- FUNÇÕES DE MANIPULAÇÃO (HANDLERS) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     if (episodeListRef.current) {
       scrollPosRef.current = episodeListRef.current.scrollTop;
-      console.log('Saving scroll position:', scrollPosRef.current); // DEBUG
     }
     setActiveEpisode({ season, episode: episodeNumber });
   };
