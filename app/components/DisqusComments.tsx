@@ -9,7 +9,7 @@ interface DisqusCommentsProps {
   title: string;
 }
 
-// 1. Crie uma interface para a configuração do Disqus
+// Interface para a configuração do Disqus
 interface IDisqusConfig {
   page: {
     url: string;
@@ -18,7 +18,7 @@ interface IDisqusConfig {
   };
 }
 
-// 2. Atualize a declaração global para usar a nova interface
+// Atualiza a declaração global para o objeto `window`
 declare global {
   interface Window {
     DISQUS: {
@@ -30,28 +30,33 @@ declare global {
 
 const DisqusComments = ({ url, identifier, title }: DisqusCommentsProps) => {
   useEffect(() => {
-    // 3. Crie uma função de callback e defina o tipo do 'this'
+    // Função de configuração do Disqus
     const disqusConfigCallback = function (this: IDisqusConfig) {
       this.page.url = url;
       this.page.identifier = identifier;
       this.page.title = title;
     };
 
+    // Lógica para carregar ou resetar o Disqus
     if (window.DISQUS) {
       window.DISQUS.reset({
         reload: true,
-        config: disqusConfigCallback, // Use a função de callback
+        config: disqusConfigCallback,
       });
     } else {
-      window.disqus_config = disqusConfigCallback; // Use a função de callback
+      window.disqus_config = disqusConfigCallback;
       const d = document, s = d.createElement('script');
-      s.src = 'https://cineveo.disqus.com/embed.js';
+      
+      // ATUALIZADO: URL do script com o novo shortname
+      s.src = 'https://cineveo-1.disqus.com/embed.js';
+      
       s.setAttribute('data-timestamp', String(+new Date()));
       (d.head || d.body).appendChild(s);
     }
   }, [url, identifier, title]);
 
   return (
+    // O HTML de incorporação do Disqus que você forneceu
     <div className="comments-section" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
       <div id="disqus_thread"></div>
       <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
