@@ -16,6 +16,7 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
+import DisqusComments from '@/app/components/DisqusComments'; // Importado
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -51,13 +52,12 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-// PlayerContent simplificado para remover "Carregando Player"
 const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
   return (
     <div className="player-container">
       {activeStreamUrl ? (
         <iframe
-          key={activeStreamUrl} // ADICIONADO: Força o Iframe a remontar, corrigindo o bug do áudio
+          key={activeStreamUrl}
           src={activeStreamUrl}
           title={`CineVEO Player - ${title}`}
           allow="autoplay; encrypted-media"
@@ -83,7 +83,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const id = getIdFromSlug(slug);
 
   const { user } = useAuth();
-  const { saveHistory, continueWatching } = useWatchHistory(); // CORREÇÃO: Pega o 'continueWatching' diretamente
+  const { saveHistory, continueWatching } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,16 +94,19 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
   
   const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
-  const [isInitialEpisodeSet, setIsInitialEpisodeSet] = useState(false); // CORREÇÃO: Flag para controle do histórico
+  const [isInitialEpisodeSet, setIsInitialEpisodeSet] = useState(false);
 
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
+  // NOVO: Estado para a configuração do Disqus
+  const [disqusConfig, setDisqusConfig] = useState<{url: string, identifier: string, title: string} | null>(null);
+
+
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
 
-  // Efeito 1: Busca os detalhes principais da mídia (filme/série) no TMDB. (Sem alterações)
   useEffect(() => {
     if (!id || !type) return;
 
@@ -124,36 +127,36 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchData();
   }, [id, type]);
 
-  // CORREÇÃO: Efeito 2 foi reescrito para lidar com o carregamento do histórico
   useEffect(() => {
     if (!details || !id || isInitialEpisodeSet) return;
 
     if (type === 'movie') {
-      setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`); // API RESTAURADA
+      setActiveStreamUrl(`https://primevicio.vercel.app/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
+       // NOVO: Configura o Disqus para filmes
+      setDisqusConfig({
+        url: `https://www.cineveo.lat/media/movie/${slug}`,
+        identifier: `movie-${details.id}`,
+        title: details.title
+      });
       setIsInitialEpisodeSet(true);
     } else if (type === 'tv') {
       const progress = continueWatching.find(item => item.tmdbId === id);
-
-      // Se o progresso existir no histórico, usa ele
       if (progress?.progress) {
         setSelectedSeason(progress.progress.season);
         setActiveEpisode({ season: progress.progress.season, episode: progress.progress.episode });
         setIsInitialEpisodeSet(true);
       } 
-      // Se o histórico já carregou (mesmo que sem progresso para este item), ou se o usuário não está logado, define o padrão
       else if (continueWatching.length > 0 || !user) {
         setSelectedSeason(1);
         setActiveEpisode({ season: 1, episode: 1 });
         setIsInitialEpisodeSet(true);
       }
-      // Se o histórico ainda não carregou, este efeito irá rodar novamente quando ele for populado
     }
-  }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet]);
+  }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet, slug]);
 
-  // Efeito 3: Busca os episódios de uma temporada. (Sem alterações)
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) {
         if (type === 'movie' && details) setIsLoading(false);
@@ -174,24 +177,28 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchSeasonData();
   }, [id, details, selectedSeason, type]);
 
-  // Efeito 4: Atualiza a URL do player e salva o histórico.
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`); // API RESTAURADA
+        setActiveStreamUrl(`https://primevicio.vercel.app/embed/tv/${id}/${season}/${episode}`);
         
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
+            // NOVO: Configura o Disqus para episódios de séries
+            setDisqusConfig({
+                url: `https://www.cineveo.lat/media/tv/${slug}#s${season}e${episode}`,
+                identifier: `tv-${id}-s${season}-e${episode}`,
+                title: `${details.title} - T${season} E${episode}: ${episodeData.name}`
+            });
         }
 
         if (user) {
           saveHistory({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
         }
     }
-  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes]);
+  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes, slug]);
   
-  // Efeito 5: Gerencia views, likes e dislikes. (Sem alterações)
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -230,7 +237,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return () => unsubUserInteraction();
   }, [currentStatsId, user]);
 
-  // Lógica de Scroll e Handlers (sem alterações)
   useLayoutEffect(() => {
     if (episodeListRef.current) {
       episodeListRef.current.scrollTop = scrollPosRef.current;
@@ -297,7 +303,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
-  // --- RENDERIZAÇÃO ---
   if (!details) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
   }
@@ -338,7 +343,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           </button>
         </div>
       </div>
-      {type === 'movie' && <InfoBox />}
+      {/* A InfoBox será renderizada separadamente para melhor controle de layout */}
     </div>
   );
   
@@ -386,10 +391,15 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
               <div className="series-player-wrapper">
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
+                {type === 'movie' && <InfoBox />}
+                {/* NOVO: Comentários Disqus para Desktop (Filme) */}
+                {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
               </div>
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'tv' && <InfoBox />}
+                 {/* NOVO: Comentários Disqus para Desktop (Série) */}
+                {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
               </div>
             </div>
           </div>
@@ -400,8 +410,14 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         <div className="mobile-only-layout">
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
+                {type === 'movie' && <InfoBox />}
+                {/* NOVO: Comentários Disqus para Mobile (Filme) */}
+                {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
+
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
+                {/* NOVO: Comentários Disqus para Mobile (Série) */}
+                {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
             </div>
         </div>
         <main className="details-main-content">

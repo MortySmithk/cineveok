@@ -7,8 +7,8 @@ import "./globals.css";
 import Header from "./components/Header";
 import { AuthProvider } from "./components/AuthProvider";
 import AppInitializer from "./components/AppInitializer";
-import { ThemeProvider } from "./components/ThemeProvider"; // Importado
-import FloatingTelegramButton from "./components/FloatingTelegramButton"; // Importado
+import { ThemeProvider } from "./components/ThemeProvider";
+import FloatingTelegramButton from "./components/FloatingTelegramButton";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -49,7 +49,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={inter.className}>
-        <ThemeProvider> {/* Adicionado */}
+        <ThemeProvider>
           <AuthProvider>
             <AppInitializer>
               <Header />
@@ -95,8 +95,10 @@ export default function RootLayout({
               </footer>
             </AppInitializer>
           </AuthProvider>
-          <FloatingTelegramButton /> {/* Adicionado */}
-        </ThemeProvider> {/* Adicionado */}
+          <FloatingTelegramButton />
+        </ThemeProvider>
+        {/* SCRIPT DO DISQUS ADICIONADO AQUI */}
+        <Script id="dsq-count-scr" src="//cineveo.disqus.com/count.js" async strategy="lazyOnload" />
       </body>
     </html>
   );
