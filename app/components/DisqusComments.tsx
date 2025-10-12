@@ -9,38 +9,47 @@ interface DisqusCommentsProps {
   title: string;
 }
 
-// Adiciona tipos para o objeto window do Disqus para evitar erros de TypeScript
+// 1. Crie uma interface para a configuração do Disqus
+interface IDisqusConfig {
+  page: {
+    url: string;
+    identifier: string;
+    title: string;
+  };
+}
+
+// 2. Atualize a declaração global para usar a nova interface
 declare global {
   interface Window {
-    DISQUS: any;
-    disqus_config: () => void;
+    DISQUS: {
+      reset: (options: { reload: boolean; config: (this: IDisqusConfig) => void }) => void;
+    };
+    disqus_config: (this: IDisqusConfig) => void;
   }
 }
 
 const DisqusComments = ({ url, identifier, title }: DisqusCommentsProps) => {
   useEffect(() => {
-    // Função de configuração do Disqus
-    window.disqus_config = function () {
+    // 3. Crie uma função de callback e defina o tipo do 'this'
+    const disqusConfigCallback = function (this: IDisqusConfig) {
       this.page.url = url;
       this.page.identifier = identifier;
       this.page.title = title;
     };
 
-    // Se o Disqus já foi carregado (ex: ao trocar de episódio),
-    // apenas resetamos com a nova configuração.
     if (window.DISQUS) {
       window.DISQUS.reset({
         reload: true,
-        config: window.disqus_config,
+        config: disqusConfigCallback, // Use a função de callback
       });
     } else {
-      // Se for o primeiro carregamento, cria e adiciona o script do Disqus.
+      window.disqus_config = disqusConfigCallback; // Use a função de callback
       const d = document, s = d.createElement('script');
       s.src = 'https://cineveo.disqus.com/embed.js';
       s.setAttribute('data-timestamp', String(+new Date()));
       (d.head || d.body).appendChild(s);
     }
-  }, [url, identifier, title]); // Roda o efeito sempre que a URL, ID ou título mudar
+  }, [url, identifier, title]);
 
   return (
     <div className="comments-section" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
