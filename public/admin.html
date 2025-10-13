@@ -43,6 +43,21 @@
                 <input id="password" type="password" placeholder="Senha" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
                 <button type="submit" class="w-full bg-yellow-500 text-gray-900 font-bold py-3 rounded-md hover:bg-yellow-600 transition-colors">Entrar</button>
             </form>
+            <div class="relative flex py-5 items-center">
+                <div class="flex-grow border-t border-gray-600"></div>
+                <span class="flex-shrink mx-4 text-gray-400 text-sm">OU</span>
+                <div class="flex-grow border-t border-gray-600"></div>
+            </div>
+            <button id="google-login-btn" class="w-full bg-white text-gray-800 font-semibold py-3 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6.02C43.51 39.88 46.98 32.93 46.98 24.55z"></path>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6.02c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                    <path fill="none" d="M0 0h48v48H0z"></path>
+                </svg>
+                Entrar com Google
+            </button>
         </div>
     </div>
 
@@ -166,7 +181,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -179,6 +194,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const firestore = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
 
         const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
@@ -193,6 +209,7 @@
             loginForm: document.getElementById('login-form'),
             emailInput: document.getElementById('email'),
             passwordInput: document.getElementById('password'),
+            googleLoginBtn: document.getElementById('google-login-btn'),
             userEmailSpan: document.getElementById('user-email'),
             catalogSearchInput: document.getElementById('catalog-search-input'),
             catalogSearchBtn: document.getElementById('catalog-search-btn'),
@@ -413,9 +430,6 @@
             ui.movieUrlsList.appendChild(div);
         };
         
-        // =================================================================================
-        // INÍCIO DA MODIFICAÇÃO: Função de salvamento corrigida para importação em massa
-        // =================================================================================
         const handleMediaFormSubmit = async (e) => {
             e.preventDefault();
             const id = ui.tmdbIdInput.value;
@@ -449,11 +463,8 @@
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
-                    // Começa com os dados de temporadas já existentes no Firestore
                     const seasonsToSave = existingData.seasons || {};
 
-                    // Mescla os dados da importação em massa. Isso irá adicionar/sobrescrever
-                    // as temporadas e episódios com base no texto colado.
                     for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
                         const newEpisodesForSeason = [];
                         for (const [epNumber, url] of Object.entries(episodes)) {
@@ -471,9 +482,6 @@
                         seasonsToSave[seasonNumber].episodes = newEpisodesForSeason;
                     }
 
-                    // Agora, processa a temporada ATUALMENTE VISÍVEL no formulário.
-                    // Isso captura quaisquer edições manuais e garante que elas sejam salvas,
-                    // sobrescrevendo os dados da importação em massa apenas para esta temporada.
                     const currentSeasonNumber = ui.seasonSelector.value;
                     const currentSeasonEpisodesFromForm = [];
                     document.querySelectorAll('.episode-url').forEach(input => {
@@ -493,7 +501,6 @@
                     seasonsToSave[currentSeasonNumber].episodes = currentSeasonEpisodesFromForm;
                     seasonsToSave[currentSeasonNumber].name = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
                     
-                    // Atribui o objeto final de temporadas para ser salvo
                     mediaData.seasons = seasonsToSave;
                 }
                 
@@ -513,9 +520,6 @@
                 ui.saveBtn.disabled = false;
             }
         };
-        // =================================================================================
-        // FIM DA MODIFICAÇÃO
-        // =================================================================================
 
         const handleBulkImport = () => {
             const text = ui.bulkImportTextarea.value.trim();
@@ -882,6 +886,15 @@
             });
 
             ui.loginForm.addEventListener('submit', (e) => { e.preventDefault(); signInWithEmailAndPassword(auth, ui.emailInput.value, ui.passwordInput.value).catch(() => alert('Credenciais inválidas.')); });
+            
+            ui.googleLoginBtn.addEventListener('click', () => {
+                signInWithPopup(auth, googleProvider)
+                    .catch((error) => {
+                        console.error("Erro no login com Google:", error);
+                        alert(`Erro ao tentar fazer login com o Google: ${error.message}`);
+                    });
+            });
+
             ui.logoutButton.addEventListener('click', () => signOut(auth));
             
             ui.catalogSearchBtn.addEventListener('click', performSearch);
