@@ -92,14 +92,15 @@
                     </button>
                 </div>
                 
-                 <div class="mt-4 flex flex-wrap gap-3">
+                <div class="mt-4 flex flex-wrap gap-3">
                     <button id="download-movies-txt-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        BAIXAR TODOS OS FILMES .TXT
+                        BAIXAR FILMES (.MP4) .TXT
                     </button>
                     <button id="download-series-txt-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
                         BAIXAR TODAS AS SÉRIES .TXT
                     </button>
                 </div>
+
                 <div class="mt-4 border-t border-gray-700 pt-4">
                     <button id="force-firestore-all-movies-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
                         Forçar Firestore para Filmes com Link .MP4
@@ -117,7 +118,7 @@
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
                         <h2 class="text-xl font-bold text-white mb-4">Adicionar Rápido por ID</h2>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB (ex: TMDB: 1053024)" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                            <input id="quick-add-tmdb-id" type="text" placeholder="ID do TMDB (ex: 1053024)" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
                             <select id="quick-add-media-type" class="bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
                                 <option value="movie">Filme</option>
                                 <option value="tv">Série</option>
@@ -248,7 +249,6 @@
             addMovieUrlBtn: document.getElementById('add-movie-url-btn'),
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn'),
             forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn'),
-            // NOVOS ELEMENTOS DA UI
             downloadMoviesBtn: document.getElementById('download-movies-txt-btn'),
             downloadSeriesBtn: document.getElementById('download-series-txt-btn'),
         };
@@ -906,16 +906,20 @@
             button.textContent = 'Gerando...';
 
             try {
-                const moviesWithLinks = allMediaCache.filter(m => m.type === 'movie' && m.hasLinks);
-                if (moviesWithLinks.length === 0) {
-                    alert('Nenhum filme com links encontrado para baixar.');
+                // Filtra filmes com links e com ID numérico
+                const moviesToProcess = allMediaCache.filter(m => 
+                    m.type === 'movie' && m.hasLinks && /^\d+$/.test(m.id)
+                );
+
+                if (moviesToProcess.length === 0) {
+                    alert('Nenhum filme com ID válido e links foi encontrado.');
                     return;
                 }
 
                 let txtContent = '';
-                for (let i = 0; i < moviesWithLinks.length; i++) {
-                    const movie = moviesWithLinks[i];
-                    button.textContent = `Gerando... (${i + 1}/${moviesWithLinks.length})`;
+                for (let i = 0; i < moviesToProcess.length; i++) {
+                    const movie = moviesToProcess[i];
+                    button.textContent = `Gerando... (${i + 1}/${moviesToProcess.length})`;
                     
                     const docRef = doc(firestore, "media", movie.id);
                     const docSnap = await getDoc(docRef);
@@ -923,25 +927,41 @@
                     if (docSnap.exists() && docSnap.data().urls) {
                         const firestoreData = docSnap.data();
                         
-                        // Busca dados do TMDB para pegar o ano
+                        // Filtra os links pelas novas regras
+                        const validUrls = firestoreData.urls
+                            .map(urlData => urlData.url)
+                            .filter(url => {
+                                if (!url) return false;
+                                const lowerUrl = url.toLowerCase();
+                                return lowerUrl.endsWith('.mp4') && 
+                                       !lowerUrl.includes('superflix') && 
+                                       !lowerUrl.includes('sinalprivado');
+                            });
+
+                        // Se não sobrar nenhum link válido, pula para o próximo filme
+                        if (validUrls.length === 0) {
+                            continue;
+                        }
+
                         const tmdbResponse = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
                         const tmdbData = await tmdbResponse.json();
                         const year = (tmdbData.release_date || '').substring(0, 4);
-
                         const title = firestoreData.title || tmdbData.title;
                         
                         txtContent += `${title} ${year ? `(${year})` : ''} - ${movie.id} << TMDB\n`;
                         
-                        firestoreData.urls.forEach(urlData => {
-                            if (urlData.url) {
-                                txtContent += `${urlData.url}\n`;
-                            }
+                        validUrls.forEach(url => {
+                            txtContent += `${url}\n`;
                         });
                         txtContent += '\n'; 
                     }
                 }
 
-                downloadFile('filmes.txt', txtContent.trim());
+                if (txtContent.trim() === '') {
+                    alert('Nenhum filme atendeu aos critérios de filtro (ID válido, .mp4, sem domínios bloqueados).');
+                } else {
+                    downloadFile('filmes.txt', txtContent.trim());
+                }
 
             } catch (error) {
                 console.error("Erro ao gerar arquivo de filmes:", error);
@@ -959,53 +979,73 @@
             button.textContent = 'Gerando...';
             
             try {
-                const seriesWithLinks = allMediaCache.filter(m => m.type === 'series' && m.episodesWithLinksCount > 0);
-                 if (seriesWithLinks.length === 0) {
-                    alert('Nenhuma série com links encontrada para baixar.');
+                // Filtra séries com links e com ID numérico
+                const seriesToProcess = allMediaCache.filter(m => 
+                    m.type === 'series' && m.episodesWithLinksCount > 0 && /^\d+$/.test(m.id)
+                );
+                 if (seriesToProcess.length === 0) {
+                    alert('Nenhuma série com ID válido e links foi encontrada.');
                     return;
                 }
 
                 let txtContent = '';
-                 for (let i = 0; i < seriesWithLinks.length; i++) {
-                    const series = seriesWithLinks[i];
-                    button.textContent = `Gerando... (${i + 1}/${seriesWithLinks.length})`;
+                 for (let i = 0; i < seriesToProcess.length; i++) {
+                    const series = seriesToProcess[i];
+                    button.textContent = `Gerando... (${i + 1}/${seriesToProcess.length})`;
                     
                     const docRef = doc(firestore, "media", series.id);
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists() && docSnap.data().seasons) {
                         const firestoreData = docSnap.data();
-                        
-                        const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${series.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
-                        const tmdbData = await tmdbResponse.json();
-                        const year = (tmdbData.first_air_date || '').substring(0, 4);
-
-                        const title = firestoreData.title || tmdbData.name;
-                        
-                        txtContent += `${title} ${year ? `(${year})` : ''} - ${series.id} << TMDB\n`;
+                        let seriesBlockContent = ''; // Armazena o conteúdo da série (temporadas e eps)
 
                         const sortedSeasonNumbers = Object.keys(firestoreData.seasons).sort((a, b) => parseInt(a) - parseInt(b));
 
                         for (const seasonNumber of sortedSeasonNumbers) {
                             const season = firestoreData.seasons[seasonNumber];
-                            if (season && Array.isArray(season.episodes) && season.episodes.some(ep => ep.urls && ep.urls[0].url)) {
-                                txtContent += `Temporada ${seasonNumber}\n`;
-                                
+                            let seasonHasValidLinks = false;
+                            let seasonContent = ''; // Armazena o conteúdo da temporada
+
+                            if (season && Array.isArray(season.episodes)) {
                                 const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
                                 
                                 sortedEpisodes.forEach(ep => {
                                     if (ep.urls && ep.urls.length > 0 && ep.urls[0].url) {
-                                        const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
-                                        txtContent += `EP${epNumberFormatted}: ${ep.urls[0].url}\n`;
+                                        const url = ep.urls[0].url;
+                                        const lowerUrl = url.toLowerCase();
+                                        // Aplica filtro de domínios
+                                        if (!lowerUrl.includes('superflix') && !lowerUrl.includes('sinalprivado')) {
+                                            const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
+                                            seasonContent += `EP${epNumberFormatted}: ${url}\n`;
+                                            seasonHasValidLinks = true;
+                                        }
                                     }
                                 });
                             }
+                            if (seasonHasValidLinks) {
+                                seriesBlockContent += `Temporada ${seasonNumber}\n${seasonContent}`;
+                            }
                         }
-                        txtContent += '\n';
+
+                        // Se a série teve algum link válido, adiciona o bloco todo
+                        if (seriesBlockContent) {
+                            const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${series.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                            const tmdbData = await tmdbResponse.json();
+                            const year = (tmdbData.first_air_date || '').substring(0, 4);
+                            const title = firestoreData.title || tmdbData.name;
+                            
+                            txtContent += `${title} ${year ? `(${year})` : ''} - ${series.id} << TMDB\n`;
+                            txtContent += seriesBlockContent + '\n';
+                        }
                     }
                 }
                 
-                downloadFile('series.txt', txtContent.trim());
+                 if (txtContent.trim() === '') {
+                    alert('Nenhuma série atendeu aos critérios de filtro (ID válido, sem domínios bloqueados).');
+                } else {
+                    downloadFile('series.txt', txtContent.trim());
+                }
 
             } catch (error) {
                 console.error("Erro ao gerar arquivo de séries:", error);
@@ -1016,7 +1056,7 @@
             }
         };
 
-        // --- FIM DAS NOVAS FUNÇÕES DE DOWNLOAD ---
+        // --- FIM DAS FUNÇÕES DE DOWNLOAD ATUALIZADAS ---
 
 
         // --- Event Listeners ---
@@ -1143,7 +1183,6 @@
 
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
 
-            // ADICIONA EVENT LISTENERS PARA OS NOVOS BOTÕES
             ui.downloadMoviesBtn.addEventListener('click', downloadAllMoviesAsTxt);
             ui.downloadSeriesBtn.addEventListener('click', downloadAllSeriesAsTxt);
         });
