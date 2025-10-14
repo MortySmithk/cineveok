@@ -76,7 +76,7 @@
             <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
 
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                <h2 class="text-xl font-bold text-white mb-4">Relatórios de Conteúdo</h2>
+                <h2 class="text-xl font-bold text-white mb-4">Relatórios e Ferramentas</h2>
                 <div id="report-tabs" class="flex flex-wrap gap-3 border-b border-gray-700 pb-4 mb-4">
                     <button data-report-type="movies-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
                         Filmes Sem Links (<span id="count-movies-no-links">...</span>)
@@ -91,11 +91,21 @@
                         Episódios Com Links (<span id="count-episodes-with-links">...</span>)
                     </button>
                 </div>
-                <div class="mt-4">
+                
+                 <div class="mt-4 flex flex-wrap gap-3">
+                    <button id="download-movies-txt-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        BAIXAR TODOS OS FILMES .TXT
+                    </button>
+                    <button id="download-series-txt-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        BAIXAR TODAS AS SÉRIES .TXT
+                    </button>
+                </div>
+                <div class="mt-4 border-t border-gray-700 pt-4">
                     <button id="force-firestore-all-movies-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
                         Forçar Firestore para Filmes com Link .MP4
                     </button>
                 </div>
+
                 <div id="report-results-container" class="space-y-3 mt-4">
                     <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
                 </div>
@@ -237,7 +247,10 @@
             logoutButton: document.getElementById('logout-button'),
             addMovieUrlBtn: document.getElementById('add-movie-url-btn'),
             copyAllLinksFormBtn: document.getElementById('copy-all-links-form-btn'),
-            forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn')
+            forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn'),
+            // NOVOS ELEMENTOS DA UI
+            downloadMoviesBtn: document.getElementById('download-movies-txt-btn'),
+            downloadSeriesBtn: document.getElementById('download-series-txt-btn'),
         };
 
         const showPanel = async (user) => {
@@ -874,6 +887,138 @@
             }
         };
 
+        // --- INÍCIO DAS NOVAS FUNÇÕES DE DOWNLOAD ---
+
+        const downloadFile = (filename, text) => {
+            const element = document.createElement('a');
+            const file = new Blob([text], {type: 'text/plain;charset=utf-8'});
+            element.href = URL.createObjectURL(file);
+            element.download = filename;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        const downloadAllMoviesAsTxt = async () => {
+            const button = ui.downloadMoviesBtn;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Gerando...';
+
+            try {
+                const moviesWithLinks = allMediaCache.filter(m => m.type === 'movie' && m.hasLinks);
+                if (moviesWithLinks.length === 0) {
+                    alert('Nenhum filme com links encontrado para baixar.');
+                    return;
+                }
+
+                let txtContent = '';
+                for (let i = 0; i < moviesWithLinks.length; i++) {
+                    const movie = moviesWithLinks[i];
+                    button.textContent = `Gerando... (${i + 1}/${moviesWithLinks.length})`;
+                    
+                    const docRef = doc(firestore, "media", movie.id);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists() && docSnap.data().urls) {
+                        const firestoreData = docSnap.data();
+                        
+                        // Busca dados do TMDB para pegar o ano
+                        const tmdbResponse = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                        const tmdbData = await tmdbResponse.json();
+                        const year = (tmdbData.release_date || '').substring(0, 4);
+
+                        const title = firestoreData.title || tmdbData.title;
+                        
+                        txtContent += `${title} ${year ? `(${year})` : ''} - ${movie.id} << TMDB\n`;
+                        
+                        firestoreData.urls.forEach(urlData => {
+                            if (urlData.url) {
+                                txtContent += `${urlData.url}\n`;
+                            }
+                        });
+                        txtContent += '\n'; 
+                    }
+                }
+
+                downloadFile('filmes.txt', txtContent.trim());
+
+            } catch (error) {
+                console.error("Erro ao gerar arquivo de filmes:", error);
+                alert("Ocorreu um erro ao gerar o arquivo de filmes. Verifique o console.");
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        };
+
+        const downloadAllSeriesAsTxt = async () => {
+            const button = ui.downloadSeriesBtn;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Gerando...';
+            
+            try {
+                const seriesWithLinks = allMediaCache.filter(m => m.type === 'series' && m.episodesWithLinksCount > 0);
+                 if (seriesWithLinks.length === 0) {
+                    alert('Nenhuma série com links encontrada para baixar.');
+                    return;
+                }
+
+                let txtContent = '';
+                 for (let i = 0; i < seriesWithLinks.length; i++) {
+                    const series = seriesWithLinks[i];
+                    button.textContent = `Gerando... (${i + 1}/${seriesWithLinks.length})`;
+                    
+                    const docRef = doc(firestore, "media", series.id);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists() && docSnap.data().seasons) {
+                        const firestoreData = docSnap.data();
+                        
+                        const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${series.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
+                        const tmdbData = await tmdbResponse.json();
+                        const year = (tmdbData.first_air_date || '').substring(0, 4);
+
+                        const title = firestoreData.title || tmdbData.name;
+                        
+                        txtContent += `${title} ${year ? `(${year})` : ''} - ${series.id} << TMDB\n`;
+
+                        const sortedSeasonNumbers = Object.keys(firestoreData.seasons).sort((a, b) => parseInt(a) - parseInt(b));
+
+                        for (const seasonNumber of sortedSeasonNumbers) {
+                            const season = firestoreData.seasons[seasonNumber];
+                            if (season && Array.isArray(season.episodes) && season.episodes.some(ep => ep.urls && ep.urls[0].url)) {
+                                txtContent += `Temporada ${seasonNumber}\n`;
+                                
+                                const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
+                                
+                                sortedEpisodes.forEach(ep => {
+                                    if (ep.urls && ep.urls.length > 0 && ep.urls[0].url) {
+                                        const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
+                                        txtContent += `EP${epNumberFormatted}: ${ep.urls[0].url}\n`;
+                                    }
+                                });
+                            }
+                        }
+                        txtContent += '\n';
+                    }
+                }
+                
+                downloadFile('series.txt', txtContent.trim());
+
+            } catch (error) {
+                console.error("Erro ao gerar arquivo de séries:", error);
+                alert("Ocorreu um erro ao gerar o arquivo de séries. Verifique o console.");
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        };
+
+        // --- FIM DAS NOVAS FUNÇÕES DE DOWNLOAD ---
+
+
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
@@ -997,6 +1142,10 @@
             });
 
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
+
+            // ADICIONA EVENT LISTENERS PARA OS NOVOS BOTÕES
+            ui.downloadMoviesBtn.addEventListener('click', downloadAllMoviesAsTxt);
+            ui.downloadSeriesBtn.addEventListener('click', downloadAllSeriesAsTxt);
         });
     </script>
 </body>
