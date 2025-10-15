@@ -131,7 +131,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (!details || !id || isInitialEpisodeSet) return;
 
     if (type === 'movie') {
-      setActiveStreamUrl(`https://primevicio.netlify.app/embed/movie/${details.id}`);
+      setActiveStreamUrl(`https://primevicio.lat/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
@@ -180,7 +180,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://primevicio.netlify.app/embed/tv/${id}/${season}/${episode}`);
+        setActiveStreamUrl(`https://primevicio.lat/embed/tv/${id}/${season}/${episode}`);
         
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
