@@ -16,7 +16,7 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import DisqusComments from '@/app/components/DisqusComments'; // Importado
+import DisqusComments from '@/app/components/DisqusComments';
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -64,7 +64,6 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
           allowFullScreen
           referrerPolicy="origin"
           loading="lazy"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-autoplay"
         ></iframe>
       ) : (
         <div className="player-loader">
@@ -100,7 +99,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  // NOVO: Estado para a configuração do Disqus
   const [disqusConfig, setDisqusConfig] = useState<{url: string, identifier: string, title: string} | null>(null);
 
 
@@ -135,7 +133,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
-       // NOVO: Configura o Disqus para filmes
       setDisqusConfig({
         url: `https://www.cineveo.lat/media/movie/${slug}`,
         identifier: `movie-${details.id}`,
@@ -185,7 +182,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
-            // NOVO: Configura o Disqus para episódios de séries
             setDisqusConfig({
                 url: `https://www.cineveo.lat/media/tv/${slug}#s${season}e${episode}`,
                 identifier: `tv-${id}-s${season}-e${episode}`,
@@ -343,7 +339,6 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           </button>
         </div>
       </div>
-      {/* A InfoBox será renderizada separadamente para melhor controle de layout */}
     </div>
   );
   
@@ -392,13 +387,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {/* NOVO: Comentários Disqus para Desktop (Filme) */}
                 {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
               </div>
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'tv' && <InfoBox />}
-                 {/* NOVO: Comentários Disqus para Desktop (Série) */}
                 {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
               </div>
             </div>
@@ -411,12 +404,10 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {/* NOVO: Comentários Disqus para Mobile (Filme) */}
                 {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
 
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
-                {/* NOVO: Comentários Disqus para Mobile (Série) */}
                 {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
             </div>
         </div>
