@@ -99,7 +99,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  const [disqusConfig, setDisqusConfig] = useState<{url: string, identifier: string, title: string} | null>(null);
+  const [disqusConfig, setDisqusConfig] = useState<{type: string, slug: string, title: string} | null>(null);
 
 
   const episodeListRef = useRef<HTMLDivElement>(null);
@@ -134,8 +134,8 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
       setDisqusConfig({
-        url: `https://www.cineveo.lat/media/movie/${slug}`,
-        identifier: `movie-${details.id}`,
+        type: 'movie',
+        slug: slug,
         title: details.title
       });
       setIsInitialEpisodeSet(true);
@@ -183,8 +183,8 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
             setDisqusConfig({
-                url: `https://www.cineveo.lat/media/tv/${slug}#s${season}e${episode}`,
-                identifier: `tv-${id}-s${season}-e${episode}`,
+                type: 'tv',
+                slug: `${id}-s${season}-e${episode}`,
                 title: `${details.title} - T${season} E${episode}: ${episodeData.name}`
             });
         }
