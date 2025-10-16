@@ -40,7 +40,7 @@ const DisqusComments = ({ type, slug, title }: DisqusCommentsProps) => {
           resolvendo o problema de "nova versão da página" do Disqus. */}
       <DiscussionEmbed
         key={identifier}
-        shortname='cineveo'
+        shortname='cineveo-1' // CORREÇÃO AQUI
         config={disqusConfig}
       />
     </div>
