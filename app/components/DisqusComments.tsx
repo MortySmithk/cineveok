@@ -3,7 +3,14 @@
 import { DiscussionEmbed } from 'disqus-react';
 import { useEffect, useState } from 'react';
 
-const DisqusComments = ({ type, slug, title }) => {
+// Define a interface para as propriedades do componente
+interface DisqusCommentsProps {
+  type: string;
+  slug: string;
+  title: string;
+}
+
+const DisqusComments = ({ type, slug, title }: DisqusCommentsProps) => {
   const [pageUrl, setPageUrl] = useState('');
   const identifier = `${type}-${slug}`;
 
@@ -32,7 +39,7 @@ const DisqusComments = ({ type, slug, title }) => {
       {/* A prop 'key' força o componente a reiniciar com a configuração correta,
           resolvendo o problema de "nova versão da página" do Disqus. */}
       <DiscussionEmbed
-        key={identifier} 
+        key={identifier}
         shortname='cineveo'
         config={disqusConfig}
       />
