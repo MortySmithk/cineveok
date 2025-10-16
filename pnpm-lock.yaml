@@ -11,6 +11,9 @@ importers:
       axios:
         specifier: ^1.7.2
         version: 1.12.2
+      disqus-react:
+        specifier: ^1.1.7
+        version: 1.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       firebase:
         specifier: ^10.12.2
         version: 10.14.1
@@ -801,6 +804,12 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  disqus-react@1.1.7:
+    resolution: {integrity: sha512-O+3q6weESpfCBumz45F+8Ue26zUn7UI62BCYwscoBszSr9vWPJohMiTtZWL/m8AyFba53bsSEhwyJcrTnXDMpg==}
+    peerDependencies:
+      react: ^15.6.1 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^15.6.1 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
@@ -2765,6 +2774,11 @@ snapshots:
       object-keys: 1.1.1
 
   delayed-stream@1.0.0: {}
+
+  disqus-react@1.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   doctrine@2.1.0:
     dependencies:
