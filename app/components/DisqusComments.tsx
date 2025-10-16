@@ -5,20 +5,14 @@ import { useEffect, useState } from 'react';
 
 const DisqusComments = ({ type, slug, title }) => {
   const [pageUrl, setPageUrl] = useState('');
+  const identifier = `${type}-${slug}`;
 
-  // Este código roda apenas no navegador do usuário para pegar a URL correta
+  // Roda no cliente para pegar a URL da janela do navegador
   useEffect(() => {
     setPageUrl(window.location.href);
   }, []);
 
-  const disqusShortname = 'cineveo';
-  const disqusConfig = {
-    url: pageUrl, // Agora usa a URL dinâmica (ex: https://cineveo.lat/...)
-    identifier: `${type}-${slug}`,
-    title: title,
-  };
-
-  // Evita renderizar o componente antes de ter a URL correta, prevenindo erros
+  // Não renderiza nada até ter a URL, para evitar o erro do Disqus
   if (!pageUrl) {
     return (
       <div className="mt-8 text-center text-zinc-400">
@@ -27,9 +21,21 @@ const DisqusComments = ({ type, slug, title }) => {
     );
   }
 
+  const disqusConfig = {
+    url: pageUrl,
+    identifier: identifier,
+    title: title,
+  };
+
   return (
     <div className="mt-8">
-      <DiscussionEmbed shortname={disqusShortname} config={disqusConfig} />
+      {/* A prop 'key' força o componente a reiniciar com a configuração correta,
+          resolvendo o problema de "nova versão da página" do Disqus. */}
+      <DiscussionEmbed
+        key={identifier} 
+        shortname='cineveo'
+        config={disqusConfig}
+      />
     </div>
   );
 };
