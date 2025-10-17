@@ -363,7 +363,7 @@
                 if (type === 'movie') {
                     ui.movieSection.classList.remove('hidden');
                     if (firestoreData.urls && firestoreData.urls.length > 0) {
-                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData));
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url));
                     } else {
                         addMovieResolutionUI();
                     }
@@ -393,22 +393,16 @@
 
                 seasonData.episodes.forEach(ep => {
                     const existingEpisode = firestoreData.seasons?.[seasonNumber]?.episodes?.find(e => e.episode_number == ep.episode_number);
-                    const urls = existingEpisode?.urls || [{ quality: 'FULL', url: '', thumbnailUrl: '' }];
+                    const existingUrl = existingEpisode?.urls?.[0]?.url || '';
 
                     const div = document.createElement('div');
-                    div.className = 'flex flex-col gap-2 p-2 bg-gray-800 rounded';
+                    div.className = 'flex items-center gap-2 p-2 bg-gray-800 rounded';
                     div.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
-                            <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
-                            <button type="button" class="add-episode-url-btn text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold px-2 py-1 rounded-md transition">+</button>
-                        </div>
-                        <div class="episode-urls-container pl-10 space-y-2"></div>
+                        <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
+                        <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
+                        <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
+                        <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Excluir episódio">X</button>
                     `;
-                    
-                    const urlsContainer = div.querySelector('.episode-urls-container');
-                    urls.forEach(urlData => addEpisodeResolutionUI(urlsContainer, ep.episode_number, urlData));
-
                     ui.episodesList.appendChild(div);
                 });
                 
@@ -417,19 +411,6 @@
             } catch (error) {
                 ui.episodesList.innerHTML = '<p class="text-red-400">Erro ao carregar episódios.</p>';
             }
-        };
-
-        const addEpisodeResolutionUI = (container, episodeNumber, urlData = { quality: 'FULL', url: '', thumbnailUrl: '' }) => {
-            const urlDiv = document.createElement('div');
-            urlDiv.className = 'flex items-center gap-2';
-            urlDiv.innerHTML = `
-                <input type="text" value="${urlData.quality}" class="episode-quality bg-gray-700 border border-gray-600 p-1 rounded text-xs w-20" placeholder="1080p">
-                <input type="text" value="${urlData.url}" class="episode-url flex-grow bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
-                <input type="text" value="${urlData.thumbnailUrl || ''}" class="episode-thumbnail-url bg-gray-700 border border-gray-600 p-1 rounded text-xs w-1/4" placeholder="URL Miniatura (.mp4)">
-                <button type="button" class="remove-url-btn text-red-500 hover:text-red-400 font-bold px-2" title="Remover Resolução">X</button>
-            `;
-            urlDiv.dataset.episodeNumber = episodeNumber;
-            container.appendChild(urlDiv);
         };
         
         const resetForm = () => {
@@ -452,14 +433,12 @@
             bulkImportData = {};
         };
         
-        const addMovieResolutionUI = (urlData = { quality: 'FULL', url: '', thumbnailUrl: '' }) => {
+        const addMovieResolutionUI = (url = '') => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
-                <input type="text" value="${urlData.quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-24" placeholder="1080p">
-                <input type="text" value="${urlData.url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
-                <input type="text" value="${urlData.thumbnailUrl || ''}" class="movie-thumbnail-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL Miniatura (.mp4)">
-                <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold px-2" title="Remover Resolução">X</button>
+                <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
+                <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold">X</button>
             `;
             ui.movieUrlsList.appendChild(div);
         };
@@ -492,48 +471,49 @@
                 if (type === 'movie') {
                     const urls = [];
                     document.querySelectorAll('#movie-urls-list > div').forEach(div => {
-                        const quality = div.querySelector('.movie-quality').value.trim() || 'FULL';
                         const url = div.querySelector('.movie-url').value.trim();
-                        const thumbnailUrl = div.querySelector('.movie-thumbnail-url').value.trim();
-                        if (url) urls.push({ quality, url, thumbnailUrl: thumbnailUrl || null });
+                        if (url) urls.push({ quality: 'HD', url: url });
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
                     const seasonsToSave = existingData.seasons || {};
-                    const currentSeasonNumber = ui.seasonSelector.value;
 
-                    document.querySelectorAll('#episodes-list > div').forEach(epDiv => {
-                        const episodeNumber = epDiv.querySelector('.episode-urls-container > div')?.dataset.episodeNumber;
-                        if (!episodeNumber) return;
-
-                        const episodeUrls = [];
-                        epDiv.querySelectorAll('.episode-urls-container > div').forEach(urlDiv => {
-                            const quality = urlDiv.querySelector('.episode-quality').value.trim() || 'FULL';
-                            const url = urlDiv.querySelector('.episode-url').value.trim();
-                            const thumbnailUrl = urlDiv.querySelector('.episode-thumbnail-url').value.trim();
+                    for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
+                        const newEpisodesForSeason = [];
+                        for (const [epNumber, url] of Object.entries(episodes)) {
                             if (url) {
-                                episodeUrls.push({ quality, url, thumbnailUrl: thumbnailUrl || null });
+                                newEpisodesForSeason.push({
+                                    episode_number: parseInt(epNumber),
+                                    urls: [{ quality: 'HD', url: url }]
+                                });
                             }
-                        });
-
-                        if (!seasonsToSave[currentSeasonNumber]) {
-                            seasonsToSave[currentSeasonNumber] = { episodes: [] };
                         }
                         
-                        let epIndex = seasonsToSave[currentSeasonNumber].episodes.findIndex(e => e.episode_number == episodeNumber);
-                        if (epIndex === -1 && episodeUrls.length > 0) {
-                            epIndex = seasonsToSave[currentSeasonNumber].episodes.length;
-                            seasonsToSave[currentSeasonNumber].episodes.push({ episode_number: parseInt(episodeNumber) });
+                        if (!seasonsToSave[seasonNumber]) {
+                            seasonsToSave[seasonNumber] = {};
                         }
+                        seasonsToSave[seasonNumber].episodes = newEpisodesForSeason;
+                    }
 
-                        if (episodeUrls.length > 0) {
-                            seasonsToSave[currentSeasonNumber].episodes[epIndex].urls = episodeUrls;
-                        } else if (epIndex !== -1) {
-                            seasonsToSave[currentSeasonNumber].episodes.splice(epIndex, 1);
+                    const currentSeasonNumber = ui.seasonSelector.value;
+                    const currentSeasonEpisodesFromForm = [];
+                    document.querySelectorAll('.episode-url').forEach(input => {
+                        const url = input.value.trim();
+                        if (url) {
+                            currentSeasonEpisodesFromForm.push({
+                                episode_number: parseInt(input.dataset.episodeNumber),
+                                urls: [{ quality: 'HD', url: url }]
+                            });
                         }
                     });
 
+                    if (!seasonsToSave[currentSeasonNumber]) {
+                        seasonsToSave[currentSeasonNumber] = {};
+                    }
+                    
+                    seasonsToSave[currentSeasonNumber].episodes = currentSeasonEpisodesFromForm;
                     seasonsToSave[currentSeasonNumber].name = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
+                    
                     mediaData.seasons = seasonsToSave;
                 }
                 
@@ -553,7 +533,6 @@
                 ui.saveBtn.disabled = false;
             }
         };
-
 
         const handleBulkImport = () => {
             const text = ui.bulkImportTextarea.value.trim();
@@ -1165,16 +1144,14 @@
             });
 
             ui.episodesList.addEventListener('click', (e) => {
-                const addBtn = e.target.closest('.add-episode-url-btn');
-                if (addBtn) {
-                    const container = addBtn.closest('.flex-col').querySelector('.episode-urls-container');
-                    const episodeNumber = container.querySelector('[data-episode-number]')?.dataset.episodeNumber || addBtn.closest('.flex-col').querySelector('span:first-child').textContent.trim();
-                    addEpisodeResolutionUI(container, episodeNumber);
-                    return;
-                }
-                const removeBtn = e.target.closest('.remove-url-btn');
+                const removeBtn = e.target.closest('.remove-episode-btn');
                 if (removeBtn) {
-                    removeBtn.closest('.flex').remove();
+                    const episodeRow = removeBtn.parentElement;
+                    const urlInput = episodeRow.querySelector('.episode-url');
+                    if (urlInput) {
+                        urlInput.value = ''; 
+                        episodeRow.style.display = 'none'; 
+                    }
                 }
             });
 
