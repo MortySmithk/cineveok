@@ -36,7 +36,7 @@
 
     <div id="login-screen" class="min-h-screen flex items-center justify-center">
         <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
-            <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
+            <img src="https://i.ibb.co/s91tycz/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
             <h2 class="text-2xl font-bold text-center text-white mb-6">Acesso Restrito</h2>
             <form id="login-form" class="space-y-4">
                 <input id="email" type="email" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
@@ -64,7 +64,7 @@
     <div id="admin-panel" class="hidden">
         <header class="bg-gray-800 shadow-md">
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-                <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-32">
+                <img src="https://i.ibb.co/s91tycz/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-32">
                 <div>
                     <span id="user-email" class="text-sm text-gray-400 mr-4"></span>
                     <button id="logout-button" class="bg-red-600 text-white font-semibold px-4 py-2 rounded-md text-sm hover:bg-red-700 transition">Sair</button>
@@ -363,7 +363,7 @@
                 if (type === 'movie') {
                     ui.movieSection.classList.remove('hidden');
                     if (firestoreData.urls && firestoreData.urls.length > 0) {
-                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url));
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url, urlData.quality));
                     } else {
                         addMovieResolutionUI();
                     }
@@ -394,12 +394,14 @@
                 seasonData.episodes.forEach(ep => {
                     const existingEpisode = firestoreData.seasons?.[seasonNumber]?.episodes?.find(e => e.episode_number == ep.episode_number);
                     const existingUrl = existingEpisode?.urls?.[0]?.url || '';
+                    const existingQuality = existingEpisode?.urls?.[0]?.quality || 'HD';
 
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-2 p-2 bg-gray-800 rounded';
                     div.innerHTML = `
                         <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
                         <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
+                        <input type="text" value="${existingQuality}" class="episode-quality bg-gray-700 border border-gray-600 p-1 rounded text-xs w-20" placeholder="HD">
                         <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
                         <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Excluir episódio">X</button>
                     `;
@@ -433,10 +435,11 @@
             bulkImportData = {};
         };
         
-        const addMovieResolutionUI = (url = '') => {
+        const addMovieResolutionUI = (url = '', quality = 'HD') => {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2';
             div.innerHTML = `
+                <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-24" placeholder="Qualidade">
                 <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
                 <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold">X</button>
             `;
@@ -472,7 +475,8 @@
                     const urls = [];
                     document.querySelectorAll('#movie-urls-list > div').forEach(div => {
                         const url = div.querySelector('.movie-url').value.trim();
-                        if (url) urls.push({ quality: 'HD', url: url });
+                        const quality = div.querySelector('.movie-quality').value.trim() || 'HD';
+                        if (url) urls.push({ quality: quality, url: url });
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
@@ -484,7 +488,7 @@
                             if (url) {
                                 newEpisodesForSeason.push({
                                     episode_number: parseInt(epNumber),
-                                    urls: [{ quality: 'HD', url: url }]
+                                    urls: [{ quality: 'HD', url: url }] // Bulk import still uses 'HD'
                                 });
                             }
                         }
@@ -497,15 +501,18 @@
 
                     const currentSeasonNumber = ui.seasonSelector.value;
                     const currentSeasonEpisodesFromForm = [];
-                    document.querySelectorAll('.episode-url').forEach(input => {
-                        const url = input.value.trim();
+                    document.querySelectorAll('#episodes-list > div').forEach(row => {
+                        const urlInput = row.querySelector('.episode-url');
+                        const qualityInput = row.querySelector('.episode-quality');
+                        const url = urlInput.value.trim();
                         if (url) {
                             currentSeasonEpisodesFromForm.push({
-                                episode_number: parseInt(input.dataset.episodeNumber),
-                                urls: [{ quality: 'HD', url: url }]
+                                episode_number: parseInt(urlInput.dataset.episodeNumber),
+                                urls: [{ quality: qualityInput.value.trim() || 'HD', url: url }]
                             });
                         }
                     });
+
 
                     if (!seasonsToSave[currentSeasonNumber]) {
                         seasonsToSave[currentSeasonNumber] = {};
