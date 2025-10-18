@@ -97,9 +97,6 @@ export default function RootLayout({
           </AuthProvider>
           <FloatingTelegramButton />
         </ThemeProvider>
-        
-        {/* NOVO: Script de contagem do Disqus adicionado antes de fechar o body */}
-        <Script id="dsq-count-scr" src="//cineveo-1.disqus.com/count.js" async strategy="lazyOnload" />
       </body>
     </html>
   );
