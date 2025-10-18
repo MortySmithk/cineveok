@@ -4,8 +4,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '@/app/firebase';
+import { commentsDb } from '@/app/firebase-comments'; // IMPORTANTE: Usando o novo arquivo de config
 import { useAuth } from '@/app/components/AuthProvider';
+
+// Definindo a interface do usuário que receberemos como prop
+interface User {
+  uid: string;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface Comment {
   id: string;
@@ -18,10 +25,10 @@ interface Comment {
 
 interface FirebaseCommentsProps {
   mediaId: string;
+  currentUser: User | null; // Recebe o usuário logado do app principal
 }
 
-export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
-  const { user } = useAuth();
+export default function FirebaseComments({ mediaId, currentUser }: FirebaseCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +41,7 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     }
 
     setIsLoading(true);
-    const commentsCol = collection(db, 'comments');
+    const commentsCol = collection(commentsDb, 'comments');
     const q = query(
       commentsCol,
       where('mediaId', '==', mediaId),
@@ -59,16 +66,16 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || newComment.trim() === '') {
+    if (!currentUser || newComment.trim() === '') {
       return;
     }
 
     try {
-      await addDoc(collection(db, 'comments'), {
+      await addDoc(collection(commentsDb, 'comments'), {
         mediaId: mediaId,
-        userId: user.uid,
-        userName: user.displayName || 'Anônimo',
-        userPhotoURL: user.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png',
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anônimo',
+        userPhotoURL: currentUser.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png',
         text: newComment.trim(),
         createdAt: serverTimestamp()
       });
@@ -95,10 +102,10 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     <div className="comments-section">
       <h3 className="comments-title">{comments.length} Comentário{comments.length !== 1 && 's'}</h3>
       
-      {user ? (
+      {currentUser ? (
         <form className="comment-form" onSubmit={handleSubmit}>
           <Image
-            src={user.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png'}
+            src={currentUser.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png'}
             alt="Seu avatar"
             width={40}
             height={40}

@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/firebase';
+import { db } from '@/app/firebase'; // Este é o DB principal, para likes, etc.
 
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
@@ -16,7 +16,7 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import FirebaseComments from '@/app/components/FirebaseComments'; // ADICIONADO
+import FirebaseComments from '@/app/components/FirebaseComments'; // Usando o novo componente
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -81,7 +81,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
-  const { user } = useAuth();
+  const { user } = useAuth(); // Pegamos o usuário do contexto de autenticação principal
   const { saveHistory, continueWatching } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -379,12 +379,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
+                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
               </div>
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
+                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
               </div>
             </div>
           </div>
@@ -396,11 +396,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
+                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
 
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
+                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
             </div>
         </div>
         <main className="details-main-content">
