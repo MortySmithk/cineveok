@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/app/components/firebase';
 import { useAuth } from '@/app/components/AuthProvider';
 
@@ -35,19 +35,16 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ✅ NOVO: Função para ajustar a altura do textarea
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reseta a altura
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Ajusta para a altura do conteúdo
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   };
 
   useEffect(() => {
-    // Ajusta a altura sempre que o texto do comentário mudar
     adjustTextareaHeight();
   }, [newComment]);
-
 
   useEffect(() => {
     if (!mediaId) {
@@ -55,29 +52,34 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
       return;
     }
 
-    setIsLoading(true);
-    const commentsCol = collection(db, 'comments');
-    const q = query(
-      commentsCol,
-      where('mediaId', '==', mediaId),
-      orderBy('createdAt', 'desc')
-    );
+    // ✅ OTIMIZAÇÃO: Trocado onSnapshot por getDocs para fazer uma busca única
+    const fetchComments = async () => {
+      setIsLoading(true);
+      try {
+        const commentsCol = collection(db, 'comments');
+        const q = query(
+          commentsCol,
+          where('mediaId', '==', mediaId),
+          orderBy('createdAt', 'desc')
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const fetchedComments = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Comment));
+        
+        setComments(fetchedComments);
+        setError(null);
+      } catch (err) {
+        console.error("Erro ao buscar comentários: ", err);
+        setError("Não foi possível carregar os comentários. Verifique as permissões ou o índice.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedComments = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Comment));
-      setComments(fetchedComments);
-      setIsLoading(false);
-      setError(null); // Limpa o erro se os comentários carregarem com sucesso
-    }, (err) => {
-      console.error("Erro ao buscar comentários: ", err);
-      setError("Não foi possível carregar os comentários. Verifique as permissões.");
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    fetchComments();
   }, [mediaId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,15 +89,26 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
     }
 
     try {
-      await addDoc(collection(db, 'comments'), {
+      const commentData = {
         mediaId: mediaId,
-        userId: currentUser.uid, // O nome do campo deve ser 'userId' para bater com a regra
+        userId: currentUser.uid,
         userName: currentUser.displayName || 'Anônimo',
         userPhotoURL: currentUser.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png',
         text: newComment.trim(),
         createdAt: serverTimestamp()
-      });
+      };
+      
+      const docRef = await addDoc(collection(db, 'comments'), commentData);
+
+      // ✅ OTIMIZAÇÃO: Adiciona o comentário novo diretamente na tela, sem precisar recarregar
+      const newCommentForState: Comment = {
+        ...commentData,
+        id: docRef.id,
+        createdAt: Timestamp.now()
+      };
+      setComments(prevComments => [newCommentForState, ...prevComments]);
       setNewComment('');
+
     } catch (err) {
       console.error("Erro ao enviar comentário: ", err);
       alert("Ocorreu um erro ao enviar seu comentário. Você está logado?");
@@ -128,7 +141,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
             className="comment-avatar"
           />
           <textarea
-            ref={textareaRef} // ✅ NOVO: Adiciona a referência
+            ref={textareaRef}
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Adicionar um comentário..."
