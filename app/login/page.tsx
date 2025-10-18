@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth } from '@/app/firebase'; // CORREÇÃO AQUI
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

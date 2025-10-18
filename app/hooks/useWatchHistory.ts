@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../components/AuthProvider';
-import { db } from '../firebase';
+import { db } from '@/app/firebase'; // CORREÇÃO AQUI
 import { doc, setDoc, onSnapshot, query, orderBy, limit, collection } from 'firebase/firestore';
 
 export interface WatchItem {
@@ -76,7 +76,6 @@ export const useWatchHistory = () => {
     }
   }, [user]);
 
-  // Função estável que não causa re-renderizações em loops
   const getContinueWatchingItem = useCallback((tmdbId: string) => {
     if (!tmdbId) return undefined;
     return continueWatchingRef.current.find(item => item.tmdbId === tmdbId);
@@ -87,7 +86,7 @@ export const useWatchHistory = () => {
     fullHistory, 
     isLoading, 
     saveHistory, 
-    getContinueWatchingItem, // Expondo a nova função estável
+    getContinueWatchingItem,
     movieCount: fullHistory.filter(item => item.mediaType === 'movie').length,
     episodeCount: fullHistory.filter(item => item.mediaType === 'tv').length,
   };

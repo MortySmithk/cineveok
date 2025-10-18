@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth } from '@/app/firebase'; // CORREÇÃO AQUI
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');

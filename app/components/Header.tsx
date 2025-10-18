@@ -7,14 +7,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { CSSProperties, useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth } from '@/app/firebase'; // CORREÇÃO AQUI
 
 import SearchComponent from './SearchComponent';
 import SearchOverlay from './SearchOverlay';
 import SearchIcon from './icons/SearchIcon';
-import ThemeSwitcher from './ThemeSwitcher'; // Importado
+import ThemeSwitcher from './ThemeSwitcher';
 
-// Ícone de usuário para o botão de perfil
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
 );
@@ -81,7 +80,7 @@ export default function Header() {
               <SearchComponent />
             </div>
              
-            <ThemeSwitcher /> {/* Botão de tema adicionado */}
+            <ThemeSwitcher />
             
             <div className="header-auth-desktop">
               {user ? (
@@ -94,13 +93,11 @@ export default function Header() {
               )}
             </div>
             
-            {/* --- Botões Mobile --- */}
             <div className="header-mobile-actions">
                 <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
                   <SearchIcon width={24} height={24} />
                 </button>
                 
-                {/* BOTÃO DE PERFIL/LOGIN MOBILE */}
                 <div className="header-profile-mobile">
                   <button 
                     className="header-profile-mobile-btn focusable" 
@@ -128,7 +125,6 @@ export default function Header() {
           </div>
         </div>
         
-        {/* --- NAVEGAÇÃO APENAS PARA CELULAR --- */}
         <nav className="mobile-sub-nav">
             <Link href="/" className={getMobileLinkClass('/')}>Início</Link>
             <Link href="/filmes" className={getMobileLinkClass('/filmes')}>Filmes</Link>
