@@ -156,7 +156,7 @@
 
                         <div id="movie-section" class="hidden space-y-3">
                             <h3 class="text-md font-semibold border-b border-gray-700 pb-2">Links do Filme</h3>
-                            <div id="movie-urls-list" class="space-y-2">
+                            <div id="movie-urls-list" class="space-y-4">
                                 </div>
                             <button type="button" id="add-movie-url-btn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1 rounded-md transition">+ Adicionar Resolução</button>
                         </div>
@@ -173,7 +173,7 @@
                                 <button type="button" id="bulk-import-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-md transition self-end whitespace-nowrap">Importar em Massa</button>
                             </div>
                             <textarea id="bulk-import-textarea" class="hidden w-full bg-gray-700 border border-gray-600 p-2 rounded text-sm mt-2" rows="8" placeholder="Cole os links, um por linha.&#10;Formatos aceitos:&#10;1. Lista de links (serão atribuídos em ordem)&#10;https://link1.com&#10;https://link2.com&#10;2. Formato com EP&#10;EP01: https://link1.com&#10;EP02: https://link2.com&#10;3. Com Temporadas&#10;Temporada 1&#10;EP01: https://link1.com"></textarea>
-                            <div id="episodes-list" class="space-y-3 max-h-96 overflow-y-auto p-2 bg-gray-900 rounded-md">
+                            <div id="episodes-list" class="space-y-4 max-h-96 overflow-y-auto p-2 bg-gray-900 rounded-md">
                                 </div>
                         </div>
                         
@@ -363,7 +363,7 @@
                 if (type === 'movie') {
                     ui.movieSection.classList.remove('hidden');
                     if (firestoreData.urls && firestoreData.urls.length > 0) {
-                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url, urlData.quality));
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url, urlData.quality, urlData.thumbnailUrl));
                     } else {
                         addMovieResolutionUI();
                     }
@@ -395,15 +395,23 @@
                     const existingEpisode = firestoreData.seasons?.[seasonNumber]?.episodes?.find(e => e.episode_number == ep.episode_number);
                     const existingUrl = existingEpisode?.urls?.[0]?.url || '';
                     const existingQuality = existingEpisode?.urls?.[0]?.quality || 'HD';
+                    const existingThumbnailUrl = existingEpisode?.urls?.[0]?.thumbnailUrl || '';
 
                     const div = document.createElement('div');
-                    div.className = 'flex items-center gap-2 p-2 bg-gray-800 rounded';
+                    div.className = 'p-3 bg-gray-800 rounded-md';
                     div.innerHTML = `
-                        <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
-                        <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
-                        <input type="text" value="${existingQuality}" class="episode-quality bg-gray-700 border border-gray-600 p-1 rounded text-xs w-20" placeholder="HD">
-                        <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url w-1/2 bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
-                        <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Excluir episódio">X</button>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
+                            <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
+                            <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Limpar link do episódio">X</button>
+                        </div>
+                        <div class="mt-2 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${existingQuality}" class="episode-quality bg-gray-700 border border-gray-600 p-1 rounded text-xs w-20" placeholder="HD">
+                                <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url flex-grow bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
+                            </div>
+                             <input type="text" value="${existingThumbnailUrl}" class="episode-thumbnail-url w-full bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL Miniaturas (.mp4)">
+                        </div>
                     `;
                     ui.episodesList.appendChild(div);
                 });
@@ -435,13 +443,16 @@
             bulkImportData = {};
         };
         
-        const addMovieResolutionUI = (url = '', quality = 'HD') => {
+        const addMovieResolutionUI = (url = '', quality = 'HD', thumbnailUrl = '') => {
             const div = document.createElement('div');
-            div.className = 'flex items-center gap-2';
+            div.className = 'p-3 bg-gray-700/50 rounded-md space-y-2 relative';
             div.innerHTML = `
-                <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-24" placeholder="Qualidade">
-                <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
-                <button type="button" class="remove-btn text-red-500 hover:text-red-400 font-bold">X</button>
+                <button type="button" class="remove-btn absolute top-2 right-2 text-red-500 hover:text-red-400 font-bold">X</button>
+                <div class="flex items-center gap-2">
+                    <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-24" placeholder="Qualidade">
+                    <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
+                </div>
+                <input type="text" value="${thumbnailUrl}" class="movie-thumbnail-url w-full bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL Miniaturas (.mp4)">
             `;
             ui.movieUrlsList.appendChild(div);
         };
@@ -476,51 +487,55 @@
                     document.querySelectorAll('#movie-urls-list > div').forEach(div => {
                         const url = div.querySelector('.movie-url').value.trim();
                         const quality = div.querySelector('.movie-quality').value.trim() || 'HD';
-                        if (url) urls.push({ quality: quality, url: url });
+                        const thumbnailUrl = div.querySelector('.movie-thumbnail-url').value.trim();
+                        if (url) urls.push({ quality, url, thumbnailUrl });
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
                     const seasonsToSave = existingData.seasons || {};
-
-                    for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
-                        const newEpisodesForSeason = [];
-                        for (const [epNumber, url] of Object.entries(episodes)) {
-                            if (url) {
-                                newEpisodesForSeason.push({
-                                    episode_number: parseInt(epNumber),
-                                    urls: [{ quality: 'HD', url: url }] // Bulk import still uses 'HD'
-                                });
-                            }
-                        }
-                        
-                        if (!seasonsToSave[seasonNumber]) {
-                            seasonsToSave[seasonNumber] = {};
-                        }
-                        seasonsToSave[seasonNumber].episodes = newEpisodesForSeason;
-                    }
 
                     const currentSeasonNumber = ui.seasonSelector.value;
                     const currentSeasonEpisodesFromForm = [];
                     document.querySelectorAll('#episodes-list > div').forEach(row => {
                         const urlInput = row.querySelector('.episode-url');
                         const qualityInput = row.querySelector('.episode-quality');
+                        const thumbnailInput = row.querySelector('.episode-thumbnail-url');
+                        
                         const url = urlInput.value.trim();
                         if (url) {
                             currentSeasonEpisodesFromForm.push({
                                 episode_number: parseInt(urlInput.dataset.episodeNumber),
-                                urls: [{ quality: qualityInput.value.trim() || 'HD', url: url }]
+                                urls: [{ 
+                                    quality: qualityInput.value.trim() || 'HD', 
+                                    url: url,
+                                    thumbnailUrl: thumbnailInput.value.trim()
+                                }]
                             });
                         }
                     });
 
-
                     if (!seasonsToSave[currentSeasonNumber]) {
                         seasonsToSave[currentSeasonNumber] = {};
                     }
-                    
                     seasonsToSave[currentSeasonNumber].episodes = currentSeasonEpisodesFromForm;
                     seasonsToSave[currentSeasonNumber].name = ui.seasonSelector.options[ui.seasonSelector.selectedIndex].text;
                     
+                    // Salvar também dados de importação em massa (se houver)
+                     for (const [seasonNumber, episodes] of Object.entries(bulkImportData)) {
+                        if (!seasonsToSave[seasonNumber]) seasonsToSave[seasonNumber] = { episodes: [] };
+                        for (const [epNumber, url] of Object.entries(episodes)) {
+                            const existingEpIndex = seasonsToSave[seasonNumber].episodes.findIndex(e => e.episode_number == epNumber);
+                            if (existingEpIndex !== -1) {
+                                seasonsToSave[seasonNumber].episodes[existingEpIndex].urls[0].url = url;
+                            } else if (url) {
+                                seasonsToSave[seasonNumber].episodes.push({
+                                    episode_number: parseInt(epNumber),
+                                    urls: [{ quality: 'HD', url, thumbnailUrl: '' }]
+                                });
+                            }
+                        }
+                    }
+
                     mediaData.seasons = seasonsToSave;
                 }
                 
@@ -894,8 +909,6 @@
             }
         };
 
-        // --- INÍCIO DAS NOVAS FUNÇÕES DE DOWNLOAD ---
-
         const downloadFile = (filename, text) => {
             const element = document.createElement('a');
             const file = new Blob([text], {type: 'text/plain;charset=utf-8'});
@@ -913,15 +926,8 @@
             button.textContent = 'Gerando...';
 
             try {
-                // Filtra filmes com links e com ID numérico
-                const moviesToProcess = allMediaCache.filter(m => 
-                    m.type === 'movie' && m.hasLinks && /^\d+$/.test(m.id)
-                );
-
-                if (moviesToProcess.length === 0) {
-                    alert('Nenhum filme com ID válido e links foi encontrado.');
-                    return;
-                }
+                const moviesToProcess = allMediaCache.filter(m => m.type === 'movie' && m.hasLinks && /^\d+$/.test(m.id));
+                if (moviesToProcess.length === 0) { alert('Nenhum filme com ID válido e links foi encontrado.'); return; }
 
                 let txtContent = '';
                 for (let i = 0; i < moviesToProcess.length; i++) {
@@ -933,22 +939,13 @@
 
                     if (docSnap.exists() && docSnap.data().urls) {
                         const firestoreData = docSnap.data();
-                        
-                        // Filtra os links pelas novas regras
-                        const validUrls = firestoreData.urls
-                            .map(urlData => urlData.url)
-                            .filter(url => {
-                                if (!url) return false;
-                                const lowerUrl = url.toLowerCase();
-                                return lowerUrl.endsWith('.mp4') && 
-                                       !lowerUrl.includes('superflix') && 
-                                       !lowerUrl.includes('sinalprivado');
-                            });
+                        const validUrls = firestoreData.urls.map(urlData => urlData.url).filter(url => {
+                            if (!url) return false;
+                            const lowerUrl = url.toLowerCase();
+                            return lowerUrl.endsWith('.mp4') && !lowerUrl.includes('superflix') && !lowerUrl.includes('sinalprivado');
+                        });
 
-                        // Se não sobrar nenhum link válido, pula para o próximo filme
-                        if (validUrls.length === 0) {
-                            continue;
-                        }
+                        if (validUrls.length === 0) continue;
 
                         const tmdbResponse = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
                         const tmdbData = await tmdbResponse.json();
@@ -956,10 +953,7 @@
                         const title = firestoreData.title || tmdbData.title;
                         
                         txtContent += `${title} ${year ? `(${year})` : ''} - ${movie.id} << TMDB\n`;
-                        
-                        validUrls.forEach(url => {
-                            txtContent += `${url}\n`;
-                        });
+                        validUrls.forEach(url => { txtContent += `${url}\n`; });
                         txtContent += '\n'; 
                     }
                 }
@@ -969,7 +963,6 @@
                 } else {
                     downloadFile('filmes.txt', txtContent.trim());
                 }
-
             } catch (error) {
                 console.error("Erro ao gerar arquivo de filmes:", error);
                 alert("Ocorreu um erro ao gerar o arquivo de filmes. Verifique o console.");
@@ -986,14 +979,8 @@
             button.textContent = 'Gerando...';
             
             try {
-                // Filtra séries com links e com ID numérico
-                const seriesToProcess = allMediaCache.filter(m => 
-                    m.type === 'series' && m.episodesWithLinksCount > 0 && /^\d+$/.test(m.id)
-                );
-                 if (seriesToProcess.length === 0) {
-                    alert('Nenhuma série com ID válido e links foi encontrada.');
-                    return;
-                }
+                const seriesToProcess = allMediaCache.filter(m => m.type === 'series' && m.episodesWithLinksCount > 0 && /^\d+$/.test(m.id));
+                if (seriesToProcess.length === 0) { alert('Nenhuma série com ID válido e links foi encontrada.'); return; }
 
                 let txtContent = '';
                  for (let i = 0; i < seriesToProcess.length; i++) {
@@ -1005,14 +992,14 @@
 
                     if (docSnap.exists() && docSnap.data().seasons) {
                         const firestoreData = docSnap.data();
-                        let seriesBlockContent = ''; // Armazena o conteúdo da série (temporadas e eps)
+                        let seriesBlockContent = '';
 
                         const sortedSeasonNumbers = Object.keys(firestoreData.seasons).sort((a, b) => parseInt(a) - parseInt(b));
 
                         for (const seasonNumber of sortedSeasonNumbers) {
                             const season = firestoreData.seasons[seasonNumber];
                             let seasonHasValidLinks = false;
-                            let seasonContent = ''; // Armazena o conteúdo da temporada
+                            let seasonContent = '';
 
                             if (season && Array.isArray(season.episodes)) {
                                 const sortedEpisodes = season.episodes.sort((a, b) => a.episode_number - b.episode_number);
@@ -1021,7 +1008,6 @@
                                     if (ep.urls && ep.urls.length > 0 && ep.urls[0].url) {
                                         const url = ep.urls[0].url;
                                         const lowerUrl = url.toLowerCase();
-                                        // Aplica filtro de domínios
                                         if (!lowerUrl.includes('superflix') && !lowerUrl.includes('sinalprivado')) {
                                             const epNumberFormatted = String(ep.episode_number).padStart(2, '0');
                                             seasonContent += `EP${epNumberFormatted}: ${url}\n`;
@@ -1035,7 +1021,6 @@
                             }
                         }
 
-                        // Se a série teve algum link válido, adiciona o bloco todo
                         if (seriesBlockContent) {
                             const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${series.id}?api_key=${TMDB_API_KEY}&language=pt-BR`);
                             const tmdbData = await tmdbResponse.json();
@@ -1053,7 +1038,6 @@
                 } else {
                     downloadFile('series.txt', txtContent.trim());
                 }
-
             } catch (error) {
                 console.error("Erro ao gerar arquivo de séries:", error);
                 alert("Ocorreu um erro ao gerar o arquivo de séries. Verifique o console.");
@@ -1062,9 +1046,6 @@
                 button.textContent = originalText;
             }
         };
-
-        // --- FIM DAS FUNÇÕES DE DOWNLOAD ATUALIZADAS ---
-
 
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -1080,29 +1061,23 @@
             ui.loginForm.addEventListener('submit', (e) => { e.preventDefault(); signInWithEmailAndPassword(auth, ui.emailInput.value, ui.passwordInput.value).catch(() => alert('Credenciais inválidas.')); });
             
             ui.googleLoginBtn.addEventListener('click', () => {
-                signInWithPopup(auth, googleProvider)
-                    .catch((error) => {
-                        console.error("Erro no login com Google:", error);
-                        alert(`Erro ao tentar fazer login com o Google: ${error.message}`);
-                    });
+                signInWithPopup(auth, googleProvider).catch((error) => {
+                    console.error("Erro no login com Google:", error);
+                    alert(`Erro ao tentar fazer login com o Google: ${error.message}`);
+                });
             });
 
             ui.logoutButton.addEventListener('click', () => signOut(auth));
-            
             ui.catalogSearchBtn.addEventListener('click', performSearch);
             ui.catalogSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
             
             const universalClickListener = (e) => {
                 const manageButton = e.target.closest('.manage-btn');
-                if (manageButton) {
-                    prepareFormForEditing(manageButton.dataset.tmdbId, manageButton.dataset.tmdbType);
-                    return;
-                }
+                if (manageButton) { prepareFormForEditing(manageButton.dataset.tmdbId, manageButton.dataset.tmdbType); return; }
+                
                 const forceButton = e.target.closest('.force-firestore-btn');
-                if (forceButton) {
-                    toggleForceFirestore(forceButton);
-                    return;
-                }
+                if (forceButton) { toggleForceFirestore(forceButton); return; }
+
                 const copyLinksButton = e.target.closest('.copy-all-links-btn');
                 if (copyLinksButton) {
                     copyLinksButton.textContent = 'Copiando...';
@@ -1119,7 +1094,6 @@
                 const rawValue = ui.quickAddTmdbId.value.trim();
                 const id = rawValue.replace(/\D/g, ''); 
                 const type = ui.quickAddMediaType.value;
-
                 if (!id) { alert('Por favor, insira um ID do TMDB válido.'); return; }
                 prepareFormForEditing(id, type);
             });
@@ -1128,9 +1102,16 @@
             ui.mediaForm.addEventListener('submit', handleMediaFormSubmit);
             ui.cancelEditBtn.addEventListener('click', resetForm);
             ui.addMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI());
+            
             ui.movieUrlsList.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-btn')) e.target.closest('.flex').remove();
+                if (e.target.closest('.remove-btn')) {
+                    const confirmation = confirm('Tem certeza que deseja remover esta resolução?');
+                    if (confirmation) {
+                        e.target.closest('.p-3').remove();
+                    }
+                }
             });
+
             ui.seasonSelector.addEventListener('change', async (e) => {
                 const seriesId = ui.tmdbIdInput.value;
                 const docRef = doc(firestore, "media", seriesId.toString());
@@ -1144,21 +1125,18 @@
                 const button = ui.copyAllLinksFormBtn;
                 if (seriesId) {
                     button.textContent = 'Copiando...';
-                    copyAllSeriesLinksToClipboard(seriesId).finally(() => {
-                        button.textContent = 'Copiar Todos os Links';
-                    });
+                    copyAllSeriesLinksToClipboard(seriesId).finally(() => { button.textContent = 'Copiar Todos os Links'; });
                 }
             });
 
             ui.episodesList.addEventListener('click', (e) => {
                 const removeBtn = e.target.closest('.remove-episode-btn');
                 if (removeBtn) {
-                    const episodeRow = removeBtn.parentElement;
+                    const episodeRow = removeBtn.closest('.p-3');
                     const urlInput = episodeRow.querySelector('.episode-url');
-                    if (urlInput) {
-                        urlInput.value = ''; 
-                        episodeRow.style.display = 'none'; 
-                    }
+                    const thumbInput = episodeRow.querySelector('.episode-thumbnail-url');
+                    if (urlInput) urlInput.value = '';
+                    if (thumbInput) thumbInput.value = '';
                 }
             });
 
@@ -1189,10 +1167,10 @@
             });
 
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
-
             ui.downloadMoviesBtn.addEventListener('click', downloadAllMoviesAsTxt);
             ui.downloadSeriesBtn.addEventListener('click', downloadAllSeriesAsTxt);
         });
     </script>
 </body>
 </html>
+}
