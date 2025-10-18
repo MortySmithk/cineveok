@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { CSSProperties, useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/app/firebase'; // CORREÇÃO AQUI
+import { auth } from '@/app/components/firebase'; // CORREÇÃO AQUI
 
 import SearchComponent from './SearchComponent';
 import SearchOverlay from './SearchOverlay';

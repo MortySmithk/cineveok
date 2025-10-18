@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/firebase'; // Este é o DB principal, para likes, etc.
+import { db } from '@/app/components/firebase'; // Este é o DB principal, para likes, etc.
 
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';

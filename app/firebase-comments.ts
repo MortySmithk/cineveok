@@ -1,4 +1,4 @@
-// app/firebase-comments.ts (corrigindo o caminho)
+// app/firebase-comments.ts
 import { initializeApp, getApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
