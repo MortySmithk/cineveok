@@ -36,7 +36,7 @@
 
     <div id="login-screen" class="min-h-screen flex items-center justify-center">
         <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
-            <img src="https://i.ibb.co/s91tycz/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
+            <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="Logo CineVEO" class="w-40 mx-auto mb-6">
             <h2 class="text-2xl font-bold text-center text-white mb-6">Acesso Restrito</h2>
             <form id="login-form" class="space-y-4">
                 <input id="email" type="email" placeholder="Email" class="w-full bg-gray-700 border border-gray-600 rounded-md p-3 text-white focus:outline-none focus:border-yellow-500" required>
@@ -195,11 +195,15 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // CORREÇÃO: Usando a configuração correta do cineveok
         const firebaseConfig = {
             apiKey: "AIzaSyCNEGDpDLuWYrxTkoONy4oQujnatx6KIS8",
             authDomain: "cineveok.firebaseapp.com",
             projectId: "cineveok",
             storageBucket: "cineveok.appspot.com",
+            messagingSenderId: "805536124347",
+            appId: "1:805536124347:web:b408c28cb0a4dc914d089e",
+            measurementId: "G-H7WVDQQDVJ"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -1173,4 +1177,3 @@
     </script>
 </body>
 </html>
-}
