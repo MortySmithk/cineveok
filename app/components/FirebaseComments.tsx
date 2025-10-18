@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { commentsDb } from '@/app/firebase-comments'; // IMPORTANTE: Usando o novo arquivo de config
+import { db } from '@/app/components/firebase'; // CORREÇÃO: Usando a configuração principal do Firebase
 import { useAuth } from '@/app/components/AuthProvider';
 
 // Definindo a interface do usuário que receberemos como prop
@@ -41,7 +41,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
     }
 
     setIsLoading(true);
-    const commentsCol = collection(commentsDb, 'comments');
+    const commentsCol = collection(db, 'comments'); // CORREÇÃO: Usando 'db'
     const q = query(
       commentsCol,
       where('mediaId', '==', mediaId),
@@ -71,7 +71,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
     }
 
     try {
-      await addDoc(collection(commentsDb, 'comments'), {
+      await addDoc(collection(db, 'comments'), { // CORREÇÃO: Usando 'db'
         mediaId: mediaId,
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anônimo',

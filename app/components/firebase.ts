@@ -13,15 +13,8 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-const mainAppName = 'cineveok-auth'; // Nome explícito para o app de autenticação
-let app: FirebaseApp;
-
-// Lógica de inicialização segura para múltiplos apps
-if (!getApps().some(app => app.name === mainAppName)) {
-  app = initializeApp(firebaseConfig, mainAppName);
-} else {
-  app = getApp(mainAppName);
-}
+// Inicialização segura do Firebase
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 const db = getFirestore(app);
