@@ -12,9 +12,14 @@ const commentsFirebaseConfig = {
 };
 
 const appName = 'cinedisq';
-const commentsApp: FirebaseApp = !getApps().some(app => app.name === appName) 
-  ? initializeApp(commentsFirebaseConfig, appName) 
-  : getApp(appName);
+let commentsApp: FirebaseApp;
+
+// Lógica de inicialização segura para múltiplos apps
+if (!getApps().some(app => app.name === appName)) {
+  commentsApp = initializeApp(commentsFirebaseConfig, appName);
+} else {
+  commentsApp = getApp(appName);
+}
 
 const commentsDb = getFirestore(commentsApp);
 

@@ -1,4 +1,4 @@
-// app/firebase.ts
+// app/components/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -13,8 +13,15 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Inicialização segura do Firebase
-const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const mainAppName = 'cineveok-auth'; // Nome explícito para o app de autenticação
+let app: FirebaseApp;
+
+// Lógica de inicialização segura para múltiplos apps
+if (!getApps().some(app => app.name === mainAppName)) {
+  app = initializeApp(firebaseConfig, mainAppName);
+} else {
+  app = getApp(mainAppName);
+}
 
 const auth = getAuth(app);
 const db = getFirestore(app);
