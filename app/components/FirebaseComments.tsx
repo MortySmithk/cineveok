@@ -1,10 +1,10 @@
 // app/components/FirebaseComments.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '@/app/components/firebase'; // CORREÇÃO: Usando a configuração principal do Firebase
+import { db } from '@/app/components/firebase';
 import { useAuth } from '@/app/components/AuthProvider';
 
 // Definindo a interface do usuário que receberemos como prop
@@ -33,6 +33,21 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ✅ NOVO: Função para ajustar a altura do textarea
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Reseta a altura
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Ajusta para a altura do conteúdo
+    }
+  };
+
+  useEffect(() => {
+    // Ajusta a altura sempre que o texto do comentário mudar
+    adjustTextareaHeight();
+  }, [newComment]);
+
 
   useEffect(() => {
     if (!mediaId) {
@@ -41,7 +56,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
     }
 
     setIsLoading(true);
-    const commentsCol = collection(db, 'comments'); // CORREÇÃO: Usando 'db'
+    const commentsCol = collection(db, 'comments');
     const q = query(
       commentsCol,
       where('mediaId', '==', mediaId),
@@ -55,9 +70,10 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
       } as Comment));
       setComments(fetchedComments);
       setIsLoading(false);
+      setError(null); // Limpa o erro se os comentários carregarem com sucesso
     }, (err) => {
       console.error("Erro ao buscar comentários: ", err);
-      setError("Não foi possível carregar os comentários.");
+      setError("Não foi possível carregar os comentários. Verifique as permissões.");
       setIsLoading(false);
     });
 
@@ -71,9 +87,9 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
     }
 
     try {
-      await addDoc(collection(db, 'comments'), { // CORREÇÃO: Usando 'db'
+      await addDoc(collection(db, 'comments'), {
         mediaId: mediaId,
-        userId: currentUser.uid,
+        userId: currentUser.uid, // O nome do campo deve ser 'userId' para bater com a regra
         userName: currentUser.displayName || 'Anônimo',
         userPhotoURL: currentUser.photoURL || 'https://i.ibb.co/27ZbyVf/placeholder-person.png',
         text: newComment.trim(),
@@ -82,7 +98,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
       setNewComment('');
     } catch (err) {
       console.error("Erro ao enviar comentário: ", err);
-      alert("Ocorreu um erro ao enviar seu comentário.");
+      alert("Ocorreu um erro ao enviar seu comentário. Você está logado?");
     }
   };
 
@@ -112,6 +128,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
             className="comment-avatar"
           />
           <textarea
+            ref={textareaRef} // ✅ NOVO: Adiciona a referência
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Adicionar um comentário..."
@@ -131,7 +148,7 @@ export default function FirebaseComments({ mediaId, currentUser }: FirebaseComme
       <div className="comments-list">
         {isLoading && <p>Carregando comentários...</p>}
         {error && <p className="error-message">{error}</p>}
-        {!isLoading && comments.length === 0 && <p className="no-comments">Seja o primeiro a comentar!</p>}
+        {!isLoading && !error && comments.length === 0 && <p className="no-comments">Seja o primeiro a comentar!</p>}
 
         {comments.map(comment => (
           <div key={comment.id} className="comment-item">
