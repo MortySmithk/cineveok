@@ -16,7 +16,7 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import DisqusComments from '@/app/components/DisqusComments';
+import FirebaseComments from '@/app/components/FirebaseComments'; // ADICIONADO
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -99,7 +99,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  const [disqusConfig, setDisqusConfig] = useState<{type: string, slug: string, title: string} | null>(null);
+  const [mediaIdForComments, setMediaIdForComments] = useState<string | null>(null);
 
 
   const episodeListRef = useRef<HTMLDivElement>(null);
@@ -133,11 +133,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
-      setDisqusConfig({
-        type: 'movie',
-        slug: slug,
-        title: details.title
-      });
+      setMediaIdForComments(`movie-${id}`);
       setIsInitialEpisodeSet(true);
     } else if (type === 'tv') {
       const progress = continueWatching.find(item => item.tmdbId === id);
@@ -182,11 +178,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
             setCurrentStatsId(episodeData.id.toString());
-            setDisqusConfig({
-                type: 'tv',
-                slug: `${id}-s${season}-e${episode}`,
-                title: `${details.title} - T${season} E${episode}: ${episodeData.name}`
-            });
+            setMediaIdForComments(`tv-${id}-s${season}-e${episode}`);
         }
 
         if (user) {
@@ -387,12 +379,12 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
+                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
               </div>
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
+                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
               </div>
             </div>
           </div>
@@ -404,11 +396,11 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && disqusConfig && <DisqusComments {...disqusConfig} />}
+                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
 
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && disqusConfig && <DisqusComments {...disqusConfig} />}
+                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} />}
             </div>
         </div>
         <main className="details-main-content">
