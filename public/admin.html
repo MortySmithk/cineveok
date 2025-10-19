@@ -23,9 +23,9 @@
         input:focus, select:focus, textarea:focus {
              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
         }
-        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar { width: 6px; }
-        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track { background: #1f2937; }
-        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar, #whitelist-list::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track, #whitelist-list::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb, #whitelist-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
         .report-btn.active {
             background-color: #ca8a04;
             color: #111827;
@@ -112,8 +112,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-1 flex flex-col gap-8">
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
                         <h2 class="text-xl font-bold text-white mb-4">Adicionar Rápido por ID</h2>
@@ -126,19 +125,19 @@
                             <button id="quick-add-btn" class="bg-teal-500 text-white font-bold px-4 py-2 rounded-md hover:bg-teal-600 transition">Carregar</button>
                         </div>
                     </div>
-                    
+
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                        <h2 class="text-xl font-bold text-white mb-4">Buscar no TMDB (Alternativo)</h2>
+                        <h2 class="text-xl font-bold text-white mb-4">Gerenciar Domínios Whitelisted</h2>
                         <div class="flex gap-2">
-                            <input id="catalog-search-input" type="text" placeholder="Nome do filme ou série..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
-                            <button id="catalog-search-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-600 transition">Buscar</button>
+                            <input id="whitelist-domain-input" type="text" placeholder="exemplo.com" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                            <button id="add-whitelist-domain-btn" class="bg-blue-500 text-white font-bold px-4 py-2 rounded-md hover:bg-blue-600 transition">Adicionar</button>
                         </div>
-                        <div id="catalog-list" class="mt-4 space-y-3 max-h-80 overflow-y-auto">
-                        </div>
+                        <div id="whitelist-list" class="mt-4 space-y-2 max-h-48 overflow-y-auto">
+                            </div>
                     </div>
                 </div>
 
-                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="lg:col-span-2 bg-gray-800 p-6 rounded-lg shadow-lg">
                     <h2 class="text-xl font-bold text-white mb-4">Adicionar/Editar Links</h2>
                     <form id="media-form" class="space-y-4">
                         <input type="hidden" id="tmdb-id">
@@ -186,6 +185,15 @@
                         </div>
                     </form>
                 </div>
+                <div class="lg:col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-bold text-white mb-4">Buscar no TMDB (Alternativo)</h2>
+                    <div class="flex gap-2">
+                        <input id="catalog-search-input" type="text" placeholder="Nome do filme ou série..." class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
+                        <button id="catalog-search-btn" class="bg-yellow-500 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-600 transition">Buscar</button>
+                    </div>
+                    <div id="catalog-list" class="mt-4 space-y-3 max-h-80 overflow-y-auto">
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -193,7 +201,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // CORREÇÃO: Usando a configuração correta do cineveok
         const firebaseConfig = {
@@ -255,6 +263,9 @@
             forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn'),
             downloadMoviesBtn: document.getElementById('download-movies-txt-btn'),
             downloadSeriesBtn: document.getElementById('download-series-txt-btn'),
+            whitelistDomainInput: document.getElementById('whitelist-domain-input'),
+            addWhitelistDomainBtn: document.getElementById('add-whitelist-domain-btn'),
+            whitelistList: document.getElementById('whitelist-list'),
         };
 
         const showPanel = async (user) => {
@@ -262,6 +273,7 @@
             ui.loginScreen.classList.add('hidden');
             ui.adminPanel.classList.remove('hidden');
             await loadAndProcessAllMedia(); 
+            await loadWhitelistedDomains();
         };
 
         const showLogin = () => {
@@ -1051,6 +1063,45 @@
             }
         };
 
+        const loadWhitelistedDomains = async () => {
+            ui.whitelistList.innerHTML = '<div class="loader mx-auto"></div>';
+            const domainsCol = collection(firestore, 'whitelistedDomains');
+            const domainSnapshot = await getDocs(domainsCol);
+            ui.whitelistList.innerHTML = '';
+            if (domainSnapshot.empty) {
+                ui.whitelistList.innerHTML = '<p class="text-gray-500 text-sm">Nenhum domínio na whitelist.</p>';
+            } else {
+                domainSnapshot.forEach(doc => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between bg-gray-700 p-2 rounded';
+                    div.innerHTML = `
+                        <span class="text-sm">${doc.id}</span>
+                        <button class="remove-whitelist-btn text-red-500 hover:text-red-400 font-bold px-2" data-domain="${doc.id}">X</button>
+                    `;
+                    ui.whitelistList.appendChild(div);
+                });
+            }
+        };
+
+        const addWhitelistDomain = async () => {
+            const domain = ui.whitelistDomainInput.value.trim();
+            if (!domain) {
+                alert('Por favor, insira um domínio válido.');
+                return;
+            }
+            const docRef = doc(firestore, 'whitelistedDomains', domain);
+            await setDoc(docRef, { addedAt: new Date() });
+            ui.whitelistDomainInput.value = '';
+            await loadWhitelistedDomains();
+        };
+
+        const removeWhitelistDomain = async (domain) => {
+            if (!confirm(`Tem certeza que deseja remover o domínio "${domain}" da whitelist?`)) return;
+            const docRef = doc(firestore, 'whitelistedDomains', domain);
+            await deleteDoc(docRef);
+            await loadWhitelistedDomains();
+        };
+
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
@@ -1173,6 +1224,15 @@
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
             ui.downloadMoviesBtn.addEventListener('click', downloadAllMoviesAsTxt);
             ui.downloadSeriesBtn.addEventListener('click', downloadAllSeriesAsTxt);
+
+            ui.addWhitelistDomainBtn.addEventListener('click', addWhitelistDomain);
+            ui.whitelistDomainInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addWhitelistDomain(); });
+            ui.whitelistList.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-whitelist-btn');
+                if (removeBtn) {
+                    removeWhitelistDomain(removeBtn.dataset.domain);
+                }
+            });
         });
     </script>
 </body>
