@@ -20,6 +20,7 @@ const LikeIcon: React.FC<LikeIconProps> = ({ isActive, width = 24, height = 24 }
       width={width}
       height={height}
       style={{ objectFit: 'contain' }}
+      unoptimized // Adicionado para garantir que as imagens externas carreguem sem configuração extra
     />
   );
 };

@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // ATENÇÃO: A otimização de imagens foi REATIVADA.
-    // A linha "unoptimized: true" foi removida.
-    // Isso é crucial para a performance.
+    // Adicione esta linha para desativar a otimização de imagens da Vercel
+    unoptimized: true,
+
     remotePatterns: [
       {
         protocol: 'https',
@@ -14,12 +14,6 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'image.tmdb.org',
-        port: '',
-        pathname: '/**',
-      },
-       {
-        protocol: 'https',
-        hostname: 'upload.wikimedia.org',
         port: '',
         pathname: '/**',
       },
