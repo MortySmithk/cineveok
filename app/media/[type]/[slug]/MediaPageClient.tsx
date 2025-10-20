@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/components/firebase'; // Este é o DB principal, para likes, etc.
+import { db } from '@/app/components/firebase'; 
 
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
@@ -16,7 +16,7 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import FirebaseComments from '@/app/components/FirebaseComments'; // Usando o novo componente
+import FirebaseComments from '@/app/components/FirebaseComments';
 
 // --- Interfaces ---
 interface Genre { id: number; name: string; }
@@ -81,7 +81,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
-  const { user } = useAuth(); // Pegamos o usuário do contexto de autenticação principal
+  const { user } = useAuth(); 
   const { saveHistory, continueWatching } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -104,6 +104,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
+  
+  // CORREÇÃO: Pega a URL base do player das variáveis de ambiente
+  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://primevicio.lat';
 
   useEffect(() => {
     if (!id || !type) return;
@@ -129,7 +132,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     if (!details || !id || isInitialEpisodeSet) return;
 
     if (type === 'movie') {
-      setActiveStreamUrl(`https://primevicio.lat/embed/movie/${details.id}`);
+      setActiveStreamUrl(`${embedBaseUrl}/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
@@ -148,7 +151,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         setIsInitialEpisodeSet(true);
       }
     }
-  }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet, slug]);
+  }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet, slug, embedBaseUrl]);
 
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons) {
@@ -173,7 +176,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   useEffect(() => {
     if (type === 'tv' && activeEpisode && id && details) {
         const { season, episode } = activeEpisode;
-        setActiveStreamUrl(`https://primevicio.lat/embed/tv/${id}/${season}/${episode}`);
+        setActiveStreamUrl(`${embedBaseUrl}/embed/tv/${id}/${season}/${episode}`);
         
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
@@ -185,7 +188,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
           saveHistory({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
         }
     }
-  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes, slug]);
+  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes, slug, embedBaseUrl]);
   
   useEffect(() => {
     if (!currentStatsId) return;
