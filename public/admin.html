@@ -130,10 +130,7 @@
                         <h2 class="text-xl font-bold text-white mb-4">Gerenciar Domínios Whitelisted</h2>
                         <div class="flex gap-2">
                             <input id="whitelist-domain-input" type="text" placeholder="exemplo.com" class="flex-grow bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:border-yellow-500">
-                            <button id="add-whitelist-domain-btn" class="bg-blue-500 text-white font-bold px-4 py-2 rounded-md hover:bg-blue-600 transition flex items-center justify-center">
-                                <span>Adicionar</span>
-                                <div class="loader hidden ml-2"></div>
-                            </button>
+                            <button id="add-whitelist-domain-btn" class="bg-blue-500 text-white font-bold px-4 py-2 rounded-md hover:bg-blue-600 transition">Adicionar</button>
                         </div>
                         <div id="whitelist-list" class="mt-4 space-y-2 max-h-48 overflow-y-auto">
                             </div>
@@ -206,6 +203,7 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // CORREÇÃO: Usando a configuração correta do cineveok
         const firebaseConfig = {
             apiKey: "AIzaSyCNEGDpDLuWYrxTkoONy4oQujnatx6KIS8",
             authDomain: "cineveok.firebaseapp.com",
@@ -1066,7 +1064,7 @@
         };
 
         const loadWhitelistedDomains = async () => {
-            ui.whitelistList.innerHTML = `<div class="loader mx-auto"></div>`;
+            ui.whitelistList.innerHTML = '<div class="loader mx-auto"></div>';
             const domainsCol = collection(firestore, 'whitelistedDomains');
             const domainSnapshot = await getDocs(domainsCol);
             ui.whitelistList.innerHTML = '';
@@ -1086,39 +1084,16 @@
         };
 
         const addWhitelistDomain = async () => {
-            let domainInput = ui.whitelistDomainInput.value.trim();
-            if (!domainInput) {
+            const domain = ui.whitelistDomainInput.value.trim();
+            if (!domain) {
                 alert('Por favor, insira um domínio válido.');
                 return;
             }
-
-            const button = ui.addWhitelistDomainBtn;
-            button.querySelector('span').textContent = '';
-            button.querySelector('.loader').classList.remove('hidden');
-            button.disabled = true;
-
-            try {
-                if (!domainInput.startsWith('http://') && !domainInput.startsWith('https://')) {
-                    domainInput = 'https://' + domainInput;
-                }
-                const url = new URL(domainInput);
-                const hostname = url.hostname.replace(/^www\./, '');
-
-                const docRef = doc(firestore, 'whitelistedDomains', hostname);
-                await setDoc(docRef, { addedAt: new Date() });
-                ui.whitelistDomainInput.value = '';
-                await loadWhitelistedDomains();
-
-            } catch (e) {
-                alert('Domínio inválido. Insira um domínio como "exemplo.com" ou "sub.exemplo.com".');
-                console.error("Invalid domain format:", e);
-            } finally {
-                button.querySelector('span').textContent = 'Adicionar';
-                button.querySelector('.loader').classList.add('hidden');
-                button.disabled = false;
-            }
+            const docRef = doc(firestore, 'whitelistedDomains', domain);
+            await setDoc(docRef, { addedAt: new Date() });
+            ui.whitelistDomainInput.value = '';
+            await loadWhitelistedDomains();
         };
-
 
         const removeWhitelistDomain = async (domain) => {
             if (!confirm(`Tem certeza que deseja remover o domínio "${domain}" da whitelist?`)) return;
