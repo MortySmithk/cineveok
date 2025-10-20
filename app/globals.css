@@ -1495,3 +1495,31 @@ body:-webkit-full-screen .site-header-main {
   color: var(--text-secondary);
   padding: 2rem;
 }
+/* Adicione estas classes ao final do seu arquivo app/globals.css */
+
+/* ... (todo seu CSS existente) ... */
+
+.player-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.player-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  border-radius: 8px; /* Mantém o mesmo raio de borda do container */
+}
+
+@media (max-width: 768px) {
+  .player-skeleton {
+    border-radius: 0;
+  }
+}
