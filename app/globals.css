@@ -1345,3 +1345,153 @@ html[data-theme='light'] .form-input {
   color: var(--text-secondary);
   padding: 2rem;
 }
+/* app/globals.css */
+
+/* ... (todo o seu CSS existente) ... */
+
+/* --- CORREÇÃO PARA TELA CHEIA --- */
+/* Esconde o cabeçalho quando qualquer elemento estiver em tela cheia */
+:root:fullscreen .site-header-main,
+body:fullscreen .site-header-main {
+  display: none;
+  z-index: -1; /* Garante que fique atrás de tudo */
+}
+
+/* Fallback para navegadores mais antigos (como alguns no Android) */
+:root:-webkit-full-screen .site-header-main,
+body:-webkit-full-screen .site-header-main {
+  display: none;
+  z-index: -1;
+}
+
+/* ================================================= */
+/* === SISTEMA DE COMENTÁRIOS (FIREBASE) === */
+/* ================================================= */
+
+.comments-section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.comments-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.comment-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.comment-avatar {
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.comment-input {
+  flex-grow: 1;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  resize: none;
+  transition: border-color 0.2s ease;
+  min-height: 38px;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent-yellow);
+}
+
+.comment-submit-btn {
+  background-color: var(--accent-yellow);
+  color: #0d0d0d;
+  border: none;
+  border-radius: 20px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  margin-top: 4px;
+}
+
+.comment-submit-btn:hover {
+  opacity: 0.8;
+}
+
+.comment-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.comment-login-prompt {
+  background-color: var(--card-color);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.comment-login-prompt a {
+  color: var(--accent-yellow);
+  font-weight: 700;
+  text-decoration: none;
+}
+.comment-login-prompt a:hover {
+  text-decoration: underline;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.comment-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.comment-author {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.comment-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.comment-text {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.no-comments {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
