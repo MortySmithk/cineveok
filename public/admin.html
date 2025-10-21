@@ -23,13 +23,21 @@
         input:focus, select:focus, textarea:focus {
              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
         }
-        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar { width: 6px; }
-        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track { background: #1f2937; }
-        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        .report-btn.active {
+        #episodes-list::-webkit-scrollbar, #catalog-list::-webkit-scrollbar, #report-results-list::-webkit-scrollbar, #cdn-update-log::-webkit-scrollbar { width: 6px; }
+        #episodes-list::-webkit-scrollbar-track, #catalog-list::-webkit-scrollbar-track, #report-results-list::-webkit-scrollbar-track, #cdn-update-log::-webkit-scrollbar-track { background: #1f2937; }
+        #episodes-list::-webkit-scrollbar-thumb, #catalog-list::-webkit-scrollbar-thumb, #report-results-list::-webkit-scrollbar-thumb, #cdn-update-log::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        
+        .report-btn.active, .tab-btn.active {
             background-color: #ca8a04;
             color: #111827;
         }
+
+        #cdn-update-log { font-family: 'Courier New', Courier, monospace; }
+        #cdn-update-log .log-info { color: #9ca3af; } /* gray-400 */
+        #cdn-update-log .log-success { color: #22c55e; } /* green-500 */
+        #cdn-update-log .log-error { color: #ef4444; } /* red-500 */
+        #cdn-update-log .log-header { color: #f59e0b; font-weight: bold; } /* amber-500 */
+
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -76,39 +84,69 @@
             <h1 class="text-3xl font-bold text-white mb-8">Gerenciador de Conteúdo</h1>
 
             <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                <h2 class="text-xl font-bold text-white mb-4">Relatórios e Ferramentas</h2>
-                <div id="report-tabs" class="flex flex-wrap gap-3 border-b border-gray-700 pb-4 mb-4">
-                    <button data-report-type="movies-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Filmes Sem Links (<span id="count-movies-no-links">...</span>)
-                    </button>
-                     <button data-report-type="movies-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Filmes Com Links (<span id="count-movies-with-links">...</span>)
-                    </button>
-                    <button data-report-type="series-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Séries Com Links (<span id="count-series-with-links">...</span>)
-                    </button>
-                     <button data-report-type="episodes-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Episódios Com Links (<span id="count-episodes-with-links">...</span>)
-                    </button>
-                </div>
+                <h2 class="text-xl font-bold text-white mb-4">Ferramentas do Painel</h2>
                 
-                <div class="mt-4 flex flex-wrap gap-3">
-                    <button id="download-movies-txt-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        BAIXAR FILMES (.MP4) .TXT
+                <div id="tab-button-container" class="flex flex-wrap gap-3 border-b border-gray-700 pb-4 mb-4">
+                    <button data-tab="reports" class="tab-btn active bg-yellow-500 text-gray-900 font-semibold px-4 py-2 rounded-md transition text-sm">
+                        Relatórios e Downloads
                     </button>
-                    <button id="download-series-txt-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        BAIXAR TODAS AS SÉRIES .TXT
-                    </button>
-                </div>
-
-                <div class="mt-4 border-t border-gray-700 pt-4">
-                    <button id="force-firestore-all-movies-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
-                        Forçar Firestore para Filmes com Link .MP4
+                    <button data-tab="cdn-update" class="tab-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                        ATUALIZAR LINKS CDN
                     </button>
                 </div>
 
-                <div id="report-results-container" class="space-y-3 mt-4">
-                    <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
+                <div id="reports-tab-content" class="space-y-4">
+                    <div id="report-tabs" class="flex flex-wrap gap-3">
+                        <button data-report-type="movies-no-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            Filmes Sem Links (<span id="count-movies-no-links">...</span>)
+                        </button>
+                         <button data-report-type="movies-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            Filmes Com Links (<span id="count-movies-with-links">...</span>)
+                        </button>
+                        <button data-report-type="series-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            Séries Com Links (<span id="count-series-with-links">...</span>)
+                        </button>
+                         <button data-report-type="episodes-with-links" class="report-btn bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            Episódios Com Links (<span id="count-episodes-with-links">...</span>)
+                        </button>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <button id="download-movies-txt-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            BAIXAR FILMES (.MP4) .TXT
+                        </button>
+                        <button id="download-series-txt-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            BAIXAR TODAS AS SÉRIES .TXT
+                        </button>
+                    </div>
+
+                    <div class="border-t border-gray-700 pt-4">
+                        <button id="force-firestore-all-movies-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-2 rounded-md transition text-sm">
+                            Forçar Firestore para Filmes com Link .MP4
+                        </button>
+                    </div>
+
+                    <div id="report-results-container" class="space-y-3 mt-4">
+                        <p class="text-gray-400">Selecione um relatório para ver os resultados.</p>
+                    </div>
+                </div>
+
+                <div id="cdn-update-tab-content" class="hidden space-y-4">
+                    <h3 class="text-lg font-semibold text-white">Console de Atualização de CDN</h3>
+                    <p class="text-sm text-gray-400">
+                        Clique no botão para verificar e atualizar todos os links do Firestore que correspondem aos domínios
+                        <code class="bg-gray-900 px-1 rounded text-yellow-400">cdn.iageni.com</code> ou 
+                        <code class="bg-gray-900 px-1 rounded text-yellow-400">cdn3.iageni.com</code> para
+                        <code class="bg-gray-900 px-1 rounded text-yellow-400">cdn.cnvsplus.com</code> e
+                        <code class="bg-gray-900 px-1 rounded text-yellow-400">cdn3.cnvsplus.com</code>.
+                    </p>
+                    <button id="start-cdn-update-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-md transition flex items-center justify-center">
+                        <span class="btn-text">Iniciar Atualização</span>
+                        <div class="loader hidden ml-2"></div>
+                    </button>
+                    <div id="cdn-update-log" class="mt-4 p-4 bg-black text-white rounded-md h-96 overflow-y-auto" style="font-family: 'Courier New', Courier, monospace;">
+                        <p class="log-info">Aguardando o início do processo...</p>
+                    </div>
                 </div>
             </div>
 
@@ -255,6 +293,13 @@
             forceFirestoreAllMoviesBtn: document.getElementById('force-firestore-all-movies-btn'),
             downloadMoviesBtn: document.getElementById('download-movies-txt-btn'),
             downloadSeriesBtn: document.getElementById('download-series-txt-btn'),
+
+            // Novos elementos da UI para abas e atualização de CDN
+            tabButtonContainer: document.getElementById('tab-button-container'),
+            reportsTabContent: document.getElementById('reports-tab-content'),
+            cdnUpdateTabContent: document.getElementById('cdn-update-tab-content'),
+            startCdnUpdateBtn: document.getElementById('start-cdn-update-btn'),
+            cdnUpdateLog: document.getElementById('cdn-update-log'),
         };
 
         const showPanel = async (user) => {
@@ -1051,6 +1096,134 @@
             }
         };
 
+        // --- Funções da Atualização de CDN ---
+
+        const logToConsole = (message, type = 'info') => {
+            const p = document.createElement('p');
+            p.className = `log-${type}`;
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            ui.cdnUpdateLog.appendChild(p);
+            ui.cdnUpdateLog.scrollTop = ui.cdnUpdateLog.scrollHeight;
+        };
+
+        const performCdnUpdateLogic = (url) => {
+            if (typeof url !== 'string' || !url) {
+                return { newUrl: url, didChange: false };
+            }
+
+            let newUrl = url;
+            let didChange = false;
+
+            if (newUrl.startsWith('https://cdn3.iageni.com')) {
+                newUrl = newUrl.replace('https://cdn3.iageni.com', 'https://cdn3.cnvsplus.com');
+                didChange = true;
+            } else if (newUrl.startsWith('cdn3.iageni.com')) {
+                newUrl = newUrl.replace('cdn3.iageni.com', 'https://cdn3.cnvsplus.com');
+                didChange = true;
+            } else if (newUrl.startsWith('https://cdn.iageni.com')) {
+                newUrl = newUrl.replace('https://cdn.iageni.com', 'https://cdn.cnvsplus.com');
+                didChange = true;
+            } else if (newUrl.startsWith('cdn.iageni.com')) {
+                newUrl = newUrl.replace('cdn.iageni.com', 'https://cdn.cnvsplus.com');
+                didChange = true;
+            }
+
+            return { newUrl, didChange };
+        };
+
+        const startCdnUpdateProcess = async () => {
+            const button = ui.startCdnUpdateBtn;
+            button.disabled = true;
+            button.querySelector('.btn-text').textContent = 'Atualizando...';
+            button.querySelector('.loader').classList.remove('hidden');
+            ui.cdnUpdateLog.innerHTML = '';
+
+            logToConsole('Iniciando processo de atualização de CDN...', 'header');
+
+            try {
+                const mediaCollection = collection(firestore, 'media');
+                const querySnapshot = await getDocs(mediaCollection);
+                logToConsole(`Processando ${querySnapshot.size} documentos...`);
+
+                let successCount = 0;
+                let errorCount = 0;
+                let skippedCount = 0;
+
+                for (const docSnapshot of querySnapshot.docs) {
+                    const media = docSnapshot.data();
+                    const mediaId = docSnapshot.id;
+                    const mediaTitle = media.title || `ID ${mediaId}`;
+                    let docHasChanges = false;
+                    let docHasLogs = false;
+
+                    try {
+                        if (media.type === 'movie' && Array.isArray(media.urls)) {
+                            media.urls.forEach(urlData => {
+                                const { newUrl, didChange } = performCdnUpdateLogic(urlData.url);
+                                if (didChange) {
+                                    urlData.url = newUrl;
+                                    docHasChanges = true;
+                                }
+                            });
+                        } else if (media.type === 'series' && media.seasons) {
+                            Object.keys(media.seasons).forEach(seasonNum => {
+                                if (media.seasons[seasonNum] && Array.isArray(media.seasons[seasonNum].episodes)) {
+                                    media.seasons[seasonNum].episodes.forEach(epData => {
+                                        if (Array.isArray(epData.urls)) {
+                                            epData.urls.forEach(urlData => {
+                                                const { newUrl, didChange } = performCdnUpdateLogic(urlData.url);
+                                                if (didChange) {
+                                                    urlData.url = newUrl;
+                                                    docHasChanges = true;
+                                                    docHasLogs = true;
+                                                    logToConsole(`${mediaTitle} - T${seasonNum} E${epData.episode_number}: Link atualizado.`, 'success');
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
+                        if (docHasChanges) {
+                            await setDoc(docSnapshot.ref, media);
+                            if (media.type === 'movie' && !docHasLogs) {
+                                logToConsole(`${mediaTitle} (Filme): Links atualizados.`, 'success');
+                                docHasLogs = true;
+                            }
+                            successCount++;
+                        } else {
+                            if (!docHasLogs) {
+                                logToConsole(`${mediaTitle}: Verificado, sem links para atualizar.`, 'info');
+                            }
+                            skippedCount++;
+                        }
+
+                    } catch (err) {
+                        errorCount++;
+                        logToConsole(`Erro ao processar ${mediaTitle}: ${err.message}`, 'error');
+                        console.error(err);
+                    }
+                }
+
+                logToConsole('--- Processo Concluído ---', 'header');
+                logToConsole(`Documentos atualizados: ${successCount}`, 'success');
+                logToConsole(`Documentos com erro: ${errorCount}`, 'error');
+                logToConsole(`Documentos ignorados: ${skippedCount}`, 'info');
+
+                await loadAndProcessAllMedia(); // Atualiza os contadores dos relatórios
+
+            } catch (error) {
+                logToConsole(`Erro crítico ao buscar documentos: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                button.disabled = false;
+                button.querySelector('.btn-text').textContent = 'Iniciar Atualização';
+                button.querySelector('.loader').classList.add('hidden');
+            }
+        };
+
+
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             onAuthStateChanged(auth, (user) => {
@@ -1169,6 +1342,34 @@
                     displayReportResults(button.dataset.reportType);
                 }
             });
+            
+            // Novo: Listener para trocar de aba
+            ui.tabButtonContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.tab-btn');
+                if (!button) return;
+
+                // Desativa todos os botões de aba
+                ui.tabButtonContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active', 'bg-yellow-500', 'text-gray-900');
+                    btn.classList.add('bg-gray-700', 'hover:bg-gray-600', 'text-white');
+                });
+                
+                // Ativa o botão clicado
+                button.classList.add('active', 'bg-yellow-500', 'text-gray-900');
+                button.classList.remove('bg-gray-700', 'hover:bg-gray-600', 'text-white');
+
+                // Mostra/Esconde o conteúdo da aba
+                if (button.dataset.tab === 'reports') {
+                    ui.reportsTabContent.classList.remove('hidden');
+                    ui.cdnUpdateTabContent.classList.add('hidden');
+                } else if (button.dataset.tab === 'cdn-update') {
+                    ui.reportsTabContent.classList.add('hidden');
+                    ui.cdnUpdateTabContent.classList.remove('hidden');
+                }
+            });
+
+            // Novo: Listener para o botão de atualização de CDN
+            ui.startCdnUpdateBtn.addEventListener('click', startCdnUpdateProcess);
 
             ui.forceFirestoreAllMoviesBtn.addEventListener('click', forceFirestoreForAllLinkedMovies);
             ui.downloadMoviesBtn.addEventListener('click', downloadAllMoviesAsTxt);
