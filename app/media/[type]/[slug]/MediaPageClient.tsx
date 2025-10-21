@@ -53,36 +53,23 @@ const formatNumber = (num: number): string => {
 };
 
 const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
-  const [isIframeLoading, setIsIframeLoading] = useState(true);
-
-  useEffect(() => {
-    setIsIframeLoading(true);
-  }, [activeStreamUrl]);
-
   return (
     <div className="player-container">
-      {isIframeLoading && (
-        <div className="player-skeleton">
-          <div className="spinner"></div>
-        </div>
-      )}
       {activeStreamUrl ? (
         <iframe
           key={activeStreamUrl}
           src={activeStreamUrl}
           title={`CineVEO Player - ${title}`}
-          allow="autoplay; encrypted-media; fullscreen"
+          allow="autoplay; encrypted-media"
           allowFullScreen
           referrerPolicy="origin"
-          onLoad={() => setIsIframeLoading(false)}
-          style={{ display: isIframeLoading ? 'none' : 'block' }}
+          loading="lazy"
         ></iframe>
       ) : (
-        !isIframeLoading && (
-          <div className="player-loader">
-            <span>Selecione um episódio para começar a assistir.</span>
-          </div>
-        )
+        <div className="player-loader">
+          <div className="spinner"></div>
+          <span>Selecione um episódio para começar a assistir.</span>
+        </div>
       )}
     </div>
   );
@@ -118,6 +105,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
   
+  // CORREÇÃO: Pega a URL base do player das variáveis de ambiente
   const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://primevicio.lat';
 
   useEffect(() => {
