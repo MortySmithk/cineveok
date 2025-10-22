@@ -212,7 +212,11 @@ export default function MediaPageClient({
         setSeasonEpisodes(episodesData);
 
         // Verifica se o activeEpisode definido na etapa 2 ainda é válido para esta temporada
-        const isCurrentActiveEpisodeValid = activeEpisode && activeEpisode.season === selectedSeason && episodesData.some(ep => ep.episode_number === activeEpisode.episode);
+        
+        // <<< --- INÍCIO DA CORREÇÃO --- >>>
+        // Adiciona o tipo (ep: Episode) para corrigir o erro de 'any' implícito
+        const isCurrentActiveEpisodeValid = activeEpisode && activeEpisode.season === selectedSeason && episodesData.some((ep: Episode) => ep.episode_number === activeEpisode.episode);
+        // <<< --- FIM DA CORREÇÃO --- >>>
 
         // Se o episódio ativo não for válido (ou não existir), define para o primeiro da lista
         if (!isCurrentActiveEpisodeValid && episodesData.length > 0) {
@@ -233,7 +237,7 @@ export default function MediaPageClient({
     };
 
     fetchSeasonData();
-  }, [selectedSeason, id, type, details, isLoadingDetails]); // Depende apenas de selectedSeason (e do ID/tipo/details)
+  }, [selectedSeason, id, type, details, isLoadingDetails, activeEpisode]); // Depende apenas de selectedSeason (e do ID/tipo/details) - Adicionado activeEpisode
 
 
   // --- 4. useEffect: Atualizar Player URL, Disqus e Histórico QUANDO activeEpisode muda ---
