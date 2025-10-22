@@ -230,7 +230,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // ADICIONADA setPersistence e browserLocalPersistence
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // CORREÇÃO: Usando a configuração correta do cineveok
@@ -1235,13 +1236,26 @@
                 }
             });
 
-            ui.loginForm.addEventListener('submit', (e) => { e.preventDefault(); signInWithEmailAndPassword(auth, ui.emailInput.value, ui.passwordInput.value).catch(() => alert('Credenciais inválidas.')); });
+            // LOGIN POR E-MAIL/SENHA COM PERSISTÊNCIA LOCAL
+            ui.loginForm.addEventListener('submit', async (e) => { 
+                e.preventDefault(); 
+                try {
+                    await setPersistence(auth, browserLocalPersistence); // Adiciona persistência local
+                    await signInWithEmailAndPassword(auth, ui.emailInput.value, ui.passwordInput.value);
+                } catch (error) {
+                    alert('Credenciais inválidas.');
+                }
+            });
             
-            ui.googleLoginBtn.addEventListener('click', () => {
-                signInWithPopup(auth, googleProvider).catch((error) => {
+            // LOGIN COM GOOGLE COM PERSISTÊNCIA LOCAL
+            ui.googleLoginBtn.addEventListener('click', async () => {
+                try {
+                    await setPersistence(auth, browserLocalPersistence); // Adiciona persistência local
+                    await signInWithPopup(auth, googleProvider);
+                } catch (error) {
                     console.error("Erro no login com Google:", error);
                     alert(`Erro ao tentar fazer login com o Google: ${error.message}`);
-                });
+                }
             });
 
             ui.logoutButton.addEventListener('click', () => signOut(auth));
