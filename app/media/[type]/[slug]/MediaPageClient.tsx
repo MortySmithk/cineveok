@@ -1,4 +1,4 @@
-// app/media/[type]/[slug]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect, memo, useRef, useLayoutEffect } from 'react';
@@ -109,7 +109,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
 
-  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.primevicio.lat';
+  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || '[https://www.primevicio.lat](https://www.primevicio.lat)';
 
   // --- useEffect para buscar detalhes da mídia ---
   useEffect(() => {
@@ -348,7 +348,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
   // --- Renderização condicional de loading ---
   if (!details && isLoading) {
-    return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
+    return (<div className="loading-container"><Image src="[https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png](https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png)" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
   }
   if (!details) {
     return (<div className="loading-container"><p>{status}</p></div>);
@@ -438,26 +438,34 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     <>
       <div className="media-page-layout">
         <section className="series-watch-section">
+          {/* --- LAYOUT DESKTOP --- */}
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
+              {/* Coluna 1: Player e Informações */}
               <div className="series-player-wrapper">
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
-                {type === 'movie' && disqusConfig && (
+                {/* O Disqus de FILME foi movido para a segunda coluna
+                */}
+              </div>
+              
+              {/* Coluna 2: Seletor de Episódio/Filme e Comentários */}
+              <div>
+                {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
+                {type === 'tv' && <InfoBox />}
+                 
+                {/* Disqus para SÉRIES (continua aqui) */}
+                {type === 'tv' && disqusConfig && (
                   <DisqusComments
                     url={disqusConfig.url}
                     identifier={disqusConfig.identifier}
                     title={disqusConfig.title}
                   />
                 )}
-              </div>
-              <div>
-                {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
-                {type === 'tv' && <InfoBox />}
-                 {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
-                {type === 'tv' && disqusConfig && (
+
+                {/* ✅ MUDANÇA: Disqus para FILMES (movido para cá) */}
+                {type === 'movie' && disqusConfig && (
                   <DisqusComments
                     url={disqusConfig.url}
                     identifier={disqusConfig.identifier}
@@ -467,15 +475,19 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
               </div>
             </div>
           </div>
+
+          {/* --- LAYOUT MOBILE --- */}
           <div className="mobile-only-layout">
             <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
           </div>
         </section>
+        
+        {/* --- SEÇÃO INFERIOR MOBILE --- */}
         <div className="mobile-only-layout">
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                 {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {/* Comentários de FILME no mobile */}
                 {type === 'movie' && disqusConfig && (
                   <DisqusComments
                     url={disqusConfig.url}
@@ -486,7 +498,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
-                {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {/* Comentários de SÉRIE no mobile */}
                 {type === 'tv' && disqusConfig && (
                   <DisqusComments
                     url={disqusConfig.url}
@@ -496,13 +508,15 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 )}
             </div>
         </div>
+        
+        {/* --- CONTEÚDO PRINCIPAL (ELENCO, ETC) --- */}
         <main className="details-main-content">
           <div className="main-container">
             {/* ... (Restante da seção de detalhes, elenco, etc., permanece o mesmo) ... */}
             <div className="details-grid">
               <div className="details-poster-container desktop-only-layout">
                   <div className="details-poster">
-                    <Image draggable="false" src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
+                    <Image draggable="false" src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : '[https://i.ibb.co/XzZ0b1B/placeholder.png](https://i.ibb.co/XzZ0b1B/placeholder.png)'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
                   </div>
                    <div className="poster-info-bar">
                     <span className="poster-info-title">{details.title}</span>
