@@ -17,15 +17,18 @@ export default function ChatangoEmbed() {
       script.style.width = '100%';
       script.style.height = '100%';
 
+      // ATUALIZAÇÃO AQUI:
       script.innerHTML = JSON.stringify({
         "handle": "cineveok",
         "arch": "js",
         "styles": {
           "a": "ffcc00", "b": 100, "c": "000000", "d": "000000", "k": "ffcc00",
           "l": "ffcc00", "m": "ffcc00", "p": "10", "q": "ffcc00", "r": 100,
-          "cnrs": "0.35", "fwtickm": 1
+          "cnrs": "0.35"
+          // "fwtickm": 1 <-- Esta linha foi removida
         }
       });
+      // FIM DA ATUALIZAÇÃO
 
       chatContainerRef.current.appendChild(script);
       scriptAddedRef.current = true;
