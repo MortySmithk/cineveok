@@ -9,6 +9,15 @@ import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
 import PlayIcon from '@/app/components/icons/PlayIcon'; // Importado
 
+// FUNÇÃO ADICIONADA: Gera o Href correto para continuar assistindo
+const getContinueWatchingHref = (item: WatchItem) => {
+  const base = `/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`;
+  if (item.mediaType === 'tv' && item.progress) {
+    return `${base}?season=${item.progress.season}&episode=${item.progress.episode}`;
+  }
+  return base;
+};
+
 export default function HistoricoPage() {
   const { user } = useAuth();
   const { fullHistory, isLoading, movieCount, episodeCount } = useWatchHistory();
@@ -84,7 +93,7 @@ export default function HistoricoPage() {
             {filteredHistory.map((item) => (
               <Link
                 draggable="false"
-                href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`}
+                href={getContinueWatchingHref(item)} // <-- MODIFICAÇÃO AQUI
                 key={item.id}
                 className="movie-card focusable"
               >

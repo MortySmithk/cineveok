@@ -8,7 +8,7 @@ import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
-import { useWatchHistory } from '@/app/hooks/useWatchHistory';
+import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory'; // Importado WatchItem
 import { generateSlug } from '@/app/lib/utils';
 
 interface Media {
@@ -25,6 +25,15 @@ interface Media {
 }
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
+
+// FUNÇÃO ADICIONADA: Gera o Href correto para continuar assistindo
+const getContinueWatchingHref = (item: WatchItem) => {
+  const base = `/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`;
+  if (item.mediaType === 'tv' && item.progress) {
+    return `${base}?season=${item.progress.season}&episode=${item.progress.episode}`;
+  }
+  return base;
+};
 
 export default function HomePage() {
   const [trending, setTrending] = useState<Media[]>([]);
@@ -174,7 +183,13 @@ export default function HomePage() {
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
             <div className="movie-carousel" ref={continueWatchingRef}>
               {continueWatching.map((item) => (
-                <Link draggable="false" href={`/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`} key={item.id} className="movie-card focusable" onClick={handleCardClick}>
+                <Link 
+                  draggable="false" 
+                  href={getContinueWatchingHref(item)} // <-- MODIFICAÇÃO AQUI
+                  key={item.id} 
+                  className="movie-card focusable" 
+                  onClick={handleCardClick}
+                >
                   <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/>
                     <div className="movie-card-play-icon-overlay"><PlayIcon /></div>

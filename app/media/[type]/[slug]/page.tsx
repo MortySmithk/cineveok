@@ -73,6 +73,13 @@ export async function generateMetadata({ params }: { params: { type: string; slu
   }
 }
 
-export default function MediaPage({ params }: { params: { type: string; slug: string } }) {
-  return <MediaPageClient params={params} />;
+// MODIFICAÇÃO AQUI: Aceita e repassa searchParams
+export default function MediaPage({ 
+  params,
+  searchParams
+}: { 
+  params: { type: string; slug: string };
+  searchParams?: { [key: string]: string | string[] | undefined }; // <-- ADICIONADO
+}) {
+  return <MediaPageClient params={params} searchParams={searchParams} />; // <-- REPASSADO
 }
