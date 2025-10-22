@@ -62,20 +62,6 @@ export default function RootLayout({
                 {children}
               </div>
               
-              {/* --- INÍCIO DA SEÇÃO DO CHATANGO --- */}
-              <div className="main-container" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-                  <script 
-                    id="cid0020000422083240257" 
-                    data-cfasync="false" 
-                    async 
-                    src="//st.chatango.com/js/gz/emb.js" 
-                    style={{width: '100%', height: '442px'}} // Alterado para 100% de largura
-                  >
-                    {`{"handle":"cineveok","arch":"js","styles":{"a":"ffcc00","b":100,"c":"000000","d":"000000","k":"ffcc00","l":"ffcc00","m":"ffcc00","p":"10","q":"ffcc00","r":100,"cnrs":"0.35"}}`}
-                  </script>
-              </div>
-              {/* --- FIM DA SEÇÃO DO CHATANGO --- */}
-
               <footer className="site-footer">
                 <div className="main-container">
                   <div className="aviso-legal">
