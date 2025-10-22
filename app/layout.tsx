@@ -6,9 +6,10 @@ import Link from 'next/link';
 import "./globals.css";
 import Header from "./components/Header";
 import { AuthProvider } from "./components/AuthProvider";
-import AppInitializer from "./components/AppInitializer"; // CORRIGIDO AQUI
+import AppInitializer from "./components/AppInitializer";
 import { ThemeProvider } from "./components/ThemeProvider";
 import FloatingTelegramButton from "./components/FloatingTelegramButton";
+import ChatangoEmbed from "./components/ChatangoEmbed"; // 1. IMPORTAR O NOVO COMPONENTE
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -65,37 +66,13 @@ export default function RootLayout({
               <footer className="site-footer">
                 <div className="main-container">
 
-                  {/* --- INÍCIO DO CHAT CHATANGO --- (Movido para cá) */}
-                  <div className="chatango-wrapper" style={{
-                    width: '100%',
-                    maxWidth: '900px', // Limita a largura em telas grandes
-                    height: '450px',
-                    margin: '2.5rem auto', // Adiciona espaço e centraliza
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    border: '1px solid var(--border-color)' // Adiciona uma borda
-                  }}>
-                    <Script
-                      id="cid0020000422083240257"
-                      data-cfasync="false"
-                      async
-                      src="//st.chatango.com/js/gz/emb.js"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none'
-                      }}
-                    >
-                      {`{"handle":"cineveok","arch":"js","styles":{"a":"ffcc00","b":100,"c":"000000","d":"000000","k":"ffcc00","l":"ffcc00","m":"ffcc00","p":"10","q":"ffcc00","r":100,"cnrs":"0.35"}}`}
-                    </Script>
-                  </div>
-                  {/* --- FIM DO CHAT CHATANGO --- */}
-                  
+                  {/* 2. SUBSTITUIR O CÓDIGO DO CHAT PELO COMPONENTE */}
+                  <ChatangoEmbed />
+
                   <div className="aviso-legal">
                     <h3>Aviso Legal</h3>
                     <p>O Site CineVEO é apenas Um AGREGADOR de Links assim como o Google. Apenas Agrega e Organiza Os Links Externos MP4. Não Somos Responsáveis Pelos Arquivos Aqui Encontrados.</p>
                   </div>
-
                   <div className="footer-grid">
                     <div className="footer-section">
                       <h4>Também Criados Pelo CineVEO:</h4>
