@@ -9,10 +9,11 @@ import { AuthProvider } from "./components/AuthProvider";
 import AppInitializer from "./components/AppInitializer";
 import { ThemeProvider } from "./components/ThemeProvider";
 import FloatingTelegramButton from "./components/FloatingTelegramButton";
-import ChatangoEmbed from "./components/ChatangoEmbed"; // 1. IMPORTAR O NOVO COMPONENTE
+import ChatangoEmbed from "./components/ChatangoEmbed";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// ... (metadata permanece o mesmo)
 export const metadata: Metadata = {
   title: "Assistir Filmes e Séries Online HD, Filmes Online, Séries Online.",
   description: "Se o site não abrir instale uma VPN Gratis e Confiavel, Baixe Acessando: https://1.1.1.1/ - Assista Filmes, Séries, Animes, Novelas, Doramas, Documentários e Muito Mais Somente no CineVEO!",
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* ... (tags <head> existentes permanecem as mesmas) ... */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, orientation=portrait" />
         <Script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest" strategy="beforeInteractive" />
         <Script id="disable-devtool-init" strategy="beforeInteractive">
@@ -62,18 +64,18 @@ export default function RootLayout({
               <div style={{ minHeight: 'calc(100vh - 280px)' }}>
                 {children}
               </div>
-              
+
               <footer className="site-footer">
                 <div className="main-container">
-
-                  {/* 2. SUBSTITUIR O CÓDIGO DO CHAT PELO COMPONENTE */}
                   <ChatangoEmbed />
 
                   <div className="aviso-legal">
+                    {/* ... (conteúdo do aviso legal) ... */}
                     <h3>Aviso Legal</h3>
                     <p>O Site CineVEO é apenas Um AGREGADOR de Links assim como o Google. Apenas Agrega e Organiza Os Links Externos MP4. Não Somos Responsáveis Pelos Arquivos Aqui Encontrados.</p>
                   </div>
                   <div className="footer-grid">
+                    {/* ... (conteúdo do grid do rodapé) ... */}
                     <div className="footer-section">
                       <h4>Também Criados Pelo CineVEO:</h4>
                       <ul>
@@ -98,6 +100,7 @@ export default function RootLayout({
                     </div>
                   </div>
                   <div className="footer-bottom">
+                    {/* ... (conteúdo do rodapé inferior) ... */}
                     <p>© 2025 CineVEO. Todos os Direitos Reservados.</p>
                     <p>Email para contato: cineveok@gmail.com</p>
                   </div>
@@ -107,6 +110,9 @@ export default function RootLayout({
           </AuthProvider>
           <FloatingTelegramButton />
         </ThemeProvider>
+
+        {/* --- ADICIONADO SCRIPT DE CONTAGEM DO DISQUS --- */}
+        <Script id="dsq-count-scr" src="//cineveo-lat.disqus.com/count.js" async strategy="lazyOnload"></Script>
       </body>
     </html>
   );

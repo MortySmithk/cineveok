@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { doc, runTransaction, onSnapshot, increment } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
-import { db } from '@/app/components/firebase'; 
+import { db } from '@/app/components/firebase';
 
 import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
@@ -16,9 +16,11 @@ import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
-import FirebaseComments from '@/app/components/FirebaseComments';
+// import FirebaseComments from '@/app/components/FirebaseComments'; // REMOVIDO
+import DisqusComments from '@/app/components/DisqusComments'; // ADICIONADO
 
 // --- Interfaces ---
+// ... (interfaces permanecem as mesmas)
 interface Genre { id: number; name: string; }
 interface Season { id: number; name: string; season_number: number; episode_count: number; }
 interface Episode {
@@ -53,6 +55,7 @@ const formatNumber = (num: number): string => {
 };
 
 const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { activeStreamUrl: string, title: string }) {
+  // ... (conteúdo do PlayerContent permanece o mesmo)
   return (
     <div className="player-container">
       {activeStreamUrl ? (
@@ -81,7 +84,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
-  const { user } = useAuth(); 
+  const { user } = useAuth();
   const { saveHistory, continueWatching } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -91,24 +94,26 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  
-  const [currentStatsId, setCurrentStatsId] = useState<string | null>(type === 'movie' ? id : null);
+
+  const [currentStatsId, setCurrentStatsId] = useState<string | null>(null); // MODIFICADO: Inicia nulo
   const [isInitialEpisodeSet, setIsInitialEpisodeSet] = useState(false);
 
   const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
   const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
-  const [mediaIdForComments, setMediaIdForComments] = useState<string | null>(null);
+  // const [mediaIdForComments, setMediaIdForComments] = useState<string | null>(null); // REMOVIDO
+  const [disqusConfig, setDisqusConfig] = useState<{ url: string; identifier: string; title: string } | null>(null); // ADICIONADO
 
 
   const episodeListRef = useRef<HTMLDivElement>(null);
   const scrollPosRef = useRef(0);
-  
-  // CORREÇÃO: Pega a URL base do player das variáveis de ambiente
+
   const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.primevicio.lat';
 
+  // --- useEffect para buscar detalhes da mídia ---
   useEffect(() => {
+    // ... (lógica existente para buscar detalhes)
     if (!id || !type) return;
 
     const fetchData = async () => {
@@ -120,7 +125,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
         const data = detailsResponse.data;
         setDetails({ ...data, title: data.title || data.name, release_date: data.release_date || data.first_air_date, imdb_id: data.external_ids?.imdb_id });
-      } catch (error) { 
+      } catch (error) {
         setStatus("Não foi possível carregar os detalhes.");
         setIsLoading(false);
       }
@@ -128,69 +133,104 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     fetchData();
   }, [id, type]);
 
+  // --- useEffect para configurar player inicial e Disqus ---
   useEffect(() => {
-    if (!details || !id || isInitialEpisodeSet) return;
+    if (!details || !id || typeof window === 'undefined' || isInitialEpisodeSet) return;
+
+    const pageUrl = window.location.href; // URL atual da página
 
     if (type === 'movie') {
       setActiveStreamUrl(`${embedBaseUrl}/embed/movie/${details.id}`);
       if (user) {
         saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
       }
-      setMediaIdForComments(`movie-${id}`);
+      setCurrentStatsId(id); // Define ID para stats
+      setDisqusConfig({ // Define config do Disqus
+          url: pageUrl,
+          identifier: `movie-${id}`,
+          title: details.title
+      });
       setIsInitialEpisodeSet(true);
     } else if (type === 'tv') {
       const progress = continueWatching.find(item => item.tmdbId === id);
+      let initialSeason = 1;
+      let initialEpisode = 1;
       if (progress?.progress) {
-        setSelectedSeason(progress.progress.season);
-        setActiveEpisode({ season: progress.progress.season, episode: progress.progress.episode });
-        setIsInitialEpisodeSet(true);
-      } 
-      else if (continueWatching.length > 0 || !user) {
-        setSelectedSeason(1);
-        setActiveEpisode({ season: 1, episode: 1 });
-        setIsInitialEpisodeSet(true);
+          initialSeason = progress.progress.season;
+          initialEpisode = progress.progress.episode;
       }
+      setSelectedSeason(initialSeason);
+      setActiveEpisode({ season: initialSeason, episode: initialEpisode });
+      setIsInitialEpisodeSet(true); // Marca que a configuração inicial foi feita
     }
   }, [details, id, type, user, saveHistory, continueWatching, isInitialEpisodeSet, slug, embedBaseUrl]);
 
+
+  // --- useEffect para buscar episódios da temporada (séries) ---
   useEffect(() => {
+    // ... (lógica existente para buscar episódios)
     if (type !== 'tv' || !id || !details?.seasons) {
         if (type === 'movie' && details) setIsLoading(false);
         return;
     }
-    
+
     const fetchSeasonData = async () => {
       setIsLoading(true);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         setSeasonEpisodes(seasonResponse.data.episodes);
-      } catch (error) { 
+
+        // Se o episódio ativo não foi definido ainda, define para o primeiro da temporada
+        if (!activeEpisode && seasonResponse.data.episodes.length > 0) {
+            setActiveEpisode({ season: selectedSeason, episode: seasonResponse.data.episodes[0].episode_number });
+        }
+
+      } catch (error) {
         setSeasonEpisodes([]);
-      } finally { 
+      } finally {
         setIsLoading(false);
       }
     };
     fetchSeasonData();
-  }, [id, details, selectedSeason, type]);
+  }, [id, details, selectedSeason, type, activeEpisode]); // Adicionado activeEpisode como dependência
 
+  // --- useEffect para atualizar player e Disqus ao mudar episódio (séries) ---
   useEffect(() => {
-    if (type === 'tv' && activeEpisode && id && details) {
+    if (type === 'tv' && activeEpisode && id && details && seasonEpisodes.length > 0 && typeof window !== 'undefined') {
         const { season, episode } = activeEpisode;
         setActiveStreamUrl(`${embedBaseUrl}/embed/tv/${id}/${season}/${episode}`);
-        
+
         const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
         if (episodeData) {
-            setCurrentStatsId(episodeData.id.toString());
-            setMediaIdForComments(`tv-${id}-s${season}-e${episode}`);
+            setCurrentStatsId(episodeData.id.toString()); // Define ID para stats
+            setDisqusConfig({ // Define config do Disqus
+                url: window.location.href.split('?')[0] + `?season=${season}&episode=${episode}`, // URL com query params
+                identifier: `tv-${id}-s${season}-e${episode}`,
+                title: `${details.title} - T${season} E${episode}`
+            });
+        } else {
+             // Caso não ache o episódio (pode acontecer durante o carregamento inicial)
+             // Tenta definir o ID de stats e Disqus para o primeiro episódio
+             const firstEpisode = seasonEpisodes[0];
+             if(firstEpisode) {
+                 setCurrentStatsId(firstEpisode.id.toString());
+                 setDisqusConfig({
+                     url: window.location.href.split('?')[0] + `?season=${season}&episode=${firstEpisode.episode_number}`,
+                     identifier: `tv-${id}-s${season}-e${firstEpisode.episode_number}`,
+                     title: `${details.title} - T${season} E${firstEpisode.episode_number}`
+                 });
+             }
         }
 
         if (user) {
           saveHistory({ mediaType: 'tv', tmdbId: id, title: details.title, poster_path: details.poster_path, progress: { season, episode } });
         }
     }
-  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes, slug, embedBaseUrl]);
-  
+  }, [activeEpisode, id, type, details, saveHistory, user, seasonEpisodes, slug, embedBaseUrl]); // Removido mediaIdForComments
+
+  // --- useEffects para Views, Stats e Likes/Dislikes (permanecem os mesmos) ---
   useEffect(() => {
+    // ... (lógica de incrementar views)
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
     runTransaction(db, async (transaction) => {
@@ -204,6 +244,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   }, [currentStatsId]);
 
   useEffect(() => {
+    // ... (lógica de buscar stats)
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
       return;
@@ -216,8 +257,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
 
     return () => unsubStats();
   }, [currentStatsId]);
-  
+
   useEffect(() => {
+    // ... (lógica de buscar like/dislike do usuário)
       if (!currentStatsId || !user) {
           setUserLikeStatus(null);
           return;
@@ -228,37 +270,47 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       return () => unsubUserInteraction();
   }, [currentStatsId, user]);
 
+  // --- useLayoutEffect para scroll (permanece o mesmo) ---
   useLayoutEffect(() => {
+    // ... (lógica de restaurar scroll)
     if (episodeListRef.current) {
       episodeListRef.current.scrollTop = scrollPosRef.current;
     }
   });
 
+  // --- Funções de manipulação (permanecem as mesmas) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
+    // ... (lógica de salvar scroll e mudar episódio)
     if (episodeListRef.current) {
       scrollPosRef.current = episodeListRef.current.scrollTop;
     }
     setActiveEpisode({ season, episode: episodeNumber });
   };
-  
+
   const handleSeasonChange = (newSeason: number) => {
+    // ... (lógica de resetar scroll e mudar temporada)
       scrollPosRef.current = 0;
       setSelectedSeason(newSeason);
+      // Define o episódio ativo como nulo para buscar o primeiro da nova temporada
+      setActiveEpisode(null);
   };
-  
+
   const getSynopsis = (): string => {
+    // ... (lógica de pegar sinopse)
       if (type === 'movie') return details?.overview || 'Sinopse não disponível.';
       const currentEpisode = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisode?.overview || details?.overview || 'Sinopse não disponível.';
   };
-  
+
   const getEpisodeTitle = (): string => {
+    // ... (lógica de pegar título do episódio/filme)
       if (type === 'movie') return details?.title || 'Filme';
       const currentEpisode = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisode && activeEpisode ? `${currentEpisode.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details?.title || 'Série';
   }
 
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
+    // ... (lógica de like/dislike)
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!currentStatsId) return;
 
@@ -282,7 +334,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 if (currentStatus === 'disliked') { newDislikes -= 1; newUserStatus = null; }
                 else { newDislikes += 1; if (currentStatus === 'liked') newLikes -= 1; newUserStatus = 'disliked'; }
             }
-            
+
             transaction.set(statsRef, { ...currentStats, likes: Math.max(0, newLikes), dislikes: Math.max(0, newDislikes) }, { merge: true });
 
             if (newUserStatus) { transaction.set(userInteractionRef, { status: newUserStatus }); }
@@ -294,11 +346,17 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     }
   };
 
-  if (!details) {
+  // --- Renderização condicional de loading ---
+  if (!details && isLoading) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
   }
-  
+  if (!details) {
+    return (<div className="loading-container"><p>{status}</p></div>);
+  }
+
+  // --- Componentes internos (InfoBox, InteractionsSection, etc.) ---
   const InfoBox = () => {
+    // ... (conteúdo do InfoBox permanece o mesmo)
     const currentSynopsis = getSynopsis();
     return (
         <div className="synopsis-box" style={{ marginTop: '1.5rem' }}>
@@ -319,13 +377,14 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   };
 
   const InteractionsSection = () => (
+    // ... (conteúdo da InteractionsSection permanece o mesmo)
     <div className="details-interactions-section">
       <h2 className="episode-title">{getEpisodeTitle()}</h2>
-      
+
       <div className="media-actions-bar">
         <div className="like-dislike-group">
           <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-              <LikeIcon isActive={userLikeStatus === 'liked'} width={24} height={24} /> 
+              <LikeIcon isActive={userLikeStatus === 'liked'} width={24} height={24} />
               <span>{formatNumber(stats.likes)}</span>
           </button>
           <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
@@ -336,8 +395,9 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
       </div>
     </div>
   );
-  
+
   const EpisodeSelector = () => (
+    // ... (conteúdo do EpisodeSelector permanece o mesmo)
     <div className="episodes-list-wrapper">
         <div className="episodes-header">
             <select className="season-selector focusable" value={selectedSeason} onChange={(e) => handleSeasonChange(Number(e.target.value))}>
@@ -352,7 +412,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
         <div className="mobile-only-layout">
           <div className="episode-grid-mobile">
               {isLoading && <div className='stream-loader'><div className='spinner'></div></div>}
-              {!isLoading && seasonEpisodes.map(ep => ( 
+              {!isLoading && seasonEpisodes.map(ep => (
                 <button key={ep.id} className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason, ep.episode_number)}>
                   {ep.episode_number}
                 </button>
@@ -363,6 +423,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   );
 
   const MovieSelector = () => (
+    // ... (conteúdo do MovieSelector permanece o mesmo)
     <div className="episodes-list-wrapper desktop-only-layout">
         <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
             <div className="episode-item-thumbnail"><Image draggable="false" src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
@@ -372,6 +433,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
     </div>
   );
 
+  // --- Renderização principal ---
   return (
     <>
       <div className="media-page-layout">
@@ -382,12 +444,26 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
+                {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {type === 'movie' && disqusConfig && (
+                  <DisqusComments
+                    url={disqusConfig.url}
+                    identifier={disqusConfig.identifier}
+                    title={disqusConfig.title}
+                  />
+                )}
               </div>
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
+                 {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {type === 'tv' && disqusConfig && (
+                  <DisqusComments
+                    url={disqusConfig.url}
+                    identifier={disqusConfig.identifier}
+                    title={disqusConfig.title}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -399,15 +475,30 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InteractionsSection />
                 {type === 'movie' && <InfoBox />}
-                {type === 'movie' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
+                 {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {type === 'movie' && disqusConfig && (
+                  <DisqusComments
+                    url={disqusConfig.url}
+                    identifier={disqusConfig.identifier}
+                    title={disqusConfig.title}
+                  />
+                )}
 
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'tv' && <InfoBox />}
-                {type === 'tv' && mediaIdForComments && <FirebaseComments mediaId={mediaIdForComments} currentUser={user} />}
+                {/* SUBSTITUÍDO FirebaseComments por DisqusComments */}
+                {type === 'tv' && disqusConfig && (
+                  <DisqusComments
+                    url={disqusConfig.url}
+                    identifier={disqusConfig.identifier}
+                    title={disqusConfig.title}
+                  />
+                )}
             </div>
         </div>
         <main className="details-main-content">
           <div className="main-container">
+            {/* ... (Restante da seção de detalhes, elenco, etc., permanece o mesmo) ... */}
             <div className="details-grid">
               <div className="details-poster-container desktop-only-layout">
                   <div className="details-poster">
