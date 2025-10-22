@@ -1,4 +1,4 @@
-// app/components/DisqusComments.tsx
+// cineveo-next/app/components/DisqusComments.tsx
 "use client";
 
 import React, { useEffect } from 'react';
@@ -23,11 +23,6 @@ export default function DisqusComments({ url, identifier, title }: DisqusComment
     if (existingScript) {
       existingScript.remove();
     }
-    const existingCountScript = document.getElementById('dsq-count-scr');
-     if (existingCountScript) {
-       // O script de contagem já existe (do layout), não precisa recarregar aqui
-     }
-
 
     // Carrega o script de embed do Disqus
     const script = document.createElement('script');
@@ -37,19 +32,45 @@ export default function DisqusComments({ url, identifier, title }: DisqusComment
     script.async = true;
     (document.head || document.body).appendChild(script);
 
-    // Função de limpeza para remover o script quando o componente desmontar
+    // --- FUNÇÃO DE LIMPEZA ATUALIZADA ---
     return () => {
+      // 1. Tenta resetar o Disqus
+      if ((window as any).DISQUS) {
+        try {
+          (window as any).DISQUS.reset({
+            reload: true
+          });
+        } catch (e) {
+          console.error("Erro ao resetar o Disqus:", e);
+        }
+      }
+      
+      // 2. Remove o script de embed que injetamos
       const scriptToRemove = document.getElementById('disqus-embed-script');
       if (scriptToRemove) {
         scriptToRemove.remove();
       }
-      // Limpa a configuração global para a próxima página
-      delete (window as any).disqus_config;
-      // Reseta o Disqus se ele já tiver sido carregado na página
-      if ((window as any).DISQUS) {
-        (window as any).DISQUS.reset({
-          reload: true
-        });
+
+      // 3. Remove o iframe do Disqus
+      const disqusIframe = document.querySelector('iframe[id^="dsq-app"]');
+      if (disqusIframe) {
+        disqusIframe.remove();
+      }
+      
+      // 4. Limpa o contêiner principal
+      const disqusThread = document.getElementById('disqus_thread');
+      if (disqusThread) {
+        disqusThread.innerHTML = '';
+      }
+
+      // 5. ✅ CORREÇÃO: Em vez de 'delete', definimos como 'undefined' para evitar o erro.
+      try {
+        (window as any).disqus_config = undefined;
+        (window as any).DISQUS = undefined;
+        (window as any).DISQUS_RECOMMENDATIONS = undefined;
+        (window as any).DISQUSWIDGETS = undefined; // Esta linha estava causando o erro
+      } catch (e) {
+        console.warn("Não foi possível limpar as variáveis globais do Disqus:", e);
       }
     };
   }, [url, identifier, title]); // Re-executa se a URL, ID ou título mudar
