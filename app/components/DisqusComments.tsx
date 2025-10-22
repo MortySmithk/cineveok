@@ -38,7 +38,7 @@ export default function DisqusComments({ url, identifier, title }: DisqusComment
     // Carrega o script de embed do Disqus
     const script = document.createElement('script');
     script.id = 'disqus-embed-script'; // Adiciona um ID para poder remover depois
-    script.src = 'https://cineveo-lat.disqus.com/embed.js'; // Mantenha seu shortname aqui
+    script.src = 'https://minorix.disqus.com/embed.js'; // ATUALIZADO AQUI
     script.setAttribute('data-timestamp', String(+new Date()));
     script.async = true;
     (document.head || document.body).appendChild(script);

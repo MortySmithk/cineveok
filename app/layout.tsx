@@ -112,7 +112,7 @@ export default function RootLayout({
         </ThemeProvider>
 
         {/* --- ADICIONADO SCRIPT DE CONTAGEM DO DISQUS --- */}
-        <Script id="dsq-count-scr" src="//cineveo-lat.disqus.com/count.js" async strategy="lazyOnload"></Script>
+        <Script id="dsq-count-scr" src="//minorix.disqus.com/count.js" async strategy="lazyOnload"></Script>
       </body>
     </html>
   );
