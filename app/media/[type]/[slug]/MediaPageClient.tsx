@@ -106,7 +106,7 @@ export default function MediaPageClient({ params }: { params: { type: string; sl
   const scrollPosRef = useRef(0);
   
   // CORREÇÃO: Pega a URL base do player das variáveis de ambiente
-  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://primevicio.netlify.app';
+  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.primevicio.lat';
 
   useEffect(() => {
     if (!id || !type) return;
