@@ -111,7 +111,7 @@ export default function MediaPageClient({
   const [disqusConfig, setDisqusConfig] = useState<{ url: string; identifier: string; title: string } | null>(null);
 
   const episodeListRef = useRef<HTMLDivElement>(null);
-  const scrollPosRef = useRef(0);
+  const scrollPosRef = useRef(0); // Ref para salvar a posição do scroll
 
   const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.primevicio.lat';
 
@@ -159,9 +159,6 @@ export default function MediaPageClient({
       initialSetupDoneRef.current = true; // Marca setup feito para filme
     } else if (type === 'tv') {
       
-      // <<< --- INÍCIO DA MODIFICAÇÃO --- >>>
-      
-      // Verifica primeiro os parâmetros da URL
       const seasonFromQuery = searchParams?.season ? Number(searchParams.season) : null;
       const episodeFromQuery = searchParams?.episode ? Number(searchParams.episode) : null;
 
@@ -169,21 +166,16 @@ export default function MediaPageClient({
       let initialEpisode = 1;
 
       if (seasonFromQuery && episodeFromQuery) {
-        // Prioriza os parâmetros da URL
         initialSeason = seasonFromQuery;
         initialEpisode = episodeFromQuery;
       } else {
-        // Se não houver, usa o histórico
         const progress = getContinueWatchingItem(id);
         if (progress?.progress) {
           initialSeason = progress.progress.season;
           initialEpisode = progress.progress.episode;
         }
       }
-      // <<< --- FIM DA MODIFICAÇÃO --- >>>
 
-
-      // Define a temporada e episódio iniciais AQUI
       setSelectedSeason(initialSeason);
       setActiveEpisode({ season: initialSeason, episode: initialEpisode });
       initialSetupDoneRef.current = true; // Marca setup feito para série
@@ -191,7 +183,7 @@ export default function MediaPageClient({
   }, [
       details, isLoadingDetails, id, type, user, saveHistory, 
       getContinueWatchingItem, embedBaseUrl, 
-      searchParams // <-- ADICIONADO searchParams como dependência
+      searchParams
     ]);
 
 
@@ -204,27 +196,20 @@ export default function MediaPageClient({
 
     const fetchSeasonData = async () => {
       setIsLoadingEpisodes(true);
-      setSeasonEpisodes([]); // Limpa antes de buscar
+      // setSeasonEpisodes([]); // NÃO limpe a lista aqui, para o scroll funcionar
       setStatus(`Carregando temporada ${selectedSeason}...`);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         const episodesData = seasonResponse.data.episodes;
         setSeasonEpisodes(episodesData);
 
-        // Verifica se o activeEpisode definido na etapa 2 ainda é válido para esta temporada
-        
-        // <<< --- INÍCIO DA CORREÇÃO --- >>>
-        // Adiciona o tipo (ep: Episode) para corrigir o erro de 'any' implícito
         const isCurrentActiveEpisodeValid = activeEpisode && activeEpisode.season === selectedSeason && episodesData.some((ep: Episode) => ep.episode_number === activeEpisode.episode);
-        // <<< --- FIM DA CORREÇÃO --- >>>
 
-        // Se o episódio ativo não for válido (ou não existir), define para o primeiro da lista
         if (!isCurrentActiveEpisodeValid && episodesData.length > 0) {
             setActiveEpisode({ season: selectedSeason, episode: episodesData[0].episode_number });
         } else if (episodesData.length === 0) {
             setActiveEpisode(null); // Nenhum episódio encontrado
         }
-        // Se for válido, mantém o activeEpisode que veio da etapa 2 (histórico)
 
       } catch (error) {
         console.error(`Erro ao buscar temporada ${selectedSeason}:`, error);
@@ -237,18 +222,23 @@ export default function MediaPageClient({
     };
 
     fetchSeasonData();
-  }, [selectedSeason, id, type, details, isLoadingDetails, activeEpisode]); // Depende apenas de selectedSeason (e do ID/tipo/details) - Adicionado activeEpisode
+    
+    // <<< --- CORREÇÃO AQUI (A MAIS IMPORTANTE) --- >>>
+    // A lista de dependências NÃO DEVE conter 'activeEpisode'.
+    // Isso garante que este hook SÓ rode ao trocar de TEMPORADA,
+    // e não ao trocar de EPISÓDIO.
+  }, [selectedSeason, id, type, details, isLoadingDetails]);
+    // <<< --- FIM DA CORREÇÃO --- >>>
 
 
   // --- 4. useEffect: Atualizar Player URL, Disqus e Histórico QUANDO activeEpisode muda ---
   useEffect(() => {
-    // Só roda se NÃO estiver carregando detalhes E tivermos um episódio ativo (para séries)
+    // Este hook agora é o *único* que roda (além do 1 e 2) quando se clica num episódio.
     if (isLoadingDetails || type !== 'tv' || !activeEpisode || !id || !details) return;
 
     const { season, episode } = activeEpisode;
     setActiveStreamUrl(`${embedBaseUrl}/embed/tv/${id}/${season}/${episode}`);
 
-    // Procura o episódio nos dados JÁ CARREGADOS no estado seasonEpisodes
     const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
 
     if (episodeData && typeof window !== 'undefined') {
@@ -270,17 +260,17 @@ export default function MediaPageClient({
             });
         }
     } else if (!episodeData && seasonEpisodes.length > 0 && !isLoadingEpisodes) {
-        // Fallback se o episódio ativo não for encontrado nos dados carregados (raro)
-        // Define para o primeiro episódio da temporada atual
-        setActiveEpisode({ season: selectedSeason!, episode: seasonEpisodes[0].episode_number });
+        // Fallback
+        if(selectedSeason) { 
+            setActiveEpisode({ season: selectedSeason, episode: seasonEpisodes[0].episode_number });
+        }
     } else if (seasonEpisodes.length === 0 && !isLoadingEpisodes) {
-        // Se a temporada não tem episódios
         setActiveStreamUrl('');
         setCurrentStatsId(null);
         setDisqusConfig(null);
     }
 
-  }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, embedBaseUrl, user, saveHistory, isLoadingDetails, selectedSeason]); // Adicionado selectedSeason como dependência para fallback
+  }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, embedBaseUrl, user, saveHistory, isLoadingDetails, selectedSeason]);
 
   // --- useEffects para Views, Stats e Likes/Dislikes (sem alterações) ---
   useEffect(() => {
@@ -302,7 +292,7 @@ export default function MediaPageClient({
       return;
     }
     const statsRef = doc(db, 'media_stats', currentStatsId);
-    const unsubStats = onSnapshot(statsRef, (docSnap) => { // Renomeado para docSnap para clareza
+    const unsubStats = onSnapshot(statsRef, (docSnap) => {
         const data = docSnap.data();
         setStats({ views: data?.views || 0, likes: data?.likes || 0, dislikes: data?.dislikes || 0 });
     });
@@ -314,32 +304,44 @@ export default function MediaPageClient({
           setUserLikeStatus(null);
           return;
       };
-      const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId); // Refatorado para clareza
-      const unsubUserInteraction = onSnapshot(userInteractionRef, (docSnap) => { // Renomeado para docSnap
+      const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
+      const unsubUserInteraction = onSnapshot(userInteractionRef, (docSnap) => {
           setUserLikeStatus(docSnap.data()?.status || null);
       });
       return () => unsubUserInteraction();
   }, [currentStatsId, user]);
 
-  // --- useLayoutEffect para scroll (sem alterações) ---
+
+  // <<< --- CORREÇÃO AQUI (GARANTIA) --- >>>
+  // Este hook restaura a posição do scroll.
+  // Vamos fazê-lo rodar sempre que 'isLoadingEpisodes' mudar (especificamente
+  // de true para false), garantindo que a lista esteja renderizada.
   useLayoutEffect(() => {
-    if (episodeListRef.current) {
+    // Se *não* estiver carregando, restaure o scroll.
+    if (episodeListRef.current && !isLoadingEpisodes) {
       episodeListRef.current.scrollTop = scrollPosRef.current;
     }
-  });
+    // Esta dependência é crucial.
+  }, [isLoadingEpisodes]); 
+  // <<< --- FIM DA CORREÇÃO --- >>>
 
-  // --- Funções de manipulação (sem alterações na lógica principal, apenas formatação) ---
+
+  // --- Funções de manipulação (sem alterações) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
-    if (isLoadingEpisodes) return; // Não permite clicar enquanto carrega
+    if (isLoadingEpisodes) return;
+    
+    // Salva a posição ATUAL do scroll ANTES de atualizar o estado
     if (episodeListRef.current) {
       scrollPosRef.current = episodeListRef.current.scrollTop;
     }
+    
+    // Atualiza o episódio ativo (Isso vai disparar o useEffect #4, mas NÃO o #3)
     setActiveEpisode({ season, episode: episodeNumber });
   };
 
   const handleSeasonChange = (newSeason: number) => {
-      if (selectedSeason === newSeason || isLoadingEpisodes) return; // Não faz nada se for a mesma temporada ou se estiver carregando
-      scrollPosRef.current = 0;
+      if (selectedSeason === newSeason || isLoadingEpisodes) return;
+      scrollPosRef.current = 0; // Reseta o scroll para o topo ao mudar de temporada
       setSelectedSeason(newSeason); // Isso vai disparar o useEffect 3 para buscar episódios
       setActiveEpisode(null); // Reseta o episódio ativo ao mudar de temporada manualmente
   };
@@ -355,7 +357,6 @@ export default function MediaPageClient({
       if (!details) return 'Carregando título...';
       if (type === 'movie') return details.title || 'Filme';
       const currentEpisodeData = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
-      // Mostra o título da série se o episódio específico ainda não carregou
       return currentEpisodeData && activeEpisode ? `${currentEpisodeData.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details.title || 'Série';
   }
 
@@ -483,8 +484,14 @@ export default function MediaPageClient({
             {!isLoadingEpisodes && <p className='episode-count-info'>({seasonEpisodes.length} Eps)</p>}
         </div>
         <div className="episode-list-desktop desktop-only-layout" ref={episodeListRef}>
+            {/* Agora, o 'isLoading' apenas mostra o spinner, mas não remove a lista de episódios
+                Isso só será visível ao trocar de temporada, não ao trocar de episódio.
+            */}
             {isLoadingEpisodes && <div className='stream-loader'><div className='spinner'></div> <span>{status}</span></div>}
+            
+            {/* A lista de episódios só é renderizada se NÃO estivermos carregando E tivermos episódios */}
             {!isLoadingEpisodes && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason!, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
+            
             {!isLoadingEpisodes && seasonEpisodes.length === 0 && <p className="text-center text-gray-500 py-4">Nenhum episódio encontrado para esta temporada.</p>}
         </div>
         <div className="mobile-only-layout">
