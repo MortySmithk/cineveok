@@ -4,14 +4,11 @@
 import { useState, useEffect, memo, useRef, useLayoutEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
-// Importa 'increment'
 import { doc, runTransaction, onSnapshot, increment, getDoc } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
 import { db } from '@/app/components/firebase';
 
-import LikeIcon from '@/app/components/icons/LikeIcon';
-import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import { useWatchHistory } from '@/app/hooks/useWatchHistory';
 import AudioVisualizer from '@/app/components/AudioVisualizer';
 import PlayIcon from '@/app/components/icons/PlayIcon';
@@ -19,7 +16,7 @@ import StarIcon from '@/app/components/icons/StarIcon';
 import ClockIcon from '@/app/components/icons/ClockIcon';
 import DisqusComments from '@/app/components/DisqusComments';
 
-// --- Interfaces ---
+// --- Interfaces (Sem alteração) ---
 interface Genre { id: number; name: string; }
 interface Season { id: number; name: string; season_number: number; episode_count: number; }
 interface Episode {
@@ -63,13 +60,12 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
           title={`CineVEO Player - ${title}`}
           allow="autoplay; encrypted-media"
           allowFullScreen
-          referrerPolicy="origin" // Mudado para 'origin' pode ajudar em alguns embeds
+          referrerPolicy="origin" 
           loading="lazy"
         ></iframe>
       ) : (
         <div className="player-loader">
           <div className="spinner"></div>
-          {/* Mensagem dinâmica */}
           <span>{title === 'Filme' ? 'Carregando filme...' : 'Selecione um episódio para assistir.'}</span>
         </div>
       )}
@@ -78,13 +74,12 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
 });
 
 
-// MODIFICAÇÃO AQUI: Aceita searchParams
 export default function MediaPageClient({ 
   params,
   searchParams
 }: { 
   params: { type: string; slug: string };
-  searchParams?: { [key: string]: string | string[] | undefined }; // <-- ADICIONADO
+  searchParams?: { [key: string]: string | string[] | undefined }; 
 }) {
   const type = params.type as 'movie' | 'tv';
   const slug = params.slug as string;
@@ -99,28 +94,28 @@ export default function MediaPageClient({
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
   const [status, setStatus] = useState('Carregando...');
   const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]);
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null); // Começa como null
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null); 
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
 
   const [currentStatsId, setCurrentStatsId] = useState<string | null>(null);
-  const initialSetupDoneRef = useRef(false); // Ref para controlar setup inicial
+  const initialSetupDoneRef = useRef(false); 
 
-  const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
-  const [userLikeStatus, setUserLikeStatus] = useState<'liked' | 'disliked' | null>(null);
+  const [stats, setStats] = useState({ views: 0 });
+  
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
   const [disqusConfig, setDisqusConfig] = useState<{ url: string; identifier: string; title: string } | null>(null);
 
   const episodeListRef = useRef<HTMLDivElement>(null);
-  const scrollPosRef = useRef(0); // Ref para salvar a posição do scroll
+  const scrollPosRef = useRef(0); 
 
   const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.primevicio.lat';
 
-  // --- 1. useEffect: Buscar detalhes da mídia (TMDB E FIRESTORE) ---
+  // --- 1. useEffect: Buscar detalhes da mídia (Sem alteração) ---
   useEffect(() => {
     if (!id || !type) return;
-    initialSetupDoneRef.current = false; // Reseta o setup ao buscar novos detalhes
+    initialSetupDoneRef.current = false; 
 
     const fetchData = async () => {
       setIsLoadingDetails(true);
@@ -129,7 +124,7 @@ export default function MediaPageClient({
       setFirestoreMediaData(null); 
       setSeasonEpisodes([]);
       setActiveEpisode(null);
-      setSelectedSeason(null); // Reseta para null
+      setSelectedSeason(null); 
       setActiveStreamUrl('');
       setStatus('Carregando detalhes...');
       try {
@@ -160,7 +155,7 @@ export default function MediaPageClient({
     fetchData();
   }, [id, type]);
 
-  // --- 2. useEffect: Configuração inicial APÓS detalhes carregados ---
+  // --- 2. useEffect: Configuração inicial (Sem alteração) ---
   useEffect(() => {
     if (isLoadingDetails || !details || initialSetupDoneRef.current || !id) return;
 
@@ -173,7 +168,7 @@ export default function MediaPageClient({
       if (typeof window !== 'undefined') {
         setDisqusConfig({ url: window.location.href, identifier: `movie-${id}`, title: details.title });
       }
-      initialSetupDoneRef.current = true; // Marca setup feito para filme
+      initialSetupDoneRef.current = true; 
     } else if (type === 'tv') {
       
       const seasonFromQuery = searchParams?.season ? Number(searchParams.season) : null;
@@ -195,7 +190,7 @@ export default function MediaPageClient({
 
       setSelectedSeason(initialSeason);
       setActiveEpisode({ season: initialSeason, episode: initialEpisode });
-      initialSetupDoneRef.current = true; // Marca setup feito para série
+      initialSetupDoneRef.current = true; 
     }
   }, [
       details, isLoadingDetails, id, type, user, saveHistory, 
@@ -204,7 +199,7 @@ export default function MediaPageClient({
     ]);
 
 
-  // --- 3. useEffect: Buscar episódios QUANDO selectedSeason é definido (e não é null) ---
+  // --- 3. useEffect: Buscar episódios (Sem alteração) ---
   useEffect(() => {
     if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null || isLoadingDetails || !firestoreMediaData) {
       return;
@@ -234,7 +229,7 @@ export default function MediaPageClient({
         if (!isCurrentActiveEpisodeValid && episodesData.length > 0) {
             setActiveEpisode({ season: selectedSeason, episode: episodesData[0].episode_number });
         } else if (episodesData.length === 0) {
-            setActiveEpisode(null); // Nenhum episódio encontrado
+            setActiveEpisode(null); 
         }
 
       } catch (error) {
@@ -252,7 +247,7 @@ export default function MediaPageClient({
   }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData]);
 
 
-  // --- 4. useEffect: Atualizar Player URL, Disqus e Histórico QUANDO activeEpisode muda ---
+  // --- 4. useEffect: Atualizar Player URL, etc (Sem alteração) ---
   useEffect(() => {
     if (isLoadingDetails || type !== 'tv' || !activeEpisode || !id || !details) return;
 
@@ -280,7 +275,6 @@ export default function MediaPageClient({
             });
         }
     } else if (!episodeData && seasonEpisodes.length > 0 && !isLoadingEpisodes) {
-        // Fallback
         if(selectedSeason) { 
             setActiveEpisode({ season: selectedSeason, episode: seasonEpisodes[0].episode_number });
         }
@@ -292,45 +286,33 @@ export default function MediaPageClient({
 
   }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, embedBaseUrl, user, saveHistory, isLoadingDetails, selectedSeason]);
 
-  // --- useEffects para Views, Stats e Likes/Dislikes (MODIFICADO O DE VIEWS) ---
+  // --- useEffect para Views (Sem alteração, está CORRETO) ---
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
     runTransaction(db, async (transaction) => {
         const statsDoc = await transaction.get(statsRef);
         if (!statsDoc.exists()) {
-            transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
+            transaction.set(statsRef, { views: 1 });
         } else {
             transaction.update(statsRef, { views: increment(1) });
         }
     }).catch(console.error); 
   }, [currentStatsId]);
 
+  // --- useEffect para Stats (Sem alteração) ---
   useEffect(() => {
     if (!currentStatsId) {
-      setStats({ views: 0, likes: 0, dislikes: 0 });
+      setStats({ views: 0 });
       return;
     }
     const statsRef = doc(db, 'media_stats', currentStatsId);
     const unsubStats = onSnapshot(statsRef, (docSnap) => {
         const data = docSnap.data();
-        setStats({ views: data?.views || 0, likes: data?.likes || 0, dislikes: data?.dislikes || 0 });
+        setStats({ views: data?.views || 0 });
     });
     return () => unsubStats();
   }, [currentStatsId]);
-
-  useEffect(() => {
-      if (!currentStatsId || !user) {
-          setUserLikeStatus(null);
-          return;
-      };
-      const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
-      const unsubUserInteraction = onSnapshot(userInteractionRef, (docSnap) => {
-          setUserLikeStatus(docSnap.data()?.status || null);
-      });
-      return () => unsubUserInteraction();
-  }, [currentStatsId, user]);
-
 
   useLayoutEffect(() => {
     if (episodeListRef.current && !isLoadingEpisodes) {
@@ -339,7 +321,7 @@ export default function MediaPageClient({
   }, [isLoadingEpisodes]); 
 
 
-  // --- Funções de manipulação (MODIFICADA handleLikeDislike) ---
+  // --- Funções de manipulação (Sem alteração) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     if (isLoadingEpisodes) return;
     if (episodeListRef.current) {
@@ -369,88 +351,6 @@ export default function MediaPageClient({
       return currentEpisodeData && activeEpisode ? `${currentEpisodeData.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details.title || 'Série';
   }
 
-  // =================================================================
-  // --- INÍCIO DA CORREÇÃO DE LIKE/DISLIKE (USANDO INCREMENT) ---
-  // =================================================================
-  const handleLikeDislike = async (action: 'like' | 'dislike') => {
-    if (!user) { alert("Você precisa estar logado para avaliar."); return; }
-    if (!currentStatsId) return;
-
-    const statsRef = doc(db, 'media_stats', currentStatsId);
-    const userInteractionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
-
-    try {
-        await runTransaction(db, async (transaction) => {
-            // 1. Lê SOMENTE o documento de interação do usuário
-            const userInteractionDoc = await transaction.get(userInteractionRef);
-            const currentStatus = userInteractionDoc.data()?.status;
-
-            // 2. Prepara os incrementos atômicos
-            let likeIncrement = 0;
-            let dislikeIncrement = 0;
-            let newUserStatus: 'liked' | 'disliked' | null = null;
-
-            if (action === 'like') {
-                if (currentStatus === 'liked') {
-                    // Clicou 'like' quando já estava 'liked' -> UNLIKE
-                    likeIncrement = -1;
-                    newUserStatus = null;
-                } else {
-                    // Clicou 'like' quando era 'disliked' ou 'null' -> LIKE
-                    likeIncrement = 1;
-                    if (currentStatus === 'disliked') {
-                        dislikeIncrement = -1; // Remove o dislike anterior
-                    }
-                    newUserStatus = 'liked';
-                }
-            } else { // action === 'dislike'
-                if (currentStatus === 'disliked') {
-                    // Clicou 'dislike' quando já estava 'disliked' -> UNDISLIKE
-                    dislikeIncrement = -1;
-                    newUserStatus = null;
-                } else {
-                    // Clicou 'dislike' quando era 'liked' ou 'null' -> DISLIKE
-                    dislikeIncrement = 1;
-                    if (currentStatus === 'liked') {
-                        likeIncrement = -1; // Remove o like anterior
-                    }
-                    newUserStatus = 'disliked';
-                }
-            }
-
-            // 3. Prepara o objeto de atualização para os stats
-            //    Isso garante que SÓ os campos de like/dislike sejam
-            //    atualizados, sem tocar no 'views'.
-            const statsUpdateData: { likes?: any, dislikes?: any } = {};
-            if (likeIncrement !== 0) {
-                statsUpdateData.likes = increment(likeIncrement);
-            }
-            if (dislikeIncrement !== 0) {
-                statsUpdateData.dislikes = increment(dislikeIncrement);
-            }
-            
-            // 4. Atualiza o documento de stats usando os incrementos atômicos
-            //    Usar set com merge: true é seguro. Ele aplicará os incrementos
-            //    mesmo se o documento de views ainda estiver sendo escrito.
-            transaction.set(statsRef, statsUpdateData, { merge: true });
-
-            // 5. Atualiza o documento de interação do usuário
-            if (newUserStatus) {
-                transaction.set(userInteractionRef, { status: newUserStatus });
-            } else if (userInteractionDoc.exists()) {
-                transaction.delete(userInteractionRef);
-            }
-        });
-    } catch (error) {
-        console.error("Falha na transação de like/dislike: ", error);
-        alert("Ocorreu um erro ao processar sua avaliação. Tente novamente.");
-    }
-  };
-  // =================================================================
-  // --- FIM DA CORREÇÃO DE LIKE/DISLIKE ---
-  // =================================================================
-
-
   // --- Renderização condicional de loading ---
   if (isLoadingDetails) {
     return (<div className="loading-container"><Image src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" alt="Carregando..." width={120} height={120} className="loading-logo" priority style={{ objectFit: 'contain' }} /></div>);
@@ -459,19 +359,26 @@ export default function MediaPageClient({
     return (<div className="loading-container"><p>{status}</p></div>);
   }
 
-  // --- Componentes internos (sem alterações) ---
+  // =================================================================
+  // --- INÍCIO DA CORREÇÃO (REMOVER CONTADOR DUPLICADO) ---
+  // =================================================================
+  // Este é o InfoBox que aparece na lateral do desktop.
+  // Eu removi o contador de visualizações daqui.
   const InfoBox = () => {
     const currentSynopsis = getSynopsis();
     return (
         <div className="synopsis-box desktop-only-layout" style={{ marginTop: '1.5rem' }}>
           <div className="info-box-header" style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-              <strong>{formatNumber(stats.views)} visualizações</strong>
+              {/* CONTADOR DE VISUALIZAÇÕES REMOVIDO DESTA LINHA */}
               <span>{(details.release_date || details.first_air_date)?.substring(0, 4)}</span>
           </div>
           <p style={{color: 'var(--text-secondary)', lineHeight: 1.7}}>{currentSynopsis}</p>
         </div>
     );
   };
+  // =================================================================
+  // --- FIM DA CORREÇÃO ---
+  // =================================================================
 
    const InfoBoxMobile = () => {
     const currentSynopsis = getSynopsis();
@@ -499,26 +406,25 @@ export default function MediaPageClient({
     );
   };
 
+  // Esta é a seção de interações que fica abaixo do player.
+  // O contador de visualizações AQUI foi mantido.
   const InteractionsSection = () => (
     <div className="details-interactions-section">
       <h2 className="episode-title">{getEpisodeTitle()}</h2>
 
       <div className="media-actions-bar">
+        {/* Este é o contador que você quer manter (Desktop) */}
         <span className="views-info desktop-only-layout">{formatNumber(stats.views)} visualizações</span>
-        <div className="like-dislike-group">
-          <button onClick={() => handleLikeDislike('like')} className={`action-btn focusable ${userLikeStatus === 'liked' ? 'active' : ''}`}>
-              <LikeIcon isActive={userLikeStatus === 'liked'} width={28} height={28} />
-              <span>{formatNumber(stats.likes)}</span>
-          </button>
-          <button onClick={() => handleLikeDislike('dislike')} className={`action-btn focusable ${userLikeStatus === 'disliked' ? 'active' : ''}`}>
-              <DislikeIcon isActive={userLikeStatus === 'disliked'} width={28} height={28} />
-               <span>{formatNumber(stats.dislikes)}</span>
-          </button>
+        
+        {/* Este é o contador que você quer manter (Mobile) */}
+        <div className="like-dislike-group mobile-only-layout" style={{ backgroundColor: 'transparent', paddingLeft: 0 }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: '700' }}>
+              {formatNumber(stats.views)} Visualizações
+            </span>
         </div>
       </div>
 
-       {/* Movido InfoBoxMobile para dentro de InteractionsSection no mobile */}
-      <InfoBoxMobile />
+       <InfoBoxMobile />
     </div>
   );
 
@@ -566,7 +472,7 @@ export default function MediaPageClient({
     </div>
   );
 
-  // --- Renderização principal ---
+  // --- Renderização principal (Sem alteração) ---
   return (
     <>
       <div className="media-page-layout">
