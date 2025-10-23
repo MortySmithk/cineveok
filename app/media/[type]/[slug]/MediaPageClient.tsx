@@ -4,7 +4,7 @@
 import { useState, useEffect, memo, useRef, useLayoutEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
-// *** ALTERAÇÃO AQUI: Importado getDoc, doc ***
+// Importa 'increment'
 import { doc, runTransaction, onSnapshot, increment, getDoc } from 'firebase/firestore';
 
 import { useAuth } from '@/app/components/AuthProvider';
@@ -94,7 +94,6 @@ export default function MediaPageClient({
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
-  // *** ALTERAÇÃO AQUI: Adicionado estado para dados do Firestore ***
   const [firestoreMediaData, setFirestoreMediaData] = useState<any>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
@@ -127,7 +126,7 @@ export default function MediaPageClient({
       setIsLoadingDetails(true);
       setIsLoadingEpisodes(false);
       setDetails(null);
-      setFirestoreMediaData(null); // *** ALTERAÇÃO AQUI: Reseta dados do Firestore ***
+      setFirestoreMediaData(null); 
       setSeasonEpisodes([]);
       setActiveEpisode(null);
       setSelectedSeason(null); // Reseta para null
@@ -137,18 +136,16 @@ export default function MediaPageClient({
         const detailsResponse = await axios.get(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&language=pt-BR&append_to_response=credits,external_ids`);
         const tmdbData = detailsResponse.data;
 
-        // *** ALTERAÇÃO AQUI: Buscar dados do Firestore ***
         const firestoreDocRef = doc(db, "media", id);
         const firestoreDocSnap = await getDoc(firestoreDocRef);
         const firestoreData = firestoreDocSnap.exists() ? firestoreDocSnap.data() : {};
-        setFirestoreMediaData(firestoreData); // Salva dados do Firestore no estado
+        setFirestoreMediaData(firestoreData); 
 
-        // *** ALTERAÇÃO AQUI: Prioriza o título do Firestore ***
         const finalTitle = firestoreData.title || tmdbData.title || tmdbData.name;
         
         setDetails({ 
           ...tmdbData, 
-          title: finalTitle, // Usa o título final
+          title: finalTitle, 
           release_date: tmdbData.release_date || tmdbData.first_air_date, 
           imdb_id: tmdbData.external_ids?.imdb_id 
         });
@@ -209,33 +206,28 @@ export default function MediaPageClient({
 
   // --- 3. useEffect: Buscar episódios QUANDO selectedSeason é definido (e não é null) ---
   useEffect(() => {
-    // Só roda para séries, se tiver ID e detalhes, e se selectedSeason tiver um valor
-    // *** ALTERAÇÃO AQUI: Adicionado 'firestoreMediaData' na condição ***
     if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null || isLoadingDetails || !firestoreMediaData) {
       return;
     }
 
     const fetchSeasonData = async () => {
       setIsLoadingEpisodes(true);
-      // setSeasonEpisodes([]); // NÃO limpe a lista aqui, para o scroll funcionar
       setStatus(`Carregando temporada ${selectedSeason}...`);
       try {
         const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
         const tmdbEpisodesData = seasonResponse.data.episodes;
 
-        // *** ALTERAÇÃO AQUI: Buscar dados de episódios do Firestore ***
         const firestoreSeasonData = firestoreMediaData?.seasons?.[selectedSeason];
             
-        // *** ALTERAÇÃO AQUI: Mesclar dados do TMDB com os do Firestore (priorizando nomes do Firestore) ***
         const episodesData = tmdbEpisodesData.map((tmdbEp: Episode) => {
           const firestoreEp = firestoreSeasonData?.episodes?.find((fe: any) => fe.episode_number === tmdbEp.episode_number);
           return {
             ...tmdbEp,
-            name: firestoreEp?.name || tmdbEp.name, // Prioritiza nome do Firestore
+            name: firestoreEp?.name || tmdbEp.name, 
           };
         });
 
-        setSeasonEpisodes(episodesData); // Salva os dados mesclados
+        setSeasonEpisodes(episodesData); 
 
         const isCurrentActiveEpisodeValid = activeEpisode && activeEpisode.season === selectedSeason && episodesData.some((ep: Episode) => ep.episode_number === activeEpisode.episode);
 
@@ -257,14 +249,11 @@ export default function MediaPageClient({
 
     fetchSeasonData();
     
-    // *** ALTERAÇÃO AQUI: Adicionado 'firestoreMediaData' à lista de dependências ***
   }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData]);
-    // <<< --- FIM DA CORREÇÃO --- >>>
 
 
   // --- 4. useEffect: Atualizar Player URL, Disqus e Histórico QUANDO activeEpisode muda ---
   useEffect(() => {
-    // Este hook agora é o *único* que roda (além do 1 e 2) quando se clica num episódio.
     if (isLoadingDetails || type !== 'tv' || !activeEpisode || !id || !details) return;
 
     const { season, episode } = activeEpisode;
@@ -274,7 +263,6 @@ export default function MediaPageClient({
 
     if (episodeData && typeof window !== 'undefined') {
         const identifier = `tv-${id}-s${season}-e${episode}`;
-        // *** ALTERAÇÃO AQUI: O título já vem mesclado de 'seasonEpisodes' ***
         const title = `${details.title} - T${season} E${episode}`;
         const url = window.location.href.split('?')[0] + `?season=${season}&episode=${episode}`;
         const statsId = episodeData.id.toString();
@@ -286,7 +274,7 @@ export default function MediaPageClient({
             saveHistory({
                 mediaType: 'tv',
                 tmdbId: id,
-                title: details.title, // Salva o título principal da série
+                title: details.title, 
                 poster_path: details.poster_path,
                 progress: { season, episode }
             });
@@ -304,7 +292,7 @@ export default function MediaPageClient({
 
   }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, embedBaseUrl, user, saveHistory, isLoadingDetails, selectedSeason]);
 
-  // --- useEffects para Views, Stats e Likes/Dislikes (sem alterações) ---
+  // --- useEffects para Views, Stats e Likes/Dislikes (MODIFICADO O DE VIEWS) ---
   useEffect(() => {
     if (!currentStatsId) return;
     const statsRef = doc(db, 'media_stats', currentStatsId);
@@ -315,7 +303,7 @@ export default function MediaPageClient({
         } else {
             transaction.update(statsRef, { views: increment(1) });
         }
-    }).catch(console.error);
+    }).catch(console.error); 
   }, [currentStatsId]);
 
   useEffect(() => {
@@ -344,44 +332,32 @@ export default function MediaPageClient({
   }, [currentStatsId, user]);
 
 
-  // <<< --- CORREÇÃO AQUI (GARANTIA) --- >>>
-  // Este hook restaura a posição do scroll.
-  // Vamos fazê-lo rodar sempre que 'isLoadingEpisodes' mudar (especificamente
-  // de true para false), garantindo que a lista esteja renderizada.
   useLayoutEffect(() => {
-    // Se *não* estiver carregando, restaure o scroll.
     if (episodeListRef.current && !isLoadingEpisodes) {
       episodeListRef.current.scrollTop = scrollPosRef.current;
     }
-    // Esta dependência é crucial.
   }, [isLoadingEpisodes]); 
-  // <<< --- FIM DA CORREÇÃO --- >>>
 
 
-  // --- Funções de manipulação (sem alterações) ---
+  // --- Funções de manipulação (MODIFICADA handleLikeDislike) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     if (isLoadingEpisodes) return;
-    
-    // Salva a posição ATUAL do scroll ANTES de atualizar o estado
     if (episodeListRef.current) {
       scrollPosRef.current = episodeListRef.current.scrollTop;
     }
-    
-    // Atualiza o episódio ativo (Isso vai disparar o useEffect #4, mas NÃO o #3)
     setActiveEpisode({ season, episode: episodeNumber });
   };
 
   const handleSeasonChange = (newSeason: number) => {
       if (selectedSeason === newSeason || isLoadingEpisodes) return;
-      scrollPosRef.current = 0; // Reseta o scroll para o topo ao mudar de temporada
-      setSelectedSeason(newSeason); // Isso vai disparar o useEffect 3 para buscar episódios
-      setActiveEpisode(null); // Reseta o episódio ativo ao mudar de temporada manualmente
+      scrollPosRef.current = 0; 
+      setSelectedSeason(newSeason); 
+      setActiveEpisode(null); 
   };
 
   const getSynopsis = (): string => {
       if (!details) return 'Carregando sinopse...';
       if (type === 'movie') return details.overview || 'Sinopse não disponível.';
-      // *** ALTERAÇÃO AQUI: 'seasonEpisodes' já contém o nome correto ***
       const currentEpisodeData = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisodeData?.overview || details.overview || 'Sinopse não disponível.';
   };
@@ -389,11 +365,13 @@ export default function MediaPageClient({
   const getEpisodeTitle = (): string => {
       if (!details) return 'Carregando título...';
       if (type === 'movie') return details.title || 'Filme';
-      // *** ALTERAÇÃO AQUI: 'seasonEpisodes' já contém o nome correto ***
       const currentEpisodeData = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisodeData && activeEpisode ? `${currentEpisodeData.name} - T${activeEpisode.season} E${activeEpisode.episode}` : details.title || 'Série';
   }
 
+  // =================================================================
+  // --- INÍCIO DA CORREÇÃO DE LIKE/DISLIKE (USANDO INCREMENT) ---
+  // =================================================================
   const handleLikeDislike = async (action: 'like' | 'dislike') => {
     if (!user) { alert("Você precisa estar logado para avaliar."); return; }
     if (!currentStatsId) return;
@@ -403,32 +381,75 @@ export default function MediaPageClient({
 
     try {
         await runTransaction(db, async (transaction) => {
-            const statsDoc = await transaction.get(statsRef);
+            // 1. Lê SOMENTE o documento de interação do usuário
             const userInteractionDoc = await transaction.get(userInteractionRef);
-            const currentStats = statsDoc.data() || { likes: 0, dislikes: 0, views: 0 };
             const currentStatus = userInteractionDoc.data()?.status;
-            let newLikes = currentStats.likes;
-            let newDislikes = currentStats.dislikes;
+
+            // 2. Prepara os incrementos atômicos
+            let likeIncrement = 0;
+            let dislikeIncrement = 0;
             let newUserStatus: 'liked' | 'disliked' | null = null;
 
             if (action === 'like') {
-                if (currentStatus === 'liked') { newLikes -= 1; newUserStatus = null; }
-                else { newLikes += 1; if (currentStatus === 'disliked') newDislikes -= 1; newUserStatus = 'liked'; }
-            } else {
-                if (currentStatus === 'disliked') { newDislikes -= 1; newUserStatus = null; }
-                else { newDislikes += 1; if (currentStatus === 'liked') newLikes -= 1; newUserStatus = 'disliked'; }
+                if (currentStatus === 'liked') {
+                    // Clicou 'like' quando já estava 'liked' -> UNLIKE
+                    likeIncrement = -1;
+                    newUserStatus = null;
+                } else {
+                    // Clicou 'like' quando era 'disliked' ou 'null' -> LIKE
+                    likeIncrement = 1;
+                    if (currentStatus === 'disliked') {
+                        dislikeIncrement = -1; // Remove o dislike anterior
+                    }
+                    newUserStatus = 'liked';
+                }
+            } else { // action === 'dislike'
+                if (currentStatus === 'disliked') {
+                    // Clicou 'dislike' quando já estava 'disliked' -> UNDISLIKE
+                    dislikeIncrement = -1;
+                    newUserStatus = null;
+                } else {
+                    // Clicou 'dislike' quando era 'liked' ou 'null' -> DISLIKE
+                    dislikeIncrement = 1;
+                    if (currentStatus === 'liked') {
+                        likeIncrement = -1; // Remove o like anterior
+                    }
+                    newUserStatus = 'disliked';
+                }
             }
 
-            transaction.set(statsRef, { ...currentStats, likes: Math.max(0, newLikes), dislikes: Math.max(0, newDislikes) }, { merge: true });
+            // 3. Prepara o objeto de atualização para os stats
+            //    Isso garante que SÓ os campos de like/dislike sejam
+            //    atualizados, sem tocar no 'views'.
+            const statsUpdateData: { likes?: any, dislikes?: any } = {};
+            if (likeIncrement !== 0) {
+                statsUpdateData.likes = increment(likeIncrement);
+            }
+            if (dislikeIncrement !== 0) {
+                statsUpdateData.dislikes = increment(dislikeIncrement);
+            }
+            
+            // 4. Atualiza o documento de stats usando os incrementos atômicos
+            //    Usar set com merge: true é seguro. Ele aplicará os incrementos
+            //    mesmo se o documento de views ainda estiver sendo escrito.
+            transaction.set(statsRef, statsUpdateData, { merge: true });
 
-            if (newUserStatus) { transaction.set(userInteractionRef, { status: newUserStatus }); }
-            else if (userInteractionDoc.exists()) { transaction.delete(userInteractionRef); }
+            // 5. Atualiza o documento de interação do usuário
+            if (newUserStatus) {
+                transaction.set(userInteractionRef, { status: newUserStatus });
+            } else if (userInteractionDoc.exists()) {
+                transaction.delete(userInteractionRef);
+            }
         });
     } catch (error) {
         console.error("Falha na transação de like/dislike: ", error);
         alert("Ocorreu um erro ao processar sua avaliação. Tente novamente.");
     }
   };
+  // =================================================================
+  // --- FIM DA CORREÇÃO DE LIKE/DISLIKE ---
+  // =================================================================
+
 
   // --- Renderização condicional de loading ---
   if (isLoadingDetails) {
@@ -480,7 +501,6 @@ export default function MediaPageClient({
 
   const InteractionsSection = () => (
     <div className="details-interactions-section">
-      {/* *** ALTERAÇÃO AQUI: Esta função agora retorna o nome correto *** */}
       <h2 className="episode-title">{getEpisodeTitle()}</h2>
 
       <div className="media-actions-bar">
@@ -505,27 +525,19 @@ export default function MediaPageClient({
   const EpisodeSelector = () => (
     <div className="episodes-list-wrapper">
         <div className="episodes-header">
-            {/* O valor do select agora é `selectedSeason ?? ''` para lidar com o estado inicial null */}
             <select
                 className="season-selector focusable"
                 value={selectedSeason ?? ''}
                 onChange={(e) => handleSeasonChange(Number(e.target.value))}
-                disabled={isLoadingEpisodes} // Desabilita enquanto carrega
+                disabled={isLoadingEpisodes} 
             >
-                {/* Garante que só mostra temporadas válidas */}
                 {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
             </select>
-            {/* Mostra contagem apenas se não estiver carregando episódios */}
             {!isLoadingEpisodes && <p className='episode-count-info'>({seasonEpisodes.length} Eps)</p>}
         </div>
         <div className="episode-list-desktop desktop-only-layout" ref={episodeListRef}>
-            {/* Agora, o 'isLoading' apenas mostra o spinner, mas não remove a lista de episódios
-                Isso só será visível ao trocar de temporada, não ao trocar de episódio.
-            */}
             {isLoadingEpisodes && <div className='stream-loader'><div className='spinner'></div> <span>{status}</span></div>}
             
-            {/* A lista de episódios só é renderizada se NÃO estivermos carregando E tivermos episódios */}
-            {/* *** ALTERAÇÃO AQUI: ep.name agora vem dos dados mesclados *** */}
             {!isLoadingEpisodes && seasonEpisodes.map(ep => (<button key={ep.id} className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`} onClick={() => handleEpisodeClick(selectedSeason!, ep.episode_number)}><div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div><div className="episode-item-thumbnail">{ep.still_path ? (<Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />) : (<div className='thumbnail-placeholder-small'></div>)}</div><div className="episode-item-info"><span className="episode-item-title">{ep.name}</span><p className="episode-item-overview">{ep.overview}</p></div></button>))}
             
             {!isLoadingEpisodes && seasonEpisodes.length === 0 && <p className="text-center text-gray-500 py-4">Nenhum episódio encontrado para esta temporada.</p>}
@@ -548,7 +560,6 @@ export default function MediaPageClient({
     <div className="episodes-list-wrapper desktop-only-layout">
         <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
             <div className="episode-item-thumbnail"><Image draggable="false" src={`https://image.tmdb.org/t/p/w300${details.poster_path}`} alt={`Poster de ${details.title}`} width={120} height={180} style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }} /></div>
-            {/* *** ALTERAÇÃO AQUI: details.title já é o título mesclado *** */}
             <div className="episode-item-info"><span className="episode-item-title">{details.title}</span><p className="episode-item-overview">Filme Completo</p></div>
             <div className="visualizer-container"><AudioVisualizer /></div>
         </div>
@@ -612,14 +623,12 @@ export default function MediaPageClient({
                     <Image draggable="false" src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'} alt={details.title} width={300} height={450} style={{ width: '100%', height: 'auto' }}/>
                   </div>
                    <div className="poster-info-bar">
-                    {/* *** ALTERAÇÃO AQUI: details.title já é o título mesclado *** */}
                     <span className="poster-info-title">{details.title}</span>
                     <span className="poster-info-rating"><StarIcon /> {details.vote_average.toFixed(1)}</span>
                   </div>
               </div>
               <div className="details-info">
                  <div className='desktop-only-layout'>
-                    {/* *** ALTERAÇÃO AQUI: details.title já é o título mesclado *** */}
                     <h1>{details.title}</h1>
                     <div className="details-meta-bar">
                       <span className="meta-item"><StarIcon /> {details.vote_average.toFixed(1)}</span>
