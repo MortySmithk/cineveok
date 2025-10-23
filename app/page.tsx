@@ -56,15 +56,48 @@ export default function HomePage() {
     const fetchMedia = async () => {
       setIsLoading(true);
       try {
-        const trendingPromise = axios.get(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR`);
+        // --- INÍCIO DA MODIFICAÇÃO: Requisições para o SLIDER ---
+        // 5 Filmes recém-lançados de 2025
+        const sliderMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR&primary_release_year=2025`);
+        // 5 Séries populares lançadas em 2025
+        const sliderSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR&first_air_date_year=2025`);
+        // --- FIM DA MODIFICAÇÃO ---
+
+        // Requisições para os carrosséis inferiores (mantidas como estavam)
         const latestMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR`);
         const popularSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
         
-        const [trendingResponse, latestMoviesResponse, popularSeriesResponse] = await Promise.all([trendingPromise, latestMoviesPromise, popularSeriesPromise]);
+        const [
+            sliderMoviesResponse, 
+            sliderSeriesResponse, 
+            latestMoviesResponse, 
+            popularSeriesResponse
+        ] = await Promise.all([
+            sliderMoviesPromise, 
+            sliderSeriesPromise, 
+            latestMoviesPromise, 
+            popularSeriesPromise
+        ]);
 
-        setTrending(trendingResponse.data.results.filter((item: Media) => item.title || item.name).slice(0, 5));
+        // --- INÍCIO DA MODIFICAÇÃO: Processamento do SLIDER ---
+        const sliderMovies = sliderMoviesResponse.data.results
+            .filter((item: Media) => (item.title || item.name) && item.backdrop_path) // Garante que tem nome e background
+            .slice(0, 5)
+            .map((item: Media) => ({ ...item, media_type: 'movie' })); // Adiciona media_type
+            
+        const sliderSeries = sliderSeriesResponse.data.results
+            .filter((item: Media) => (item.title || item.name) && item.backdrop_path) // Garante que tem nome e background
+            .slice(0, 5)
+            .map((item: Media) => ({ ...item, media_type: 'tv' })); // Adiciona media_type
+
+        // Combina os 5 filmes e 5 séries (total de 10) para o slider
+        setTrending([...sliderMovies, ...sliderSeries]); 
+        // --- FIM DA MODIFICAÇÃO ---
+
+        // Processamento para os carrosséis inferiores (mantido como estava)
         setLatestMovies(latestMoviesResponse.data.results.filter((item: Media) => item.title || item.name));
         setPopularSeries(popularSeriesResponse.data.results.filter((item: Media) => item.title || item.name));
+      
       } catch (error) { console.error("Erro ao buscar mídia:", error);
       } finally { setIsLoading(false); }
     };

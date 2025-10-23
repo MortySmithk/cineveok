@@ -446,13 +446,15 @@
                     const existingUrl = existingEpisode?.urls?.[0]?.url || '';
                     const existingQuality = existingEpisode?.urls?.[0]?.quality || 'HD';
                     const existingThumbnailUrl = existingEpisode?.urls?.[0]?.thumbnailUrl || '';
+                    // *** ALTERAÇÃO AQUI: Buscar nome personalizado ***
+                    const existingName = existingEpisode?.name || ep.name;
 
                     const div = document.createElement('div');
                     div.className = 'p-3 bg-gray-800 rounded-md';
                     div.innerHTML = `
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-sm w-8 text-center">${ep.episode_number}</span>
-                            <span class="flex-grow text-sm text-gray-300 truncate" title="${ep.name}">${ep.name}</span>
+                            <input type="text" value="${existingName.replace(/"/g, '&quot;')}" class="episode-name flex-grow bg-gray-700 border border-gray-600 p-1 rounded text-sm" placeholder="Nome do Episódio" title="${existingName.replace(/"/g, '&quot;')}">
                             <button type="button" class="remove-episode-btn text-red-500 hover:text-red-400 font-bold px-2" title="Limpar link do episódio">X</button>
                         </div>
                         <div class="mt-2 space-y-2">
@@ -550,16 +552,22 @@
                         const urlInput = row.querySelector('.episode-url');
                         const qualityInput = row.querySelector('.episode-quality');
                         const thumbnailInput = row.querySelector('.episode-thumbnail-url');
+                        // *** ALTERAÇÃO AQUI: Ler o input do nome ***
+                        const nameInput = row.querySelector('.episode-name');
                         
                         const url = urlInput.value.trim();
-                        if (url) {
+                        const name = nameInput.value.trim(); // <-- Nome personalizado
+                        
+                        // *** ALTERAÇÃO AQUI: Salvar se tiver nome (mesmo sem URL) ***
+                        if (name) {
                             currentSeasonEpisodesFromForm.push({
                                 episode_number: parseInt(urlInput.dataset.episodeNumber),
-                                urls: [{ 
+                                name: name, // <-- Salva o nome personalizado
+                                urls: url ? [{ // <-- Salva URL se existir
                                     quality: qualityInput.value.trim() || 'HD', 
                                     url: url,
                                     thumbnailUrl: thumbnailInput.value.trim()
-                                }]
+                                }] : [] // <-- Salva array vazio se não houver URL
                             });
                         }
                     });
@@ -578,8 +586,13 @@
                             if (existingEpIndex !== -1) {
                                 seasonsToSave[seasonNumber].episodes[existingEpIndex].urls[0].url = url;
                             } else if (url) {
+                                // Se for importação em massa, não temos nome personalizado, então buscamos o nome do input (que será o do TMDB)
+                                const nameInput = document.querySelector(`.episode-name[data-episode-number="${epNumber}"]`);
+                                const name = nameInput ? nameInput.value : `Episódio ${epNumber}`;
+                                
                                 seasonsToSave[seasonNumber].episodes.push({
                                     episode_number: parseInt(epNumber),
+                                    name: name, // <-- Adicionado nome
                                     urls: [{ quality: 'HD', url, thumbnailUrl: '' }]
                                 });
                             }
