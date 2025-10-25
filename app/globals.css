@@ -11,6 +11,7 @@
   --text-secondary: #a0a0a0;
   --accent-red: #e50914;
   --accent-yellow: #f5c518;
+  --hover-border-color: #ffffff;
 }
 
 html[data-theme='light'] {
@@ -20,13 +21,14 @@ html[data-theme='light'] {
   --border-color: #e0e0e0;
   --text-primary: #0d0d0d;
   --text-secondary: #555555;
+  --hover-border-color: #0d0d0d;
 }
 
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { 
-  font-family: 'Inter', sans-serif; 
-  background-color: var(--background-color); 
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background-color);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -150,9 +152,9 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
   flex-shrink: 0;
   background-color: var(--background-color);
   border-bottom: 1px solid var(--border-color);
-  position: relative; 
-  z-index: 1102; 
-  overflow: visible; 
+  position: relative;
+  z-index: 1102;
+  overflow: visible;
 }
 
 .search-overlay-back-btn { background: none; border: none; color: var(--text-primary); padding: 0.5rem;}
@@ -163,10 +165,10 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 
 .search-overlay .suggestions-dropdown {
   position: absolute;
-  top: 100%; 
+  top: 100%;
   left: 0;
   right: 0;
-  height: calc(100vh - 60px); 
+  height: calc(100vh - 60px);
   background-color: var(--background-color);
   overflow-y: auto;
   padding: 1rem;
@@ -378,12 +380,12 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 
 
 /* --- PÁGINA DE DETALHES --- */
-.details-main-content { padding-top: 3rem; } /* Adicionado padding */
+.details-main-content { padding-top: 3rem; }
 .details-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2.5rem; align-items: start;}
 .details-poster-container { display: flex; flex-direction: column; }
 .details-poster { border-top-left-radius: 8px; border-top-right-radius: 8px; overflow: hidden; line-height: 0; }
 .details-poster img { width: 100%; height: auto; }
-.poster-info-bar { 
+.poster-info-bar {
   background-color: var(--card-color);
   padding: 1rem;
   border-bottom-left-radius: 8px;
@@ -411,68 +413,127 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 .btn-secondary { background-color: var(--card-color); color: var(--text-primary); border: 1px solid var(--border-color); }
 .btn-secondary:hover { background-color: var(--border-color); }
 
-/* --- SEÇÃO DE INTERAÇÕES (Canal, Likes, etc) --- */
+/* --- SEÇÃO DE INTERAÇÕES --- */
 .details-interactions-section {
-  padding: 1.5rem 0;
-  margin-top: 1.5rem;
+  padding: 1rem 0; /* Reduzido padding superior */
+  margin-top: 1rem; /* Reduzido margin superior */
   border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
+  /* Removido border-bottom */
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem; /* Reduzido gap */
 }
-.episode-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+.episode-title { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;} /* Ajustes no título */
 
-.channel-info {
+/* Barra de Ações (Like/Dislike/Share) */
+.media-actions-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap; /* Permite quebrar linha em telas menores */
+  gap: 0.5rem; /* Espaço menor entre grupos */
 }
-.channel-details { display: flex; align-items: center; gap: 1rem; }
-.channel-avatar { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
-.channel-name-wrapper { display: flex; align-items: center; gap: 0.5rem; }
-.channel-name { font-size: 1.1rem; font-weight: 700; }
-.verified-badge { width: 16px; height: 16px; flex-shrink: 0; }
-.channel-subs { font-size: 0.9rem; color: var(--text-secondary); }
-.subscribe-btn {
-  background-color: var(--accent-red); color: white; border: none;
-  padding: 0.6rem 1.2rem; border-radius: 20px; font-weight: 700;
-  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+.like-dislike-group {
+  display: flex;
+  align-items: center;
+  background-color: var(--card-color); /* Fundo para o grupo */
+  border-radius: 20px; /* Bordas arredondadas */
+  border: 1px solid var(--border-color);
+  overflow: hidden; /* Garante que as bordas internas funcionem */
 }
-.subscribe-btn:hover { opacity: 0.8; }
-.subscribe-btn.subscribed { background-color: var(--border-color); }
-
-.media-actions-bar {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;
-  background-color: var(--card-color); padding: 0.5rem 1.5rem; border-radius: 30px;
-}
-.views-info { 
-  font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);
-  padding-right: 1rem; margin-right: 1rem;
+/* Adiciona uma linha divisória entre like e dislike */
+.like-dislike-group button:first-child {
   border-right: 1px solid var(--border-color);
 }
-.like-dislike-group { 
-  display: flex; 
-  align-items: center; 
-  gap: 1rem; 
-}
 .action-btn {
-  background: none; border: none; color: var(--text-secondary);
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.5rem; cursor: pointer; font-size: 0.9rem; font-weight: 500;
-  transition: color 0.2s;
+  background: none;
+  border: none;
+  color: var(--text-primary); /* Cor primária por padrão */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem; /* Padding interno */
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  border-radius: 0; /* Remove borda do botão individual se dentro do grupo */
 }
-.action-btn:hover { color: var(--text-primary); }
-.action-btn.active { color: var(--accent-yellow); }
+.action-btn:hover {
+   background-color: var(--border-color); /* Leve fundo no hover */
+}
+/* Estilo específico para botão fora do grupo like/dislike (ex: Share) */
+.media-actions-bar > .action-btn {
+   background-color: var(--card-color);
+   border-radius: 20px;
+   border: 1px solid var(--border-color);
+}
+ .media-actions-bar > .action-btn:hover {
+    background-color: var(--border-color);
+ }
+.action-btn.active {
+   color: var(--accent-yellow); /* Cor quando ativo (like/dislike) */
+}
+.action-btn svg {
+   width: 20px; /* Ícones um pouco menores */
+   height: 20px;
+}
+.views-info { /* Para Desktop, dentro da description-box agora */
+  display: none; /* Escondido da barra principal */
+}
 
-.synopsis-box { background-color: var(--card-color); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 2rem; }
-.synopsis-box h3 { font-size: 1.2rem; margin-bottom: 0.75rem; }
-.synopsis-box p { color: var(--text-secondary); line-height: 1.7; }
+/* --- Caixa de Descrição (Estilo YouTube) --- */
+.description-box {
+  background-color: var(--card-color);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-top: 1rem;
+  cursor: pointer; /* Indica que é clicável para expandir */
+  transition: max-height 0.3s ease-out; /* Transição suave */
+  overflow: hidden; /* Esconde conteúdo extra */
+}
+.description-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Espaço entre views e ano */
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.description-header strong {
+  color: var(--text-primary); /* Views em negrito e cor primária */
+  font-weight: 700; /* Garante negrito */
+}
+.description-content {
+   font-size: 0.9rem;
+   line-height: 1.6;
+   color: var(--text-primary);
+   /* Limita a altura inicial */
+   max-height: 4.8em; /* Aproximadamente 3 linhas */
+   overflow: hidden;
+}
+/* Estado expandido */
+.description-box.expanded .description-content {
+    max-height: 1000px; /* Altura grande para mostrar tudo */
+}
+.description-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 0 0 0; /* Espaçamento acima do botão */
+  cursor: pointer;
+  display: block; /* Garante que o botão fique abaixo */
+  width: 100%; /* Ocupa a largura */
+  text-align: left; /* Alinha o texto à esquerda */
+}
+
 
 .synopsis-box-mobile {
   background-color: var(--background-color);
   padding: 0 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem; /* Reduzido espaço abaixo */
 }
 .synopsis-box-mobile h3 {
   font-size: 1.1rem;
@@ -482,26 +543,11 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 .synopsis-box-mobile .meta-item {
   font-size: 0.85rem;
 }
-.synopsis-text-container {
-  overflow: hidden;
-  max-height: 4.5rem;
-  line-height: 1.5;
-  transition: max-height 0.3s ease-out;
-}
-.synopsis-text-container.expanded {
-  max-height: 1000px;
-}
-.expand-synopsis-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  padding: 0;
-  margin-top: 0.5rem;
-  display: block;
-  cursor: pointer;
-}
 
+
+/* Outros estilos .channel-info, etc. permanecem aqui se você os tiver */
+
+/* --- RESTANTE DOS ESTILOS (CAST, PLAYER, FOOTER, ETC.) --- */
 
 .genre-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
 .genre-tag {
@@ -521,11 +567,11 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
     background-size: cover; background-position: center;
 }
 
-/* --- PLAYER DE SÉRIE E EPISÓDIOS (ESTRUTURA DESKTOP) --- */
 .series-watch-section { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
 .series-watch-grid { display: flex; flex-direction: column; gap: 2rem; }
 .player-container {
-  position: relative; width: 100%; padding-top: 56.25%; /* 16:9 */
+  position: relative; width: 100%;
+  padding-top: 56.25%;
   background-color: #000; border-radius: 8px; overflow: hidden;
 }
 .player-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
@@ -666,8 +712,8 @@ html[data-theme='light'] .site-footer {
   border-radius: 50%;
   padding: 2px;
   background: conic-gradient(#ff00ff, #ff00ff, #ff00ff, #ff00ff);
-  -webkit-mask: 
-     linear-gradient(#fff 0 0) content-box, 
+  -webkit-mask:
+     linear-gradient(#fff 0 0) content-box,
      linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -701,7 +747,7 @@ html[data-theme='light'] .site-footer {
     align-items: start;
   }
   .episode-list-desktop {
-    max-height: 80vh; 
+    max-height: 80vh;
     overflow-y: auto;
     padding-right: 0.5rem;
   }
@@ -713,7 +759,7 @@ html[data-theme='light'] .site-footer {
 
 /*
 ==============================================
---- ESTILOS MOBILE E NOVAS FUNCIONALIDADES ---
+--- ESTILOS MOBILE ---
 ==============================================
 */
 
@@ -731,11 +777,11 @@ html[data-theme='light'] .site-footer {
 @media (max-width: 768px) {
   .desktop-only-layout { display: none !important; }
   .mobile-only-layout { display: block !important; }
-  
+
   main { padding-top: 0 !important; }
 
   .header-nav-desktop, .header-auth-desktop, .header-search-desktop { display: none; }
-  .header-mobile-actions { 
+  .header-mobile-actions {
     display: flex;
     align-items: center;
   }
@@ -766,7 +812,7 @@ html[data-theme='light'] .site-footer {
     font-weight: 700;
     border-bottom-color: var(--accent-yellow);
   }
-  
+
   .mobile-top-content-container {
       margin-top: 112px;
       padding: 0 1rem;
@@ -785,84 +831,73 @@ html[data-theme='light'] .site-footer {
   .media-page-layout .main-container {
     margin-top: 1.5rem !important;
   }
-  
+
   .movie-carousel { grid-auto-columns: 160px; }
   .movie-carousel .movie-card { width: 160px; }
-  
+
   .page-title { font-size: 1.5rem; }
   .genre-filter-bar { gap: 0.5rem; }
   .genre-filter-bar button { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
   .responsive-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 2rem 0.75rem; }
-  
-  .details-main-content { padding-top: 2rem; }
+
+  .details-main-content { padding-top: 1rem; } /* Reduzido padding */
   .details-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-  .details-poster { width: 60%; max-width: 250px; margin: 0 auto; display: none; }
+  .details-poster { display: none; }
   .details-poster-container { display: none; }
   .details-info h1 { font-size: 1.8rem; text-align: center; }
   .details-meta-bar { justify-content: center; font-size: 0.8rem; gap: 1rem;}
   .action-buttons-desktop { display: none; }
 
-  .details-interactions-section { 
-    border-top: none; 
-    border-bottom: none; 
+  .details-interactions-section {
+    border-top: none;
+    border-bottom: none;
     padding-top: 0.5rem;
+    margin-top: 0; /* Removido margin top */
+    gap: 0.75rem; /* Espaço menor */
   }
+  .episode-title { font-size: 1.1rem; margin-bottom: 0.75rem;}
 
-  .media-actions-bar {
-    order: 1; 
-    background-color: transparent;
+  /* Ajusta a barra de ações mobile */
+   .media-actions-bar {
+      justify-content: space-between; /* Espalha os itens */
+      background-color: transparent;
+      padding: 0;
+      gap: 0.5rem; /* Espaço entre os botões */
+    }
+    .like-dislike-group {
+        /* Mantém o estilo do grupo */
+    }
+     .media-actions-bar > .action-btn { /* Estilo do botão Share */
+       background-color: var(--card-color);
+       border: 1px solid var(--border-color);
+       padding: 0.5rem 0.75rem; /* Ajuste padding */
+     }
+     .action-btn { /* Ajuste geral para mobile */
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+     }
+     .action-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+     }
+
+  /* Esconde Description box no mobile (InfoBoxMobile é usado) */
+  .description-box {
+      display: none;
+  }
+  .synopsis-box-mobile { /* Ajustes no InfoBoxMobile */
     padding: 0;
-    border-radius: 0;
-    justify-content: flex-start;
-    gap: 0.5rem;
-    width: 100%;
-    margin-bottom: 1rem;
-  }
-  .synopsis-box-mobile {
-    order: 2; 
-    padding-left: 0;
-    padding-right: 0;
-    margin-bottom: 1rem;
-  }
-  .channel-info { 
-    order: 3; 
-    flex-direction: row; 
-    gap: 0;
-    justify-content: space-between;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
     margin-bottom: 1rem;
   }
 
-  .views-info { border: none; padding: 0; margin: 0; display: none; }
-  
-  .like-dislike-group { 
-    background-color: var(--card-color); 
-    border-radius: 20px;
-    padding: 0.2rem 0.5rem;
-    gap: 0.5rem;
-    align-self: flex-start;
+  /* Outros ajustes mobile... */
+  .channel-info { /* Escondido por enquanto */
+      display: none;
   }
 
-  .action-btn { 
-    padding: 0.5rem 0.75rem; 
-    font-size: 1rem;
-    font-weight: 700;
-  }
-  .action-btn svg {
-      width: 28px !important; 
-      height: 28px !important;
-  }
-
-  .channel-details { text-align: left; }
-  .channel-name-wrapper { margin-top: 0.1rem; }
-  .channel-subs { margin-top: -0.2rem; }
-  
-  .subscribe-btn { align-self: center; }
-  
   .episodes-list-wrapper {
     display: block;
-    margin-top: 0;
+    margin-top: 1rem; /* Adicionado espaço */
     padding-bottom: 1rem;
   }
   .episodes-header {
@@ -874,7 +909,7 @@ html[data-theme='light'] .site-footer {
   .series-watch-section .season-selector { flex-grow: 1; }
   .episode-count-info { font-size: 0.9rem; color: var(--text-secondary); white-space: nowrap; }
   .episode-list-desktop { display: none; }
-  
+
   .episode-grid-mobile {
     display: flex;
     overflow-x: auto;
@@ -886,7 +921,7 @@ html[data-theme='light'] .site-footer {
     scrollbar-width: none;
   }
   .episode-grid-mobile::-webkit-scrollbar { display: none; }
-  
+
   .episode-grid-button {
     flex: 0 0 auto;
     width: 60px;
@@ -910,7 +945,7 @@ html[data-theme='light'] .site-footer {
     font-weight: 700;
     border-color: var(--accent-yellow);
   }
-  
+
   .footer-grid { text-align: center; }
   .main-container, .header-content { padding: 0 1rem; }
 
@@ -930,9 +965,9 @@ html[data-theme='light'] .site-footer {
       padding-top: 1.5rem;
       border-top: 1px solid var(--border-color);
   }
-  
+
   .series-watch-section {
-    order: -1; 
+    order: -1;
     margin-top: 112px !important;
     padding: 0;
     border-top: none;
@@ -943,8 +978,9 @@ html[data-theme='light'] .site-footer {
   }
   .player-container {
       border-radius: 0;
+      padding-top: 56.25%;
   }
-  
+
   /* --- NOVOS ESTILOS PARA BOTÃO DE PERFIL MOBILE --- */
   .header-profile-mobile {
     position: relative;
@@ -1025,7 +1061,7 @@ html[data-theme='light'] .site-footer {
   z-index: 10;
 }
 /* ================================================= */
-/* === NOVOS ESTILOS PARA CORRIGIR PLAYER DUPLO === */
+/* === PLAYER DUPLO E LAYOUT GERAL === */
 /* ================================================= */
 
 .media-page-layout {
@@ -1039,31 +1075,25 @@ html[data-theme='light'] .site-footer {
 
 /* Regras para telas pequenas (Celulares) */
 @media (max-width: 768px) {
-  .mobile-only-layout {
-    display: block !important;
-  }
-  .desktop-only-layout {
-    display: none !important;
-  }
+  .mobile-only-layout { display: block !important; }
+  .desktop-only-layout { display: none !important; }
 
   .series-watch-section {
     order: -1;
     margin-top: 112px !important;
     padding: 0 0;
-    margin-bottom: 0; 
+    margin-bottom: 0;
   }
-  
+
   .mobile-player-wrapper {
     display: block !important;
-    order: -1; 
+    order: -1;
     margin-top: 112px !important;
     padding: 0;
-    margin-bottom: 0; 
+    margin-bottom: 0;
   }
-  
-  .episodes-list-wrapper {
-      display: block !important;
-  }
+
+  .episodes-list-wrapper { display: block !important; }
 }
 
 /* Regras para telas grandes (Desktop) */
@@ -1077,379 +1107,321 @@ html[data-theme='light'] .site-footer {
   }
 }
 /* ================================================= */
-/* === NOVOS ESTILOS PARA VISUALIZADOR DE ÁUDIO === */
+/* === VISUALIZADOR DE ÁUDIO === */
 /* ================================================= */
 
 .movie-info-card {
   position: relative;
   overflow: hidden;
 }
-
 .visualizer-container {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 5px;
-  background-color: rgba(13, 13, 13, 0.5);
-  border-radius: 4px;
-  backdrop-filter: blur(4px);
-  z-index: 10;
+  position: absolute; top: 10px; right: 10px; padding: 5px;
+  background-color: rgba(13, 13, 13, 0.5); border-radius: 4px;
+  backdrop-filter: blur(4px); z-index: 10;
 }
-
-.audio-visualizer {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 20px;
-  width: 24px;
-}
-
+.audio-visualizer { display: flex; align-items: flex-end; gap: 2px; height: 20px; width: 24px; }
 .visualizer-bar {
-  width: 4px;
-  height: 100%;
-  background-color: var(--accent-yellow);
-  animation: beat 1.2s ease-in-out infinite alternate;
-  transform-origin: bottom;
+  width: 4px; height: 100%; background-color: var(--accent-yellow);
+  animation: beat 1.2s ease-in-out infinite alternate; transform-origin: bottom;
 }
-
 @keyframes beat {
-  0% { transform: scaleY(0.1); }
-  25% { transform: scaleY(1); }
-  50% { transform: scaleY(0.4); }
-  75% { transform: scaleY(0.8); }
-  100% { transform: scaleY(0.2); }
+  0% { transform: scaleY(0.1); } 25% { transform: scaleY(1); }
+  50% { transform: scaleY(0.4); } 75% { transform: scaleY(0.8); } 100% { transform: scaleY(0.2); }
 }
-/* app/globals.css */
-
-/* ... (todo o seu CSS existente) ... */
-
-/* --- PÁGINAS DE AUTENTICAÇÃO --- */
+/* ================================================= */
+/* === PÁGINAS DE AUTENTICAÇÃO === */
+/* ================================================= */
 .auth-page-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 100px); /* Ajusta a altura para não ficar colado no footer */
-  padding: 1rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100vh - 100px); padding: 1rem;
 }
-
 .auth-form-wrapper {
-  width: 100%;
-  max-width: 400px;
-  padding: 2.5rem;
-  background-color: var(--card-color);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  width: 100%; max-width: 400px; padding: 2.5rem; background-color: var(--card-color);
+  border: 1px solid var(--border-color); border-radius: 12px;
 }
-
-.auth-form-wrapper h1 {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
+.auth-form-wrapper h1 { text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; font-weight: 700; }
 .auth-form-wrapper .error-message {
-  color: var(--accent-red);
-  margin-bottom: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-  background-color: rgba(229, 9, 20, 0.1);
-  padding: 0.75rem;
-  border-radius: 6px;
+  color: var(--accent-red); margin-bottom: 1rem; text-align: center; font-size: 0.9rem;
+  background-color: rgba(229, 9, 20, 0.1); padding: 0.75rem; border-radius: 6px;
 }
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+.auth-form { display: flex; flex-direction: column; gap: 1rem; }
 .form-input {
-  padding: 0.9rem 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: #0d0d0d;
-  color: white;
-  font-size: 1rem;
-  width: 100%;
-  transition: border-color 0.2s;
+  padding: 0.9rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
+  background-color: #0d0d0d; color: white; font-size: 1rem; width: 100%; transition: border-color 0.2s;
 }
-
-html[data-theme='light'] .form-input {
-  background-color: #fff;
-  color: #000;
-}
-
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--accent-yellow);
-}
-
-.separator-text {
-  text-align: center;
-  margin: 1.5rem 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.auth-form-wrapper .link-text {
-  text-align: center;
-  margin-top: 2rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.auth-form-wrapper .link-text a {
-  color: var(--accent-yellow);
-  text-decoration: none;
-  font-weight: 500;
-}
- .auth-form-wrapper .link-text a:hover {
-  text-decoration: underline;
-}
-
-/* Modificador para botões de largura total */
-.btn-full {
-    width: 100%;
-}
-/* ================================================= */
-/* === SISTEMA DE COMENTÁRIOS (FIREBASE) === */
-/* ================================================= */
-
-.comments-section {
-  margin-top: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.comments-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-}
-
-.comment-form {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.comment-avatar {
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.comment-input {
-  flex-grow: 1;
-  background-color: transparent;
-  border: none;
-  border-bottom: 2px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 1rem;
-  padding: 0.5rem 0;
-  resize: none;
-  transition: border-color 0.2s ease;
-  min-height: 38px;
-}
-
-.comment-input:focus {
-  outline: none;
-  border-bottom-color: var(--accent-yellow);
-}
-
-.comment-submit-btn {
-  background-color: var(--accent-yellow);
-  color: #0d0d0d;
-  border: none;
-  border-radius: 20px;
-  padding: 0.6rem 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-  margin-top: 4px;
-}
-
-.comment-submit-btn:hover {
-  opacity: 0.8;
-}
-
-.comment-submit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.comment-login-prompt {
-  background-color: var(--card-color);
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.comment-login-prompt a {
-  color: var(--accent-yellow);
-  font-weight: 700;
-  text-decoration: none;
-}
-.comment-login-prompt a:hover {
-  text-decoration: underline;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.comment-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.comment-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
-}
-
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.comment-author {
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-.comment-date {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.comment-text {
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.no-comments {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 2rem;
-}
-/* app/globals.css */
-
-/* ... (todo o seu CSS existente) ... */
+html[data-theme='light'] .form-input { background-color: #fff; color: #000; }
+.form-input:focus { outline: none; border-color: var(--accent-yellow); }
+.separator-text { text-align: center; margin: 1.5rem 0; color: var(--text-secondary); font-size: 0.9rem; }
+.auth-form-wrapper .link-text { text-align: center; margin-top: 2rem; font-size: 0.9rem; color: var(--text-secondary); }
+.auth-form-wrapper .link-text a { color: var(--accent-yellow); text-decoration: none; font-weight: 500; }
+.auth-form-wrapper .link-text a:hover { text-decoration: underline; }
+.btn-full { width: 100%; }
 
 /* --- CORREÇÃO PARA TELA CHEIA --- */
-/* Esconde o cabeçalho quando qualquer elemento estiver em tela cheia */
-:root:fullscreen .site-header-main,
-body:fullscreen .site-header-main {
-  display: none;
-  z-index: -1; /* Garante que fique atrás de tudo */
-}
-
-/* Fallback para navegadores mais antigos (como alguns no Android) */
-:root:-webkit-full-screen .site-header-main,
-body:-webkit-full-screen .site-header-main {
-  display: none;
-  z-index: -1;
+:root:fullscreen .site-header-main, body:fullscreen .site-header-main,
+:root:-webkit-full-screen .site-header-main, body:-webkit-full-screen .site-header-main {
+  display: none; z-index: -1;
 }
 
 /* ================================================= */
-/* === SISTEMA DE COMENTÁRIOS (FIREBASE) === */
+/* === FILMES RELACIONADOS (Estilo YouTube) === */
 /* ================================================= */
 
-.comments-section {
-  margin-top: 2.5rem;
+.related-movies-section {
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
 }
 
-.comments-title {
-  font-size: 1.25rem;
+.related-movies-section .section-title {
+  font-size: 1.1rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-.comment-form {
+.related-movies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.related-movie-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.related-movie-item:hover {
+  border-color: var(--hover-border-color);
+}
+
+.related-thumbnail-wrapper {
+  flex-shrink: 0;
+  width: 160px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: var(--card-color);
+  padding-top: calc(9 / 16 * 160px);
+}
+
+.related-thumbnail-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.related-movie-item:hover .related-thumbnail-image {
+  transform: scale(1.1);
+}
+
+.related-play-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Ícone de play removido do hover */
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  color: white;
+}
+
+.related-info-wrapper {
+  flex-grow: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.related-movie-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.related-movie-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.related-movie-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.related-movie-meta svg {
+   color: var(--accent-yellow);
+}
+
+/* Ajustes Mobile para Relacionados */
+@media (max-width: 768px) {
+  .related-thumbnail-wrapper {
+    width: 120px;
+    padding-top: calc(9 / 16 * 120px);
+  }
+  .related-movie-title {
+    font-size: 0.85rem;
+  }
+   .related-movie-meta {
+      font-size: 0.7rem;
+  }
+   .related-movies-section .section-title {
+      font-size: 1.1rem;
+   }
+}
+/* ================================================= */
+/* === SISTEMA DE COMENTÁRIOS FIREBASE (Estilo YouTube) === */
+/* ================================================= */
+
+.comments-container {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.comments-header {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.add-comment-box {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.comment-avatar {
-  border-radius: 50%;
+.user-avatar-comment {
   flex-shrink: 0;
-  margin-top: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--card-color);
+  overflow: hidden;
 }
 
-.comment-input {
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent-yellow);
+  background-color: var(--border-color);
+}
+
+.comment-input-wrapper {
   flex-grow: 1;
-  background-color: transparent;
-  border: none;
-  border-bottom: 2px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 1rem;
-  padding: 0.5rem 0;
-  resize: none;
-  transition: border-color 0.2s ease;
-  min-height: 38px;
+  display: flex;
+  flex-direction: column;
 }
 
-.comment-input:focus {
+.comment-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  padding-bottom: 0.5rem;
+  resize: none;
+  overflow-y: hidden; /* Evita a barra de rolagem */
+  line-height: 1.6;
+  min-height: 28px; /* Altura inicial */
+  transition: border-color 0.2s ease;
+}
+
+.comment-textarea:focus {
   outline: none;
   border-bottom-color: var(--accent-yellow);
 }
 
-.comment-submit-btn {
+.comment-textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.comment-btn-firebase {
+  background: none;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-btn-firebase.cancel {
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+.comment-btn-firebase.cancel:hover {
+  background-color: var(--border-color);
+}
+
+.comment-btn-firebase.submit {
   background-color: var(--accent-yellow);
   color: #0d0d0d;
-  border: none;
-  border-radius: 20px;
-  padding: 0.6rem 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-  margin-top: 4px;
 }
-
-.comment-submit-btn:hover {
+.comment-btn-firebase.submit:hover {
   opacity: 0.8;
 }
-
-.comment-submit-btn:disabled {
-  opacity: 0.5;
+.comment-btn-firebase.submit:disabled {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .comment-login-prompt {
-  background-color: var(--card-color);
-  padding: 1rem;
-  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
   text-align: center;
   margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 }
-
 .comment-login-prompt a {
   color: var(--accent-yellow);
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
 }
 .comment-login-prompt a:hover {
   text-decoration: underline;
 }
 
-.comments-list {
+.comment-list {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -1462,36 +1434,30 @@ body:-webkit-full-screen .site-header-main {
 }
 
 .comment-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
+  flex-grow: 1;
 }
 
-.comment-header {
+.comment-author-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
-.comment-author {
-  font-weight: 700;
+.comment-author-name {
   font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.comment-date {
+.comment-time {
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
 .comment-text {
+  font-size: 0.95rem;
+  color: var(--text-primary);
   line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.no-comments {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 2rem;
+  white-space: pre-wrap; /* Preserva quebras de linha */
 }
