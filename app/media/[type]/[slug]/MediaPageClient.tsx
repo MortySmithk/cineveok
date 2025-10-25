@@ -5,9 +5,12 @@ import { useState, useEffect, memo, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
+// --- Importação Adicional ---
+import { useRouter } from 'next/navigation'; // <-- ADICIONADO: Importa o useRouter
+// --- Fim da Importação Adicional ---
 // --- Importações do Firestore ---
-import { doc, runTransaction, onSnapshot, increment, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'; // Adicionado setDoc, updateDoc, collection, query, where, getDocs, deleteDoc
-import { db } from '@/app/components/firebase'; // Verifique se o caminho está correto
+import { doc, runTransaction, onSnapshot, increment, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'; 
+import { db } from '@/app/components/firebase'; 
 // --- Fim das importações do Firestore ---
 import { useAuth } from '@/app/components/AuthProvider';
 import { useWatchHistory } from '@/app/hooks/useWatchHistory';
@@ -20,7 +23,7 @@ import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import ShareIcon from '@/app/components/icons/ShareIcon';
 import { generateSlug } from '@/app/lib/utils';
 // --- Importar componente de comentários do Firebase ---
-import FirebaseComments from '@/app/components/FirebaseComments'; // Verifique se o caminho está correto
+import FirebaseComments from '@/app/components/FirebaseComments'; 
 // --- Fim da importação ---
 
 // --- Interfaces ---
@@ -107,6 +110,7 @@ export default function MediaPageClient({
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
+  const router = useRouter(); // <-- ADICIONADO: Inicialização do useRouter
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
 
@@ -231,7 +235,7 @@ export default function MediaPageClient({
   }, [
       details, isLoadingDetails, id, type, user, saveHistory,
       getContinueWatchingItem,
-      searchParams, firestoreMediaData // <-- Adicionado firestoreMediaData
+      searchParams, firestoreMediaData 
   ]);
 
 
@@ -288,7 +292,7 @@ export default function MediaPageClient({
 
       fetchSeasonData();
 
-  }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData, activeEpisode]); // Adicionado activeEpisode como dependência
+  }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData, activeEpisode]); 
 
 
   // 4. Atualizar Player URL, Stats ID e Histórico (Séries) - Lógica do Firestore adicionada
@@ -302,8 +306,7 @@ export default function MediaPageClient({
 
       if (episodeData) {
           // --- LÓGICA FIRESTORE PARA EPISÓDIO ---
-          // AQUI ESTAVA A LINHA 301 QUE DAVA ERRO:
-          const episodeUrl = episodeData.streamUrl; // Correto agora, pois streamUrl foi adicionado à interface Episode
+          const episodeUrl = episodeData.streamUrl; 
           if (episodeUrl) {
               setActiveStreamUrl(episodeUrl);
           } else {
@@ -447,7 +450,7 @@ export default function MediaPageClient({
   // --- Função para lidar com Likes/Dislikes ---
   const handleLikeDislike = async (newStatus: 'liked' | 'disliked' | null) => {
       if (!user || !currentStatsId || isUpdatingLike) {
-          // Se não logado, pode redirecionar para login ou mostrar mensagem
+          // CORREÇÃO: Usa a variável 'router' inicializada
           if (!user) router.push('/login?redirect=' + window.location.pathname + window.location.search);
           return;
       }
@@ -755,7 +758,7 @@ export default function MediaPageClient({
                 <div className="episode-item-thumbnail">
                     <Image
                       draggable="false"
-                      src={details.poster_path ? `https://image.tmdb.org/t/p/w300${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
+                      src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
                       alt={`Poster de ${details.title}`}
                       width={120} height={180}
                       style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }}
