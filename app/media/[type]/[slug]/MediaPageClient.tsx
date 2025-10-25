@@ -23,12 +23,16 @@ import { generateSlug } from '@/app/lib/utils';
 import FirebaseComments from '@/app/components/FirebaseComments'; // Verifique se o caminho está correto
 // --- Fim da importação ---
 
-// ... (Interfaces MediaDetails, Genre, Season, Episode, CastMember, Media permanecem as mesmas) ...
+// --- Interfaces ---
 interface Genre { id: number; name: string; }
 interface Season { id: number; name: string; season_number: number; episode_count: number; }
 interface Episode {
   id: number; name: string; episode_number: number;
   overview: string; still_path: string;
+  // **********************************************
+  // *** CORREÇÃO: ADICIONANDO streamUrl AQUI ***
+  // **********************************************
+  streamUrl?: string | null; 
 }
 interface CastMember {
   id: number; name: string; character: string; profile_path: string;
@@ -249,13 +253,13 @@ export default function MediaPageClient({
           const firestoreSeasonData = firestoreMediaData?.seasons?.[selectedSeason];
 
           // Mapeia os episódios do TMDB, sobrescrevendo nome e buscando URL do Firestore
-          const episodesData = tmdbEpisodesData.map((tmdbEp) => {
+          const episodesData: Episode[] = tmdbEpisodesData.map((tmdbEp) => {
               const firestoreEp = firestoreSeasonData?.episodes?.find((fe: any) => fe.episode_number === tmdbEp.episode_number);
               return {
                   ...tmdbEp,
                   name: firestoreEp?.name || tmdbEp.name, // Usa nome do Firestore se existir
                   // Adiciona a URL do Firestore ao objeto do episódio para fácil acesso
-                  streamUrl: firestoreEp?.urls?.[0]?.url || null
+                  streamUrl: firestoreEp?.urls?.[0]?.url || null // Adicionado streamUrl
               };
           });
 
@@ -298,7 +302,8 @@ export default function MediaPageClient({
 
       if (episodeData) {
           // --- LÓGICA FIRESTORE PARA EPISÓDIO ---
-          const episodeUrl = episodeData.streamUrl; // Pega a URL do Firestore que adicionamos no useEffect anterior
+          // AQUI ESTAVA A LINHA 301 QUE DAVA ERRO:
+          const episodeUrl = episodeData.streamUrl; // Correto agora, pois streamUrl foi adicionado à interface Episode
           if (episodeUrl) {
               setActiveStreamUrl(episodeUrl);
           } else {
