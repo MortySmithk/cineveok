@@ -137,7 +137,9 @@ export default function MediaPageClient({
   const [relatedMovies, setRelatedMovies] = useState<Media[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
 
-  const embedBaseUrl = process.env.NEXT_PUBLIC_EMBED_BASE_URL || 'https://www.cineveo.lat'; // Corrigido para www.
+  // ***************************************************************
+  // *** MUDANÇA #1: REMOVIDA A CONSTANTE embedBaseUrl (não estava sendo usada) ***
+  // ***************************************************************
 
   // --- useEffects ---
   // 1. Buscar detalhes da mídia (TMDB + Firestore) - Sem alterações significativas
@@ -190,15 +192,17 @@ export default function MediaPageClient({
       if (isLoadingDetails || !details || initialSetupDoneRef.current || !id) return;
 
       if (type === 'movie') {
-            // --- LÓGICA FIRESTORE PARA FILME ---
-            const movieUrl = firestoreMediaData?.urls?.[0]?.url; // Pega a primeira URL do Firestore
-            if (movieUrl) {
+            // ***************************************************************
+            // *** MUDANÇA #2: Lógica de URL para FILME alterada para PrimeVicio ***
+            // ***************************************************************
+            if (id) {
+                const movieUrl = `https://www.primevicio.lat/embed/movie/${id}`;
                 setActiveStreamUrl(movieUrl);
             } else {
                  setActiveStreamUrl(''); // Ou define um placeholder/mensagem de erro
                  console.warn("Nenhuma URL encontrada no Firestore para este filme.");
             }
-            // --- FIM DA LÓGICA FIRESTORE ---
+            // --- FIM DA LÓGICA MODIFICADA ---
 
           if (user) {
               saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
@@ -241,7 +245,12 @@ export default function MediaPageClient({
 
   // 3. Buscar episódios da temporada (Séries) - Lógica do Firestore adicionada
     useEffect(() => {
-      if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null || isLoadingDetails || !firestoreMediaData) {
+      // ***************************************************************
+      // *** MUDANÇA #3: Removido !firestoreMediaData da verificação ***
+      // Esta verificação impedia o carregamento de episódios se o documento
+      // de mídia não existisse no Firestore.
+      // ***************************************************************
+      if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null || isLoadingDetails) {
           return;
       }
 
@@ -253,17 +262,16 @@ export default function MediaPageClient({
           const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
           const tmdbEpisodesData: Episode[] = seasonResponse.data.episodes;
 
-          // Pega os dados da temporada específica do Firestore (contém URLs e nomes editados)
+          // Pega os dados da temporada específica do Firestore (contém nomes editados)
           const firestoreSeasonData = firestoreMediaData?.seasons?.[selectedSeason];
 
-          // Mapeia os episódios do TMDB, sobrescrevendo nome e buscando URL do Firestore
+          // Mapeia os episódios do TMDB, sobrescrevendo nome (se existir no Firestore)
           const episodesData: Episode[] = tmdbEpisodesData.map((tmdbEp) => {
               const firestoreEp = firestoreSeasonData?.episodes?.find((fe: any) => fe.episode_number === tmdbEp.episode_number);
               return {
                   ...tmdbEp,
                   name: firestoreEp?.name || tmdbEp.name, // Usa nome do Firestore se existir
-                  // Adiciona a URL do Firestore ao objeto do episódio para fácil acesso
-                  streamUrl: firestoreEp?.urls?.[0]?.url || null // Adicionado streamUrl
+                  // A streamUrl não é mais buscada aqui
               };
           });
 
@@ -301,19 +309,16 @@ export default function MediaPageClient({
 
       const { season, episode } = activeEpisode;
 
-      // Encontra os dados do episódio atual na lista já processada (que contém a streamUrl do Firestore)
+      // Encontra os dados do episódio atual na lista
       const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
 
       if (episodeData) {
-          // --- LÓGICA FIRESTORE PARA EPISÓDIO ---
-          const episodeUrl = episodeData.streamUrl; 
-          if (episodeUrl) {
-              setActiveStreamUrl(episodeUrl);
-          } else {
-              setActiveStreamUrl(''); // Limpa se não houver URL
-              console.warn(`Nenhuma URL encontrada no Firestore para T${season} E${episode}.`);
-          }
-          // --- FIM DA LÓGICA FIRESTORE ---
+          // ***************************************************************
+          // *** MUDANÇA #4: Lógica de URL para SÉRIE alterada para PrimeVicio ***
+          // ***************************************************************
+          const episodeUrl = `https://www.primevicio.lat/embed/tv/${id}/${season}/${episode}`;
+          setActiveStreamUrl(episodeUrl);
+          // --- FIM DA LÓGICA MODIFICADA ---
 
           const statsId = episodeData.id.toString(); // ID do episódio no TMDB para stats/comments
           setCurrentStatsId(statsId);
