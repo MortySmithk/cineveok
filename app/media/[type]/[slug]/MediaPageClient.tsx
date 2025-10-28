@@ -1,16 +1,15 @@
-// app/media/[type]/[slug]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect, memo, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 import Link from 'next/link';
-// --- Importação Adicional ---
-import { useRouter } from 'next/navigation'; // <-- ADICIONADO: Importa o useRouter
-// --- Fim da Importação Adicional ---
+import { useRouter } from 'next/navigation';
+import Script from 'next/script'; // <-- ADICIONADO: Importa o Script do Next.js
 // --- Importações do Firestore ---
-import { doc, runTransaction, onSnapshot, increment, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore'; 
-import { db } from '@/app/components/firebase'; 
+import { doc, runTransaction, onSnapshot, increment, getDoc, setDoc, updateDoc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { db } from '@/app/components/firebase';
 // --- Fim das importações do Firestore ---
 import { useAuth } from '@/app/components/AuthProvider';
 import { useWatchHistory } from '@/app/hooks/useWatchHistory';
@@ -23,7 +22,7 @@ import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import ShareIcon from '@/app/components/icons/ShareIcon';
 import { generateSlug } from '@/app/lib/utils';
 // --- Importar componente de comentários do Firebase ---
-import FirebaseComments from '@/app/components/FirebaseComments'; 
+import FirebaseComments from '@/app/components/FirebaseComments';
 // --- Fim da importação ---
 
 // --- Interfaces ---
@@ -32,10 +31,7 @@ interface Season { id: number; name: string; season_number: number; episode_coun
 interface Episode {
   id: number; name: string; episode_number: number;
   overview: string; still_path: string;
-  // **********************************************
-  // *** CORREÇÃO: ADICIONANDO streamUrl AQUI ***
-  // **********************************************
-  streamUrl?: string | null; 
+  streamUrl?: string | null;
 }
 interface CastMember {
   id: number; name: string; character: string; profile_path: string;
@@ -110,12 +106,12 @@ export default function MediaPageClient({
   const slug = params.slug as string;
   const id = getIdFromSlug(slug);
 
-  const router = useRouter(); // <-- ADICIONADO: Inicialização do useRouter
+  const router = useRouter();
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
-  const [firestoreMediaData, setFirestoreMediaData] = useState<any>(null); // Dados específicos do Firestore (título editado, links)
+  const [firestoreMediaData, setFirestoreMediaData] = useState<any>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(true);
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
   const [status, setStatus] = useState('Carregando...');
@@ -123,13 +119,13 @@ export default function MediaPageClient({
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
   const [activeStreamUrl, setActiveStreamUrl] = useState<string>('');
-  const [currentStatsId, setCurrentStatsId] = useState<string | null>(null); // ID para views, likes, comments (pode ser TMDB ID ou Episode ID)
+  const [currentStatsId, setCurrentStatsId] = useState<string | null>(null);
   const initialSetupDoneRef = useRef(false);
 
   // --- Estados para Views, Likes, Dislikes ---
-  const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 }); // Estado unificado
-  const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(null); // Estado da interação do usuário
-  const [isUpdatingLike, setIsUpdatingLike] = useState(false); // Para desabilitar botões durante a atualização
+  const [stats, setStats] = useState({ views: 0, likes: 0, dislikes: 0 });
+  const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(null);
+  const [isUpdatingLike, setIsUpdatingLike] = useState(false);
   // --- Fim dos estados ---
 
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
@@ -137,11 +133,8 @@ export default function MediaPageClient({
   const [relatedMovies, setRelatedMovies] = useState<Media[]>([]);
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
 
-  // ***************************************************************
-  // *** MUDANÇA #1: REMOVIDA A CONSTANTE embedBaseUrl (não estava sendo usada) ***
-  // ***************************************************************
-
   // --- useEffects ---
+  // (useEffects 1 a 7 permanecem os mesmos)
   // 1. Buscar detalhes da mídia (TMDB + Firestore) - Sem alterações significativas
    useEffect(() => {
       if (!id || !type) return;
@@ -192,9 +185,6 @@ export default function MediaPageClient({
       if (isLoadingDetails || !details || initialSetupDoneRef.current || !id) return;
 
       if (type === 'movie') {
-            // ***************************************************************
-            // *** MUDANÇA #2: Lógica de URL para FILME alterada para PrimeVicio ***
-            // ***************************************************************
             if (id) {
                 const movieUrl = `https://www.primevicio.lat/embed/movie/${id}`;
                 setActiveStreamUrl(movieUrl);
@@ -202,7 +192,6 @@ export default function MediaPageClient({
                  setActiveStreamUrl(''); // Ou define um placeholder/mensagem de erro
                  console.warn("Nenhuma URL encontrada no Firestore para este filme.");
             }
-            // --- FIM DA LÓGICA MODIFICADA ---
 
           if (user) {
               saveHistory({ mediaType: 'movie', tmdbId: id, title: details.title, poster_path: details.poster_path });
@@ -239,17 +228,12 @@ export default function MediaPageClient({
   }, [
       details, isLoadingDetails, id, type, user, saveHistory,
       getContinueWatchingItem,
-      searchParams, firestoreMediaData 
+      searchParams, firestoreMediaData
   ]);
 
 
   // 3. Buscar episódios da temporada (Séries) - Lógica do Firestore adicionada
     useEffect(() => {
-      // ***************************************************************
-      // *** MUDANÇA #3: Removido !firestoreMediaData da verificação ***
-      // Esta verificação impedia o carregamento de episódios se o documento
-      // de mídia não existisse no Firestore.
-      // ***************************************************************
       if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null || isLoadingDetails) {
           return;
       }
@@ -271,7 +255,6 @@ export default function MediaPageClient({
               return {
                   ...tmdbEp,
                   name: firestoreEp?.name || tmdbEp.name, // Usa nome do Firestore se existir
-                  // A streamUrl não é mais buscada aqui
               };
           });
 
@@ -300,7 +283,7 @@ export default function MediaPageClient({
 
       fetchSeasonData();
 
-  }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData, activeEpisode]); 
+  }, [selectedSeason, id, type, details, isLoadingDetails, firestoreMediaData, activeEpisode]);
 
 
   // 4. Atualizar Player URL, Stats ID e Histórico (Séries) - Lógica do Firestore adicionada
@@ -313,12 +296,8 @@ export default function MediaPageClient({
       const episodeData = seasonEpisodes.find(ep => ep.episode_number === episode);
 
       if (episodeData) {
-          // ***************************************************************
-          // *** MUDANÇA #4: Lógica de URL para SÉRIE alterada para PrimeVicio ***
-          // ***************************************************************
           const episodeUrl = `https://www.primevicio.lat/embed/tv/${id}/${season}/${episode}`;
           setActiveStreamUrl(episodeUrl);
-          // --- FIM DA LÓGICA MODIFICADA ---
 
           const statsId = episodeData.id.toString(); // ID do episódio no TMDB para stats/comments
           setCurrentStatsId(statsId);
@@ -360,10 +339,8 @@ export default function MediaPageClient({
       runTransaction(db, async (transaction) => {
           const statsDoc = await transaction.get(statsRef);
           if (!statsDoc.exists()) {
-              // Cria o documento com view = 1 e likes/dislikes = 0 se não existir
               transaction.set(statsRef, { views: 1, likes: 0, dislikes: 0 });
           } else {
-              // Apenas incrementa a view se o documento já existe
               transaction.update(statsRef, { views: increment(1) });
           }
       }).catch(error => console.error("Erro ao incrementar view:", error));
@@ -394,7 +371,6 @@ export default function MediaPageClient({
           return;
       }
 
-      // Referência ao documento de interação do usuário para esta mídia/episódio
       const interactionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
 
       const unsubscribeInteraction = onSnapshot(interactionRef, (docSnap) => {
@@ -441,6 +417,7 @@ export default function MediaPageClient({
 
 
   // --- Funções de manipulação ---
+  // (handleEpisodeClick, handleSeasonChange permanecem as mesmas)
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     if (isLoadingEpisodes) return;
     setActiveEpisode({ season, episode: episodeNumber });
@@ -453,9 +430,9 @@ export default function MediaPageClient({
   };
 
   // --- Função para lidar com Likes/Dislikes ---
-  const handleLikeDislike = async (newStatus: 'liked' | 'disliked' | null) => {
+  // (handleLikeDislike permanece a mesma)
+   const handleLikeDislike = async (newStatus: 'liked' | 'disliked' | null) => {
       if (!user || !currentStatsId || isUpdatingLike) {
-          // CORREÇÃO: Usa a variável 'router' inicializada
           if (!user) router.push('/login?redirect=' + window.location.pathname + window.location.search);
           return;
       }
@@ -463,7 +440,6 @@ export default function MediaPageClient({
       setIsUpdatingLike(true);
       const previousStatus = likeStatus; // Guarda o estado anterior para rollback
 
-      // Referências aos documentos
       const interactionRef = doc(db, `users/${user.uid}/interactions`, currentStatsId);
       const statsRef = doc(db, 'media_stats', currentStatsId);
 
@@ -476,83 +452,62 @@ export default function MediaPageClient({
               let dislikesIncrement = 0;
               const currentInteractionStatus = interactionDoc.exists() ? interactionDoc.data().status : null;
 
-              // --- Lógica para incrementar/decrementar contadores ---
               if (newStatus === 'liked') {
                   if (currentInteractionStatus === 'liked') { // Clicou em like de novo (remove like)
                       likesIncrement = -1;
-                      newStatus = null; // Atualiza o estado da interação para nulo
+                      newStatus = null;
                   } else {
                       likesIncrement = 1;
-                      if (currentInteractionStatus === 'disliked') { // Mudou de dislike para like
-                          dislikesIncrement = -1;
-                      }
+                      if (currentInteractionStatus === 'disliked') { dislikesIncrement = -1; }
                   }
               } else if (newStatus === 'disliked') {
                   if (currentInteractionStatus === 'disliked') { // Clicou em dislike de novo (remove dislike)
                       dislikesIncrement = -1;
-                      newStatus = null; // Atualiza o estado da interação para nulo
+                      newStatus = null;
                   } else {
                       dislikesIncrement = 1;
-                      if (currentInteractionStatus === 'liked') { // Mudou de like para dislike
-                          likesIncrement = -1;
-                      }
+                      if (currentInteractionStatus === 'liked') { likesIncrement = -1; }
                   }
               }
-              // Se newStatus for null (porque clicou de novo no mesmo botão), a lógica acima já tratou os decrementos.
 
-              // --- Atualizar documento de stats ---
               if (statsDoc.exists()) {
                   transaction.update(statsRef, {
                       likes: increment(likesIncrement),
                       dislikes: increment(dislikesIncrement)
                   });
               } else {
-                  // Se o doc de stats não existir (pouco provável, mas seguro), cria com os valores corretos
                    transaction.set(statsRef, {
-                       views: 1, // Assume 1 view se está interagindo
-                       likes: Math.max(0, likesIncrement), // Garante que não seja negativo
-                       dislikes: Math.max(0, dislikesIncrement) // Garante que não seja negativo
-                   }, { merge: true }); // Usa merge para não sobrescrever views se outro processo criou
+                       views: 1,
+                       likes: Math.max(0, likesIncrement),
+                       dislikes: Math.max(0, dislikesIncrement)
+                   }, { merge: true });
               }
 
-              // --- Atualizar/deletar documento de interação do usuário ---
               if (newStatus) {
-                  // Se deu like ou dislike, salva o estado
                   transaction.set(interactionRef, { status: newStatus }, { merge: true });
               } else {
-                  // Se removeu o like/dislike (newStatus é null), deleta o documento de interação
-                   if (interactionDoc.exists()) { // Só deleta se existir
-                      transaction.delete(interactionRef);
-                   }
+                   if (interactionDoc.exists()) { transaction.delete(interactionRef); }
               }
           });
 
-          // Atualização otimista do estado local (já tratada pelo listener no useEffect 6)
-          // setLikeStatus(newStatus); // O listener onSnapshot já fará isso
-
       } catch (error) {
           console.error("Erro ao atualizar like/dislike:", error);
-          // Rollback da UI (Embora o listener deva corrigir, podemos fazer aqui por segurança)
           setLikeStatus(previousStatus);
           alert("Ocorreu um erro ao registrar sua avaliação.");
       } finally {
           setIsUpdatingLike(false);
       }
   };
-  // --- Fim da função handleLikeDislike ---
 
-  const getSynopsis = (): string => {
-    // ... (sem alterações) ...
+  // --- getSynopsis, getEpisodeTitle, handleShare permanecem os mesmos ---
+   const getSynopsis = (): string => {
      if (!details) return 'Carregando sinopse...';
       if (type === 'movie') return details.overview || 'Sinopse não disponível.';
-
-      // Para séries, tenta pegar a sinopse do episódio ativo, senão da série
       const currentEpisodeData = activeEpisode ? seasonEpisodes.find(ep => ep.episode_number === activeEpisode.episode) : null;
       return currentEpisodeData?.overview || details.overview || 'Sinopse não disponível.';
   };
 
   const getEpisodeTitle = (): string => {
-    // ... (sem alterações) ...
      if (!details) return 'Carregando título...';
       if (type === 'movie') return details.title || 'Filme';
 
@@ -563,7 +518,6 @@ export default function MediaPageClient({
   };
 
   const handleShare = () => {
-    // ... (sem alterações) ...
      if (navigator.share) {
       navigator.share({
         title: details?.title || 'CineVEO',
@@ -573,7 +527,6 @@ export default function MediaPageClient({
       .then(() => console.log('Compartilhado com sucesso'))
       .catch((error) => console.error('Erro ao compartilhar:', error));
     } else {
-      // Fallback para copiar link
       navigator.clipboard.writeText(window.location.href)
         .then(() => alert('Link copiado para a área de transferência!'))
         .catch(() => alert('Não foi possível copiar o link.'));
@@ -591,7 +544,6 @@ export default function MediaPageClient({
 
   // --- Componentes Internos ---
   const InfoBoxMobile = () => {
-      // ... (sem alterações, apenas ajusta para usar `details`)
        return (
           <div className="synopsis-box-mobile mobile-only-layout">
             <h3>{details.title}</h3>
@@ -608,8 +560,8 @@ export default function MediaPageClient({
         );
   };
 
+  // --- MODIFICAÇÃO AQUI: Adicionado o <Script> do anúncio ---
   const InteractionsSection = () => {
-      // ... (Componente atualizado para usar stats e handleLikeDislike)
       const currentSynopsis = getSynopsis();
       const releaseYear = (details?.release_date || details?.first_air_date)?.substring(0, 4);
 
@@ -624,21 +576,21 @@ export default function MediaPageClient({
              <div className="like-dislike-group">
                 <button
                   className={`action-btn focusable ${likeStatus === 'liked' ? 'active' : ''}`}
-                  onClick={() => handleLikeDislike('liked')} // Chama a nova função
+                  onClick={() => handleLikeDislike('liked')}
                   aria-label="Gostei"
-                  disabled={isUpdatingLike || !user} // Desabilita enquanto atualiza ou se não logado
+                  disabled={isUpdatingLike || !user}
                 >
                   <LikeIcon isActive={likeStatus === 'liked'} />
-                  <span>{formatNumber(stats.likes)}</span> {/* Exibe contagem real */}
+                  <span>{formatNumber(stats.likes)}</span>
                 </button>
                 <button
                   className={`action-btn focusable ${likeStatus === 'disliked' ? 'active' : ''}`}
-                  onClick={() => handleLikeDislike('disliked')} // Chama a nova função
+                  onClick={() => handleLikeDislike('disliked')}
                   aria-label="Não gostei"
-                  disabled={isUpdatingLike || !user} // Desabilita enquanto atualiza ou se não logado
+                  disabled={isUpdatingLike || !user}
                 >
                   <DislikeIcon isActive={likeStatus === 'disliked'} />
-                  <span>{formatNumber(stats.dislikes)}</span> {/* Exibe contagem real */}
+                  <span>{formatNumber(stats.dislikes)}</span>
                 </button>
              </div>
 
@@ -655,6 +607,16 @@ export default function MediaPageClient({
                  </span>
              </div>
           </div>
+
+          {/* --- ADICIONADO: Script do Anúncio Vignette --- */}
+          <Script
+            id="monetag-vignette-script" // ID opcional para identificação
+            src="https://groleegni.net/vignette.min.js"
+            strategy="afterInteractive" // Carrega depois que a página está interativa
+            data-zone="10104095" // Atributo data-zone necessário para o script
+            // Não precisa de dangerouslySetInnerHTML pois o src carrega o script externo
+          />
+          {/* --- FIM DA ADIÇÃO --- */}
 
           {/* Caixa de Descrição (Estilo YouTube) */}
           <div className={`description-box ${isDescriptionExpanded ? 'expanded' : ''}`} onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
@@ -691,7 +653,6 @@ export default function MediaPageClient({
   };
 
   const EpisodeSelector = () => {
-    // ... (sem alterações significativas, talvez ajustar o loading state)
      return (
           <div className="episodes-list-wrapper">
               <div className="episodes-header">
@@ -699,9 +660,8 @@ export default function MediaPageClient({
                       className="season-selector focusable"
                       value={selectedSeason ?? ''}
                       onChange={(e) => handleSeasonChange(Number(e.target.value))}
-                      disabled={isLoadingEpisodes} // Desabilita durante o carregamento
+                      disabled={isLoadingEpisodes}
                   >
-                       {/* Filtra temporadas inválidas (sem número ou sem episódios) */}
                       {details.seasons?.filter(s => s.season_number > 0 && s.episode_count > 0).map(s => (
                           <option key={s.id} value={s.season_number}>{s.name}</option>
                       ))}
@@ -723,7 +683,7 @@ export default function MediaPageClient({
                               {ep.still_path ? (
                                   <Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />
                               ) : (
-                                  <div className='thumbnail-placeholder-small'></div> // Placeholder se não houver imagem
+                                  <div className='thumbnail-placeholder-small'></div>
                               )}
                           </div>
                           <div className="episode-item-info">
@@ -755,10 +715,8 @@ export default function MediaPageClient({
   };
 
   const MovieSelector = () => {
-    // ... (sem alterações) ...
      return (
         <div className="episodes-list-wrapper desktop-only-layout">
-            {/* Apenas um "item" para o filme */}
             <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
                 <div className="episode-item-thumbnail">
                     <Image
@@ -773,7 +731,6 @@ export default function MediaPageClient({
                     <span className="episode-item-title">{details.title}</span>
                     <p className="episode-item-overview">Filme Completo</p>
                 </div>
-                {/* Visualizador de áudio (opcional, pode remover se não gostar) */}
                 <div className="visualizer-container">
                     <AudioVisualizer />
                 </div>
@@ -783,7 +740,6 @@ export default function MediaPageClient({
   };
 
   const RelatedMoviesSection = () => {
-     // ... (sem alterações)
       if (type !== 'movie' || relatedMovies.length === 0) return null;
 
       return (
@@ -828,6 +784,7 @@ export default function MediaPageClient({
       );
   };
 
+
   // --- Renderização Principal ---
   return (
     <>
@@ -840,12 +797,11 @@ export default function MediaPageClient({
               {/* Coluna 1: Player e Interações */}
               <div className="series-player-wrapper">
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
-                <InteractionsSection /> {/* Inclui botões, descrição E COMENTÁRIOS */}
+                <InteractionsSection /> {/* Inclui botões, anúncio, descrição E COMENTÁRIOS */}
               </div>
               {/* Coluna 2: Seletor (Ep/Filme), InfoBox (séries), Relacionados (filmes) */}
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
-                {/* InfoBox (com sinopse) foi movido para dentro de InteractionsSection */}
                 {type === 'movie' && <RelatedMoviesSection />}
               </div>
             </div>
@@ -860,7 +816,7 @@ export default function MediaPageClient({
         <div className="mobile-only-layout">
              <div className="main-container" style={{ marginTop: '1.5rem' }}>
                 <InfoBoxMobile /> {/* Título e meta info mobile */}
-                <InteractionsSection /> {/* Botões, caixa de descrição E COMENTÁRIOS mobile */}
+                <InteractionsSection /> {/* Botões, anúncio, caixa de descrição E COMENTÁRIOS mobile */}
                 {type === 'tv' && <EpisodeSelector />}
                 {type === 'movie' && <RelatedMoviesSection />}
             </div>
@@ -869,8 +825,6 @@ export default function MediaPageClient({
         {/* Detalhes Adicionais (Elenco, etc.) */}
         <main className="details-main-content">
           <div className="main-container">
-             {/* Conteúdo que estava dentro de <div className="details-info"> foi removido ou movido */}
-             {/* Os gêneros podem ser adicionados à InteractionsSection se desejado */}
              {details.credits?.cast && details.credits.cast.length > 0 && (
                 <section className="cast-section">
                 <h2>Elenco Principal</h2>
