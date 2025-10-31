@@ -1,4 +1,4 @@
-// cineveo-next/app/components/CategoryPage.tsx
+// cineveo-next/app/components/CategorySection.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -118,16 +118,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
                       sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                     />
                   </div>
-                  <div className="movie-card-overlay">
-                    <Image 
-                        src="https://i.ibb.co/Q7V0pybV/bot-o-play-sem-bg.png" 
-                        alt="Play" 
-                        width={110}
-                        height={110}
-                        className="play-button-overlay" 
-                        style={{ objectFit: 'contain' }}
-                    />
-                  </div>
+                  {/* REMOVIDO: <div className="movie-card-overlay">...</div> */}
                   <div className="movie-card-bookmark"><BookmarkIcon /></div>
                   <div className="movie-card-info">
                     <h3 className="movie-card-title">{item.title || item.name}</h3>

@@ -1,4 +1,4 @@
-// cineveo-next/app/components/SearchComponent.tsx
+// app/components/SearchComponent.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -10,17 +10,12 @@ import { useSearchHistory } from '../hooks/useSearchHistory';
 import { generateSlug } from '../lib/utils';
 
 import SearchIcon from './icons/SearchIcon';
-import MicrophoneIcon from './icons/MicrophoneIcon';
+// REMOVIDO: MicrophoneIcon
 import HistoryIcon from './icons/HistoryIcon';
 import XIcon from './icons/XIcon';
-import VoiceSearchOverlay from './VoiceSearchOverlay';
+// REMOVIDO: VoiceSearchOverlay
 
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
+// REMOVIDO: Declaração global de SpeechRecognition
 
 interface Suggestion {
   id: number; media_type: 'movie' | 'tv' | 'person'; title?: string; name?: string;
@@ -34,8 +29,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isActive, setIsActive] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false);
+  // REMOVIDO: isListening, isVoiceOverlayOpen
   const router = useRouter();
   const { history, addToHistory, removeFromHistory } = useSearchHistory();
 
@@ -81,40 +75,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
     executeSearch(query);
   };
 
-  const handleVoiceSearch = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("O seu navegador não suporta a pesquisa por voz.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setIsVoiceOverlayOpen(true);
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-      setIsVoiceOverlayOpen(false);
-    };
-    recognition.onerror = (event: any) => {
-      console.error("Erro no reconhecimento de voz:", event.error);
-      setIsListening(false);
-      setIsVoiceOverlayOpen(false);
-    };
-    recognition.onresult = (event: any) => {
-      const speechResult = event.results[0][0].transcript;
-      setQuery(speechResult);
-      // Executa a pesquisa assim que o resultado for obtido
-      executeSearch(speechResult);
-    };
-    
-    recognition.start();
-  };
+  // REMOVIDO: handleVoiceSearch
 
   const renderHistoryAndSuggestions = () => (
     <div className="suggestions-dropdown">
@@ -125,7 +86,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
               <HistoryIcon className="history-icon" />
               <span className="history-text">{term}</span>
               <button onClick={(e) => {
-                e.stopPropagation(); // Impede que o clique no botão de remover acione a pesquisa
+                e.stopPropagation();
                 removeFromHistory(term);
               }} className="history-remove-btn">
                 <XIcon width={16} height={16} />
@@ -155,7 +116,7 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
 
   return (
     <>
-      <VoiceSearchOverlay isOpen={isVoiceOverlayOpen} onClose={() => setIsVoiceOverlayOpen(false)} />
+      {/* REMOVIDO: VoiceSearchOverlay */}
       <div className="search-container">
         <form onSubmit={handleSearch} className="search-form">
           <input
@@ -168,14 +129,11 @@ export default function SearchComponent({ isMobile = false, onSearch }: SearchCo
             className="search-input"
             autoFocus={isMobile}
           />
-          <button type="button" className={`voice-search-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceSearch}>
-            <MicrophoneIcon width={20} height={20} />
-          </button>
-          <button type="submit" className="search-button">
+          {/* REMOVIDO: Botão de pesquisa por voz interno */}
+          <button type="submit" className="search-button focusable" aria-label="Pesquisar">
             <SearchIcon width={18} height={18} />
           </button>
         </form>
-        {/* CORREÇÃO AQUI: Removido "!isMobile" para mostrar sugestões também no celular */}
         {isActive && (query.length > 1 || history.length > 0) && renderHistoryAndSuggestions()}
       </div>
     </>

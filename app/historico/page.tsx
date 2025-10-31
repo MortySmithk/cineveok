@@ -106,9 +106,7 @@ export default function HistoricoPage() {
                     className="movie-card-poster"
                     sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                   />
-                  <div className="movie-card-play-icon-overlay">
-                    <PlayIcon />
-                  </div>
+                  {/* REMOVIDO: <div className="movie-card-play-icon-overlay">...</div> */}
                 </div>
                 <div className="movie-card-info">
                   <h3 className="movie-card-title">{getWatchItemTitle(item)}</h3>

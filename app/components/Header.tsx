@@ -4,30 +4,87 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { CSSProperties, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/app/components/firebase'; // CORREÇÃO AQUI
+import { auth } from '@/app/components/firebase';
 
 import SearchComponent from './SearchComponent';
 import SearchOverlay from './SearchOverlay';
 import SearchIcon from './icons/SearchIcon';
 import ThemeSwitcher from './ThemeSwitcher';
+import HamburgerIcon from './icons/HamburgerIcon'; // RE-ADICIONADO
+import MicrophoneIcon from './icons/MicrophoneIcon';
+import SideMenu from './SideMenu'; // RE-ADICIONADO
+import VoiceSearchOverlay from './VoiceSearchOverlay';
+
+// Ícones para o SubNav
+import HomeIcon from './icons/FlameIcon';
+import MovieIcon from './icons/PlayIcon';
+import TvIcon from './icons/StarIcon';
+import HistoryIcon from './icons/HistoryIcon';
+
+// Declaração global para a SpeechRecognition API
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
 );
 
+// --- COMPONENTE: MobileSubNav (Menu de Abas) ---
+const MobileSubNav = () => {
+  const pathname = usePathname();
+  const getLinkClass = (href: string) => {
+    return `sub-nav-link ${pathname === href ? 'active' : ''}`;
+  };
+
+  const navLinks = [
+    { href: '/', label: 'Início', icon: <HomeIcon /> },
+    { href: '/historico', label: 'Histórico', icon: <HistoryIcon /> },
+    { href: '/filmes', label: 'Filmes', icon: <MovieIcon /> },
+    { href: '/series', label: 'Séries', icon: <TvIcon /> },
+    { href: '/animes',label: 'Animes', icon: <span>🍥</span> },
+    { href: '/animacoes', label: 'Animações', icon: <span>🧸</span> },
+    { href: '/doramas', label: 'Doramas', icon: <span>🇰🇷</span> },
+    { href: '/novelas', label: 'Novelas', icon: <span>💃</span> },
+  ];
+
+  return (
+    <nav className="mobile-sub-nav">
+      {navLinks.map((link) => (
+        <Link key={link.href} href={link.href} className={getLinkClass(link.href)}>
+          {/* {link.icon} */}
+          <span>{link.label}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+};
+// --- FIM DO COMPONENTE ---
+
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Estados
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // RE-ADICIONADO
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    setIsSearchOpen(false);
+    // Fecha menus ao navegar
+    setIsMenuOpen(false); // RE-ADICIONADO
     setIsProfileOpen(false);
+    setIsSearchOpen(false);
   }, [pathname]);
 
   const handleSignOut = async () => {
@@ -35,127 +92,146 @@ export default function Header() {
     router.push('/login');
   };
 
-  const getLinkStyle = (href: string): CSSProperties => {
-    const isActive = pathname === href;
-    return {
-      color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-      fontWeight: isActive ? 700 : 500,
-      transition: 'color 0.2s ease',
+  // Lógica de pesquisa por voz
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("O seu navegador não suporta a pesquisa por voz.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setIsListening(true);
+      setIsVoiceOverlayOpen(true);
     };
+    recognition.onend = () => {
+      setIsListening(false);
+      setIsVoiceOverlayOpen(false);
+    };
+    recognition.onerror = (event: any) => {
+      console.error("Erro no reconhecimento de voz:", event.error);
+      setIsListening(false);
+      setIsVoiceOverlayOpen(false);
+    };
+    recognition.onresult = (event: any) => {
+      const speechResult = event.results[0][0].transcript;
+      router.push(`/search?q=${encodeURIComponent(speechResult)}`);
+    };
+    recognition.start();
   };
-  
-  const getMobileLinkClass = (href: string): string => {
-      const isActive = pathname === href;
-      return `mobile-nav-link focusable ${isActive ? 'active' : ''}`;
-  }
 
   return (
     <>
+      {/* Overlays */}
+      <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} /> {/* RE-ADICIONADO */}
+      <VoiceSearchOverlay isOpen={isVoiceOverlayOpen} onClose={() => setIsVoiceOverlayOpen(false)} />
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
       <header className="site-header-main">
         <div className="header-content">
+          
+          {/* COLUNA ESQUERDA: Menu (Desktop) e Logo */}
           <div className="header-left">
-              <Link href="/" className="focusable">
-                <Image
-                  src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
-                  alt="CineVEO Logo"
-                  width={140}
-                  height={35}
-                  priority
-                  style={{ objectFit: 'contain' }}
-                />
-              </Link>
-            
-            <nav className="header-nav-desktop">
-              <Link href="/" style={getLinkStyle('/')} className="focusable">Início</Link>
-              <Link href="/filmes" style={getLinkStyle('/filmes')} className="focusable">Filmes</Link>
-              <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
-              <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
-              <Link href="/doramas" style={getLinkStyle('/doramas')} className="focusable">Doramas</Link>
-              
-              {/* */}
-              <Link 
-                href="/cineleve" 
-                className="focusable cineleve-link-desktop" 
-                prefetch={false}
-              >
-                CineLeve
-              </Link>
-
-              <Link href="/historico" style={getLinkStyle('/historico')} className="focusable">Histórico</Link>
-            </nav>
+            {/* Botão Hambúrguer RE-ADICIONADO (só desktop) */}
+            <button onClick={() => setIsMenuOpen(true)} className="hamburger-btn-desktop focusable" aria-label="Abrir menu">
+              <HamburgerIcon />
+            </button>
+            <Link href="/" className="focusable logo-link">
+              <Image
+                src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
+                alt="CineVEO Logo"
+                width={140}
+                height={35}
+                priority
+                style={{ objectFit: 'contain' }}
+              />
+            </Link>
           </div>
 
-          <div className="header-right">
+          {/* COLUNA CENTRAL: Pesquisa */}
+          <div className="header-center">
             <div className="header-search-desktop">
               <SearchComponent />
             </div>
-             
+            <button className="voice-search-btn-global focusable" onClick={handleVoiceSearch} aria-label="Pesquisa por voz">
+              <MicrophoneIcon width={20} height={20} />
+            </button>
+          </div>
+
+          {/* COLUNA DIREITA: Ícones */}
+          <div className="header-right">
             <ThemeSwitcher />
             
+            <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
+              <SearchIcon width={24} height={24} />
+            </button>
+
+            {/* Perfil (Desktop) */}
             <div className="header-auth-desktop">
               {user ? (
                   <>
-                      <span className="user-greeting">Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
-                      <button onClick={handleSignOut} className="btn-secondary-small focusable">Sair</button>
+                    <button 
+                      className="header-profile-desktop-btn focusable" 
+                      onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    >
+                      {user.photoURL ? (
+                        <Image src={user.photoURL} alt="User" width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <UserIcon width={24} height={24} />
+                      )}
+                      <span>Olá, {user.displayName?.split(' ')[0] || 'Utilizador'}</span>
+                    </button>
+                    {isProfileOpen && (
+                      <div className="header-profile-dropdown">
+                        <div className="dropdown-user-info">
+                          <strong>{user.displayName || 'Utilizador'}</strong>
+                          <span>{user.email}</span>
+                        </div>
+                        <Link href="/perfil" className="dropdown-link-item focusable">Minha Conta</Link>
+                        <Link href="/historico" className="dropdown-link-item focusable">Meu Histórico</Link>
+                        <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
+                      </div>
+                    )}
                   </>
               ) : (
                   <Link href="/login" className="btn-primary-small focusable">Entrar</Link>
               )}
             </div>
             
-            <div className="header-mobile-actions">
-                <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
-                  <SearchIcon width={24} height={24} />
-                </button>
-                
-                <div className="header-profile-mobile">
-                  <button 
-                    className="header-profile-mobile-btn focusable" 
-                    onClick={() => user ? setIsProfileOpen(!isProfileOpen) : router.push('/login')}
-                  >
-                    {user && user.photoURL ? (
-                      <Image src={user.photoURL} alt="User" width={28} height={28} style={{ borderRadius: '50%' }} />
-                    ) : (
-                      <UserIcon width={22} height={22} />
-                    )}
-                  </button>
+            {/* Perfil (Mobile) */}
+            <div className="header-profile-mobile">
+              <button 
+                className="header-profile-mobile-btn focusable" 
+                onClick={() => user ? setIsProfileOpen(!isProfileOpen) : router.push('/login')}
+              >
+                {user && user.photoURL ? (
+                  <Image src={user.photoURL} alt="User" width={28} height={28} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <UserIcon width={22} height={22} />
+                )}
+              </button>
 
-                  {user && isProfileOpen && (
-                    <div className="header-profile-dropdown">
-                      <div className="dropdown-user-info">
-                        <strong>{user.displayName?.split(' ')[0] || 'Utilizador'}</strong>
-                        <span>{user.email}</span>
-                      </div>
-                       <Link href="/historico" className="dropdown-signout-btn focusable" style={{ color: 'var(--text-primary)', textAlign: 'left' }}>Meu Histórico</Link>
-                      <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
-                    </div>
-                  )}
+              {user && isProfileOpen && (
+                <div className="header-profile-dropdown">
+                  <div className="dropdown-user-info">
+                    <strong>{user.displayName || 'Utilizador'}</strong>
+                    <span>{user.email}</span>
+                  </div>
+                  <Link href="/perfil" className="dropdown-link-item focusable">Minha Conta</Link>
+                  <Link href="/historico" className="dropdown-link-item focusable">Meu Histórico</Link>
+                  <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
                 </div>
+              )}
             </div>
           </div>
         </div>
-        
-        <nav className="mobile-sub-nav">
-            <Link href="/" className={getMobileLinkClass('/')}>Início</Link>
-            <Link href="/filmes" className={getMobileLinkClass('/filmes')}>Filmes</Link>
-            <Link href="/series" className={getMobileLinkClass('/series')}>Séries</Link>
-            <Link href="/animes" className={getMobileLinkClass('/animes')}>Animes</Link>
-            <Link href="/doramas" className={getMobileLinkClass('/doramas')}>Doramas</Link>
-
-            {/* */}
-            <Link 
-              href="/cineleve" 
-              className={getMobileLinkClass('/cineleve') + ' cineleve-link-mobile'} 
-              prefetch={false}
-            >
-              CineLeve
-            </Link>
-
-            <Link href="/historico" className={getMobileLinkClass('/historico')}>Histórico</Link>
-        </nav>
       </header>
-
-      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      
+      {/* --- RENDERIZA O MENU DE ABAS MOBILE --- */}
+      <MobileSubNav />
     </>
   );
 }

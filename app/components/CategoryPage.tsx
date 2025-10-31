@@ -119,9 +119,7 @@ export default function CategoryPage({ title, mediaType, fetchUrl, isSearchPage 
                       className="movie-card-poster"
                       sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
                     />
-                    <div className="movie-card-play-icon-overlay">
-                        <PlayIcon />
-                    </div>
+                    {/* REMOVIDO: <div className="movie-card-play-icon-overlay">...</div> */}
                     <div className="movie-card-bookmark"><BookmarkIcon /></div>
                   </div>
                   <div className="movie-card-info">

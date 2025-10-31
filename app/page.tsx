@@ -6,9 +6,9 @@ import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
-import PlayIcon from '@/app/components/icons/PlayIcon';
+import PlayIcon from '@/app/components/icons/PlayIcon'; // Ainda é necessário para o botão Assistir
 import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
-import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory'; // Importado WatchItem
+import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
 
 interface Media {
@@ -26,7 +26,7 @@ interface Media {
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-// FUNÇÃO ADICIONADA: Gera o Href correto para continuar assistindo
+// Função para gerar o Href correto
 const getContinueWatchingHref = (item: WatchItem) => {
   const base = `/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`;
   if (item.mediaType === 'tv' && item.progress) {
@@ -35,82 +35,73 @@ const getContinueWatchingHref = (item: WatchItem) => {
   return base;
 };
 
+// Função para gerar o Href dinâmico (para "Em Alta")
+const getMediaHref = (item: Media) => {
+  const type = item.media_type || (item.title ? 'movie' : 'tv');
+  const title = item.title || item.name || '';
+  return `/media/${type}/${generateSlug(title)}-${item.id}`;
+};
+
+
 export default function HomePage() {
-  const [trending, setTrending] = useState<Media[]>([]);
-  const [latestMovies, setLatestMovies] = useState<Media[]>([]);
+  // Estados para os carrosséis
+  const [trendingToday, setTrendingToday] = useState<Media[]>([]);
+  const [popularMovies, setPopularMovies] = useState<Media[]>([]);
   const [popularSeries, setPopularSeries] = useState<Media[]>([]);
-  const [activeSlide, setActiveSlide] = useState(0);
+  const [popularAnimations, setPopularAnimations] = useState<Media[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
   const { continueWatching } = useWatchHistory();
 
   // Refs para os carrosséis
   const continueWatchingRef = useRef<HTMLDivElement>(null);
-  const latestMoviesRef = useRef<HTMLDivElement>(null);
+  const trendingTodayRef = useRef<HTMLDivElement>(null);
+  const popularMoviesRef = useRef<HTMLDivElement>(null);
   const popularSeriesRef = useRef<HTMLDivElement>(null);
+  const popularAnimationsRef = useRef<HTMLDivElement>(null);
   
-  // Ref para controlar se o usuário arrastou ou apenas clicou
   const hasDragged = useRef(false);
-
 
   useEffect(() => {
     const fetchMedia = async () => {
       setIsLoading(true);
       try {
-        // --- INÍCIO DA MODIFICAÇÃO: Requisições para o SLIDER ---
-        // 5 Filmes recém-lançados de 2025
-        const sliderMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR&primary_release_year=2025`);
-        // 5 Séries populares lançadas em 2025
-        const sliderSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR&first_air_date_year=2025`);
-        // --- FIM DA MODIFICAÇÃO ---
-
-        // Requisições para os carrosséis inferiores (mantidas como estavam)
-        const latestMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/now_playing?api_key=${API_KEY}&language=pt-BR`);
+        // Novas requisições
+        const trendingTodayPromise = axios.get(`https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}&language=pt-BR`);
+        const popularMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pt-BR`);
         const popularSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
-        
+        const popularAnimationsPromise = axios.get(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=pt-BR&sort_by=popularity.desc&with_genres=16`);
+
         const [
-            sliderMoviesResponse, 
-            sliderSeriesResponse, 
-            latestMoviesResponse, 
-            popularSeriesResponse
+          trendingTodayResponse,
+          popularMoviesResponse,
+          popularSeriesResponse,
+          popularAnimationsResponse
         ] = await Promise.all([
-            sliderMoviesPromise, 
-            sliderSeriesPromise, 
-            latestMoviesPromise, 
-            popularSeriesPromise
+          trendingTodayPromise,
+          popularMoviesPromise,
+          popularSeriesPromise,
+          popularAnimationsPromise
         ]);
 
-        // --- INÍCIO DA MODIFICAÇÃO: Processamento do SLIDER ---
-        const sliderMovies = sliderMoviesResponse.data.results
-            .filter((item: Media) => (item.title || item.name) && item.backdrop_path) // Garante que tem nome e background
-            .slice(0, 5)
-            .map((item: Media) => ({ ...item, media_type: 'movie' })); // Adiciona media_type
-            
-        const sliderSeries = sliderSeriesResponse.data.results
-            .filter((item: Media) => (item.title || item.name) && item.backdrop_path) // Garante que tem nome e background
-            .slice(0, 5)
-            .map((item: Media) => ({ ...item, media_type: 'tv' })); // Adiciona media_type
+        // Função de filtro
+        const filterValidMedia = (results: Media[]) => 
+          results.filter((item: Media) => (item.title || item.name) && item.poster_path);
 
-        // Combina os 5 filmes e 5 séries (total de 10) para o slider
-        setTrending([...sliderMovies, ...sliderSeries]); 
-        // --- FIM DA MODIFICAÇÃO ---
+        // Definindo os estados
+        setTrendingToday(filterValidMedia(trendingTodayResponse.data.results));
+        setPopularMovies(filterValidMedia(popularMoviesResponse.data.results));
+        setPopularSeries(filterValidMedia(popularSeriesResponse.data.results));
+        setPopularAnimations(filterValidMedia(popularAnimationsResponse.data.results));
 
-        // Processamento para os carrosséis inferiores (mantido como estava)
-        setLatestMovies(latestMoviesResponse.data.results.filter((item: Media) => item.title || item.name));
-        setPopularSeries(popularSeriesResponse.data.results.filter((item: Media) => item.title || item.name));
-      
-      } catch (error) { console.error("Erro ao buscar mídia:", error);
-      } finally { setIsLoading(false); }
+      } catch (error) { 
+        console.error("Erro ao buscar mídia:", error);
+      } finally { 
+        setIsLoading(false); 
+      }
     };
     fetchMedia();
   }, []);
-
-  useEffect(() => {
-    if (trending.length === 0) return;
-    const interval = setInterval(() => {
-      setActiveSlide((current) => (current === trending.length - 1 ? 0 : current + 1));
-    }, 7000);
-    return () => clearInterval(interval);
-  }, [trending]);
 
   // Efeito para adicionar a funcionalidade de arrastar para rolar
   useEffect(() => {
@@ -125,7 +116,7 @@ export default function HomePage() {
         element.classList.add('active-drag');
         startX = e.pageX - element.offsetLeft;
         scrollLeft = element.scrollLeft;
-        hasDragged.current = false; // Reseta a flag de arrastar
+        hasDragged.current = false;
       };
 
       const onMouseLeaveOrUp = () => {
@@ -159,16 +150,19 @@ export default function HomePage() {
       };
     };
 
+    // Adiciona o drag scroll a todos os carrosséis
     const cleanupFunctions = [
         addDragScroll(continueWatchingRef.current),
-        addDragScroll(latestMoviesRef.current),
+        addDragScroll(trendingTodayRef.current),
+        addDragScroll(popularMoviesRef.current),
         addDragScroll(popularSeriesRef.current),
+        addDragScroll(popularAnimationsRef.current),
     ];
     
     return () => {
         cleanupFunctions.forEach(cleanup => cleanup && cleanup());
     };
-  }, [isLoading, continueWatching, latestMovies, popularSeries]);
+  }, [isLoading, continueWatching, trendingToday, popularMovies, popularSeries, popularAnimations]); // Adiciona novas dependências
 
   const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (hasDragged.current) {
@@ -186,31 +180,11 @@ export default function HomePage() {
 
   return (
     <main>
-      <div className="hero-slider">
-        {trending.map((item, index) => (
-          <div key={item.id} className={`slide ${index === activeSlide ? 'active' : ''}`}>
-            <Image draggable="false" src={`https://image.tmdb.org/t/p/original${item.backdrop_path}`} alt={item.title || item.name || ''} fill style={{ objectFit: 'cover' }} className="slide-bg" priority={index === 0} />
-            <div className="slide-overlay"></div>
-            <div className="slide-content">
-              <h1 className="slide-title">{item.title || item.name}</h1>
-              <div className="slide-meta">
-                <span>{(item.release_date || item.first_air_date)?.substring(0, 4)}</span>
-                <span className="stars">★★★★★</span>
-              </div>
-              <p className="slide-overview">{item.overview}</p>
-              <div className="slide-actions">
-                <Link draggable="false" href={`/media/${item.media_type}/${generateSlug(item.title || item.name || '')}-${item.id}`} className="btn-primary slide-btn focusable"><PlayIcon /> Assistir</Link>
-                <button className="btn-secondary slide-btn focusable">+ Minha Lista</button>
-              </div>
-            </div>
-          </div>
-        ))}
-        <div className="slide-dots">
-          {trending.map((_, index) => (<button key={index} onClick={() => setActiveSlide(index)} className={`focusable ${index === activeSlide ? 'active' : ''}`}></button>))}
-        </div>
-      </div>
+      {/* HERO SLIDER REMOVIDO */}
 
-      <div className="main-container" style={{ position: 'relative', zIndex: 10 }}>
+      <div className="main-container" style={{ position: 'relative', zIndex: 10, paddingTop: '2rem' }}>
+        
+        {/* CONTINUAR ASSISTINDO */}
         {continueWatching.length > 0 && (
           <section className="movie-section">
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
@@ -218,14 +192,13 @@ export default function HomePage() {
               {continueWatching.map((item) => (
                 <Link 
                   draggable="false" 
-                  href={getContinueWatchingHref(item)} // <-- MODIFICAÇÃO AQUI
+                  href={getContinueWatchingHref(item)}
                   key={item.id} 
                   className="movie-card focusable" 
                   onClick={handleCardClick}
                 >
                   <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-play-icon-overlay"><PlayIcon /></div>
                   </div>
                   <div className="movie-card-info">
                     <h3 className="movie-card-title">{item.title}</h3>
@@ -237,17 +210,42 @@ export default function HomePage() {
           </section>
         )}
 
+        {/* EM ALTA HOJE (NOVA SEÇÃO) */}
+        <section className="movie-section">
+          <div className="section-header">
+            <h2 className="section-title">Em Alta Hoje</h2>
+            {/* <Link draggable="false" href="/trending" className="section-view-all-link focusable" >&gt;</Link> */}
+          </div>
+          <div className="movie-carousel" ref={trendingTodayRef}>
+            {trendingToday.map((item) => (
+              <Link draggable="false" href={getMediaHref(item)} key={item.id} className="movie-card focusable" onClick={handleCardClick}>
+                 <div className="movie-card-poster-wrapper">
+                    <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name || ''} fill className="movie-card-poster" sizes="220px"/>
+                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 </div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{item.title || item.name}</h3>
+                   <div className="movie-card-meta">
+                     <span>{(item.release_date || item.first_air_date)?.substring(0, 4)}</span>
+                     <span><StarIcon /> {item.vote_average.toFixed(1)}</span>
+                   </div>
+                 </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* FILMES POPULARES (READICIONADO) */}
         <section className="movie-section">
           <div className="section-header">
             <h2 className="section-title">Filmes Populares</h2>
             <Link draggable="false" href="/filmes" className="section-view-all-link focusable" >&gt;</Link>
           </div>
-          <div className="movie-carousel" ref={latestMoviesRef}>
-            {latestMovies.map((movie) => (
+          <div className="movie-carousel" ref={popularMoviesRef}>
+            {popularMovies.map((movie) => (
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-play-icon-overlay"><PlayIcon /></div>
                     <div className="movie-card-bookmark"><BookmarkIcon /></div>
                  </div>
                  <div className="movie-card-info">
@@ -259,6 +257,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* SÉRIES POPULARES (EXISTENTE) */}
          <section className="movie-section">
           <div className="section-header">
              <h2 className="section-title">Séries Populares</h2>
@@ -269,7 +268,6 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-play-icon-overlay"><PlayIcon /></div>
                     <div className="movie-card-bookmark"><BookmarkIcon /></div>
                  </div>
                  <div className="movie-card-info">
@@ -281,6 +279,28 @@ export default function HomePage() {
           </div>
         </section>
         
+        {/* ANIMAÇÕES POPULARES (NOVA SEÇÃO) */}
+        <section className="movie-section">
+          <div className="section-header">
+            <h2 className="section-title">Animações Populares</h2>
+            <Link draggable="false" href="/animacoes" className="section-view-all-link focusable" >&gt;</Link>
+          </div>
+          <div className="movie-carousel" ref={popularAnimationsRef}>
+            {popularAnimations.map((movie) => (
+              <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
+                 <div className="movie-card-poster-wrapper">
+                    <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
+                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                 </div>
+                 <div className="movie-card-info">
+                   <h3 className="movie-card-title">{movie.title}</h3>
+                   <div className="movie-card-meta"><span>{movie.release_date?.substring(0, 4)}</span><span><StarIcon /> {movie.vote_average.toFixed(1)}</span></div>
+                 </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
       </div>
     </main>
   );
