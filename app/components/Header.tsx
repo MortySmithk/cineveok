@@ -71,6 +71,16 @@ export default function Header() {
               <Link href="/series" style={getLinkStyle('/series')} className="focusable">Séries</Link>
               <Link href="/animes" style={getLinkStyle('/animes')} className="focusable">Animes</Link>
               <Link href="/doramas" style={getLinkStyle('/doramas')} className="focusable">Doramas</Link>
+              
+              {/* */}
+              <Link 
+                href="/cineleve" 
+                className="focusable cineleve-link-desktop" 
+                prefetch={false}
+              >
+                CineLeve
+              </Link>
+
               <Link href="/historico" style={getLinkStyle('/historico')} className="focusable">Histórico</Link>
             </nav>
           </div>
@@ -131,6 +141,16 @@ export default function Header() {
             <Link href="/series" className={getMobileLinkClass('/series')}>Séries</Link>
             <Link href="/animes" className={getMobileLinkClass('/animes')}>Animes</Link>
             <Link href="/doramas" className={getMobileLinkClass('/doramas')}>Doramas</Link>
+
+            {/* */}
+            <Link 
+              href="/cineleve" 
+              className={getMobileLinkClass('/cineleve') + ' cineleve-link-mobile'} 
+              prefetch={false}
+            >
+              CineLeve
+            </Link>
+
             <Link href="/historico" className={getMobileLinkClass('/historico')}>Histórico</Link>
         </nav>
       </header>

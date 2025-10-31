@@ -1,3 +1,5 @@
+// cineveo-next/next.config.mjs
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -22,6 +24,15 @@ const nextConfig = {
   // Esta parte ignora os erros de ESLint durante o build
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  // ADICIONE ESTE BLOCO PARA A VERSÃO LEVE
+  async rewrites() {
+    return [
+      {
+        source: '/cineleve', // A URL que o usuário acessará
+        destination: '/CineLeve.html', // O arquivo que será servido (dentro da pasta /public)
+      },
+    ]
   },
 };
 

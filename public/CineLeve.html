@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamApp - Catálogo TMDB</title>
+    <!-- [REMOVIDO] Tailwind CSS -->
+    <!-- [REMOVIDO] Fonte Google (Inter) -->
+    
+    <!-- [NOVO] Estilos In-line "Modo Batata" -->
+    <style>
+        /* --- Reset Básico e Fontes do Sistema --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #111827; /* gray-900 */
+            color: #f9fafb; /* white */
+            margin: 0;
+            line-height: 1.5;
+        }
+        * {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+        ::selection {
+            background-color: #3b82f6; /* blue-500 */
+            color: #f9fafb;
+        }
+        
+        /* --- Classes Utilitárias --- */
+        .hidden {
+            display: none !important; /* Importante para sobrepor o 'block' */
+        }
+        .container {
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 1rem;
+        }
+        .text-gray-400 { color: #9ca3af; }
+        .text-red-400 { color: #f87171; }
+
+        /* --- Cabeçalho --- */
+        header {
+            background-color: #1f2937; /* gray-800 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        .header-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 4rem;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        .logo {
+            /* [MODIFICADO] Removido estilos de fonte */
+            margin-right: 2rem;
+            /* [MODIFICADO] Altura da logo diminuída ainda mais */
+            height: 1.5rem; /* 24px */
+        }
+        /* [NOVO] Estilo para a imagem da logo */
+        .logo img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+        }
+        .nav-list {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+        }
+        .nav-tab {
+            background: none;
+            border: none;
+            color: #d1d5db; /* gray-300 */
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-tab:hover {
+            color: #f9fafb;
+        }
+        .nav-tab[data-active="true"] {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+
+        /* --- Pesquisa --- */
+        #search-form {
+            position: relative;
+        }
+        #search-input {
+            background-color: #374151; /* gray-700 */
+            color: #f9fafb;
+            border-radius: 9999px;
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+            width: 16rem;
+        }
+        #search-input::placeholder {
+            color: #9ca3af;
+        }
+        #search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        #search-form button {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        #search-form button svg {
+            height: 1.25rem;
+            width: 1.25rem;
+            color: #9ca3af;
+        }
+
+        /* --- Conteúdo Principal e Abas --- */
+        main {
+            padding: 2rem 0;
+        }
+        .tab-content {
+            display: none;
+        }
+        #home-content {
+            display: block; /* Mostra a primeira aba por padrão */
+        }
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #93c5fd; /* blue-300 */
+        }
+
+        /* --- Grelha "Modo Batata" (Responsiva e Leve) --- */
+        .media-grid {
+            display: grid;
+            /* Cria colunas de no mínimo 140px, e no máximo 1fr */
+            /* Isto é responsivo por natureza, sem media queries */
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+        .grid-item {
+            background-color: #1f2937; /* gray-800 */
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .grid-item:hover {
+            transform: scale(1.05);
+        }
+        .grid-item img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            background-color: #374151; /* Cor de fundo caso a imagem falhe */
+        }
+        .grid-item div {
+            padding: 0.75rem;
+        }
+        .grid-item h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- Página de Detalhes da Série --- */
+        #series-details-page {
+            padding: 2rem 0;
+        }
+        #back-to-grid-btn {
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: #f9fafb;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        #back-to-grid-btn:hover {
+            background-color: #2563eb;
+        }
+        #back-to-grid-btn svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+        }
+        #series-info {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: #1f2937;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        #series-info .relative {
+            position: relative;
+        }
+        #series-backdrop {
+            width: 100%;
+            /* [MODIFICADO] Altura fluida com aspect-ratio */
+            height: auto;
+            aspect-ratio: 16 / 9;
+            max-height: 25rem; /* Limite máximo */
+            object-fit: cover;
+            border-radius: 0.5rem;
+            /* [REMOVIDO] margin-bottom */
+        }
+        #series-title {
+            /* [REMOVIDO] Posição absoluta */
+            font-size: 2.25rem;
+            font-weight: 700;
+            /* [NOVO] Adicionado espaçamento */
+            margin-top: 1rem;
+        }
+        #series-overview {
+            color: #d1d5db;
+            margin-top: 1rem;
+        }
+
+        /* --- Layout de Detalhes (Temporadas, Episódios, Player) --- */
+        .details-grid {
+            display: flex;
+            flex-wrap: wrap; /* Quebra em telas pequenas */
+            gap: 1.5rem;
+        }
+        .details-col {
+            flex: 1; /* Todos crescem igualmente */
+            min-width: 300px; /* Largura mínima antes de quebrar */
+            background-color: #1f2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .details-col h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #93c5fd;
+        }
+        .list-box {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 24rem;
+            overflow-y: auto;
+            /* Estilo da barra de rolagem (opcional, mas bom) */
+            scrollbar-width: thin;
+            scrollbar-color: #374151 #1f2937;
+        }
+        .list-box li {
+            padding: 0.75rem 1rem;
+            background-color: #374151;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .list-box li:hover {
+            background-color: #4b5563;
+        }
+        .list-box li.active {
+            background-color: #3b82f6; /* [MODIFICADO] Classe CSS ao invés de Tailwind */
+            color: white;
+        }
+
+        /* --- Player --- */
+        #player-episode-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            height: 1.5rem;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #000;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Modal do Player (Filmes) --- */
+        #player-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: #111827;
+            border-radius: 0.5rem;
+            width: 100%;
+            max-width: 64rem; /* max-w-4xl */
+            margin: 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #374151;
+        }
+        #player-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        #close-modal-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 2.25rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        #close-modal-btn:hover {
+            color: #f9fafb;
+        }
+
+        /* --- [NOVO] Media Queries para Fluidez Total (Mobile-First) --- */
+
+        /* Telas Médias e Pequenas (Tablets e Telemóveis) */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 0.75rem; /* Menos padding lateral */
+            }
+            /* Cabeçalho empilhado */
+            .header-nav {
+                flex-direction: column;
+                height: auto;
+                padding: 0.75rem 0;
+                gap: 0.75rem;
+            }
+            .header-left, #search-form {
+                width: 100%;
+            }
+            .header-left {
+                justify-content: space-between;
+            }
+            #search-input {
+                width: 100%;
+            }
+            h2 {
+                font-size: 1.25rem;
+            }
+            #series-title {
+                font-size: 1.75rem;
+            }
+            .modal-content {
+                margin: 0.5rem; /* Menos margem no modal */
+            }
+        }
+
+        /* Telas Muito Pequenas (Telemóveis) */
+        @media (max-width: 480px) {
+            /* Faz as abas rolarem horizontalmente */
+            .header-left {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            .nav-list {
+                width: 100%;
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 0.5rem;
+                /* Adiciona uma barra de rolagem fina se precisar */
+                scrollbar-width: thin;
+                scrollbar-color: #374151 #1f2337;
+            }
+            /* Diminui a grelha para caber melhor */
+            .media-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 0.75rem;
+            }
+            .grid-item h3 {
+                font-size: 0.8rem;
+            }
+            /* Reduz o tamanho do backdrop */
+            #series-backdrop {
+                max-height: 20rem;
+            }
+            #series-title {
+                font-size: 1.5rem;
+            }
+            .details-col {
+                /* Garante que colunas de detalhes ocupem 100% */
+                min-width: 100%; 
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 text-white selection:bg-blue-500 selection:text-white">
+
+    <!-- Cabeçalho e Navegação -->
+    <!-- [MODIFICADO] Classes de Tailwind removidas e substituídas por classes/IDs CSS -->
+    <header>
+        <nav class="container">
+            <!-- [MODIFICADO] Adicionado 'header-nav' -->
+            <div class="header-nav">
+                <!-- [MODIFICADO] Adicionado 'header-left' -->
+                <div class="header-left">
+                    <div class="flex-shrink-0 logo">
+                        <!-- [MODIFICADO] Logo de texto trocada por imagem -->
+                        <img src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png" alt="StreamApp Logo"
+                             onerror="this.onerror=null; this.alt='StreamApp'; this.style.display='none'; this.after(document.createTextNode('StreamApp'));">
+                    </div>
+                    <!-- Abas de Navegação -->
+                    <ul class="nav-list">
+                        <li>
+                            <button class="nav-tab" data-target="#home-content" data-active="true">Início</button>
+                        </li>
+                        <li>
+                            <button class="nav-tab" data-target="#movies-content">Filmes</button>
+                        </li>
+                        <li>
+                            <button class="nav-tab" data-target="#series-content">Séries</button>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Formulário de Pesquisa -->
+                <form id="search-form" class="relative">
+                    <input id="search-input" type="text" placeholder="Pesquisar...">
+                    <button type="submit">
+                        <svg class="h-5 w-5 text-gray-400 hover:text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container">
+        
+        <!-- Conteúdo da Aba Início (Tendências) -->
+        <div id="home-content" class="tab-content">
+            <h2>Em Alta Esta Semana</h2>
+            <!-- [MODIFICADO] Adicionado 'media-grid' -->
+            <div id="home-grid" class="media-grid">
+                <p id="home-loading" class="text-gray-400">Carregando...</p>
+            </div>
+        </div>
+
+        <!-- Conteúdo da Aba Filmes -->
+        <div id="movies-content" class="tab-content">
+            <h2>Filmes Populares</h2>
+            <div id="movies-grid" class="media-grid">
+                <p id="movies-loading" class="text-gray-400">Carregando...</p>
+            </div>
+        </div>
+
+        <!-- Conteúdo da Aba Séries -->
+        <div id="series-content" class="tab-content">
+            <h2>Séries Populares</h2>
+            <div id="series-grid" class="media-grid">
+                <p id="series-loading" class="text-gray-400">Carregando...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Página de Resultados da Pesquisa -->
+    <div id="search-results-page" class="container hidden">
+         <h2 id="search-results-title">Resultados da Pesquisa</h2>
+         <div id="search-results-grid" class="media-grid">
+            <p id="search-loading" class="text-gray-400 col-span-full">Digite algo para pesquisar...</p>
+        </div>
+    </div>
+
+    <!-- Página de Detalhes da Série -->
+    <div id="series-details-page" class="container hidden">
+        <!-- Botão Voltar -->
+        <button id="back-to-grid-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Voltar
+        </button>
+        
+        <!-- Informações da Série (Backdrop, Título, Descrição) -->
+        <div id="series-info">
+            <div class="relative">
+                <img id="series-backdrop" src="" alt="Backdrop da Série" onerror="this.style.display='none'">
+                <!-- [REMOVIDO] Título movido para fora do 'relative' -->
+            </div>
+            <!-- [NOVO] Título e overview agora fluem no documento -->
+            <h2 id="series-title"></h2>
+            <p id="series-overview"></p>
+        </div>
+
+        <!-- [MODIFICADO] Adicionado 'details-grid' e 'details-col' -->
+        <div class="details-grid">
+            
+            <!-- Col 1: Temporadas -->
+            <div class="details-col">
+                <h3>Temporadas</h3>
+                <!-- [MODIFICADO] Adicionado 'list-box' -->
+                <ul id="seasons-list" class="list-box">
+                    <li class="text-gray-400">Carregando...</li>
+                </ul>
+            </div>
+            
+            <!-- Col 2: Episódios -->
+            <div class="details-col">
+                <h3>Episódios</h3>
+                <ul id="episodes-list" class="list-box">
+                    <li class="text-gray-400">Selecione uma temporada...</li>
+                </ul>
+            </div>
+            
+            <!-- Col 3: Player -->
+            <div class="details-col">
+                <h3 id="player-episode-title">Selecione um episódio</h3>
+                <!-- [MODIFICADO] Adicionado 'video-container' -->
+                <div class="video-container">
+                    <iframe id="series-player-iframe"
+                            src=""
+                            frameborder="0"
+                            allow="autoplay; encrypted-media"
+                            allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Modal do Player (SOMENTE PARA FILMES) -->
+    <div id="player-modal" class="hidden">
+        <!-- [MODIFICADO] Adicionado 'modal-content' e 'modal-header' -->
+        <div class="modal-content">
+            <!-- Cabeçalho do Modal -->
+            <div class="modal-header">
+                <h3 id="player-title">Assistir</h3>
+                <button id="close-modal-btn">&times;</button>
+            </div>
+            
+            <!-- Iframe do Player -->
+            <div class="video-container">
+                <iframe id="player-iframe"
+                        src=""
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen
+                ></iframe>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- Configuração da API e Constantes ---
+        const API_KEY = '001bbf841bab48f314947688a8230535';
+        const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+        const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+        const STREAM_BASE_URL_MOVIE = 'https://primevicio.lat/embed/movie/';
+        const STREAM_BASE_URL_TV = 'https://primevicio.lat/embed/tv/';
+
+        // --- Seletores do DOM ---
+        let tabButtons;
+        let tabContents;
+        let mainContent;
+        let homeGrid, moviesGrid, seriesGrid;
+        let homeLoading, moviesLoading, seriesLoading;
+        let playerModal, closeModalBtn, playerIframe, playerTitle;
+        let seriesDetailsPage, backToGridBtn, seriesBackdrop, seriesTitle, seriesOverview, seasonsList, episodesList, playerEpisodeTitle, seriesPlayerIframe;
+        let searchForm, searchInput, searchResultsPage, searchResultsTitle, searchResultsGrid, searchLoading;
+
+        // Estado Global
+        let currentTvId = null;
+        let cameFromSearch = false; 
+
+        // --- Funções Principais ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Atribui os seletores do DOM
+            tabButtons = document.querySelectorAll('.nav-tab');
+            tabContents = document.querySelectorAll('.tab-content');
+            mainContent = document.querySelector('main');
+            homeGrid = document.getElementById('home-grid');
+            moviesGrid = document.getElementById('movies-grid');
+            seriesGrid = document.getElementById('series-grid');
+            homeLoading = document.getElementById('home-loading');
+            moviesLoading = document.getElementById('movies-loading');
+            seriesLoading = document.getElementById('series-loading');
+            playerModal = document.getElementById('player-modal');
+            closeModalBtn = document.getElementById('close-modal-btn');
+            playerIframe = document.getElementById('player-iframe');
+            playerTitle = document.getElementById('player-title');
+            seriesDetailsPage = document.getElementById('series-details-page');
+            backToGridBtn = document.getElementById('back-to-grid-btn');
+            seriesBackdrop = document.getElementById('series-backdrop');
+            seriesTitle = document.getElementById('series-title');
+            seriesOverview = document.getElementById('series-overview');
+            seasonsList = document.getElementById('seasons-list');
+            episodesList = document.getElementById('episodes-list');
+            playerEpisodeTitle = document.getElementById('player-episode-title');
+            seriesPlayerIframe = document.getElementById('series-player-iframe');
+            searchForm = document.getElementById('search-form');
+            searchInput = document.getElementById('search-input');
+            searchResultsPage = document.getElementById('search-results-page');
+            searchResultsTitle = document.getElementById('search-results-title');
+            searchResultsGrid = document.getElementById('search-results-grid');
+            searchLoading = document.getElementById('search-loading');
+
+            setupTabNavigation();
+            loadAllContent();
+            setupModalListeners();
+            setupSearchListener();
+        });
+
+        /**
+         * Configura a lógica de navegação por abas.
+         */
+        function setupTabNavigation() {
+            // Aplica estilo na aba ativa inicial
+            updateActiveTabStyle();
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.setAttribute('data-active', 'false'));
+                    tabContents.forEach(content => content.style.display = 'none');
+
+                    seriesDetailsPage.classList.add('hidden');
+                    searchResultsPage.classList.add('hidden');
+                    mainContent.style.display = 'block'; 
+                    cameFromSearch = false; 
+
+                    button.setAttribute('data-active', 'true');
+                    updateActiveTabStyle(); 
+                    
+                    const targetId = button.getAttribute('data-target');
+                    const targetContent = document.querySelector(targetId);
+                    if (targetContent) {
+                        targetContent.style.display = 'block';
+                    }
+                });
+            });
+        }
+
+        /**
+         * Atualiza o estilo visual da aba ativa (JS controla o estilo).
+         */
+        function updateActiveTabStyle() {
+             // O CSS agora cuida disso com [data-active="true"]
+             // Esta função está mantida caso a lógica de clique precise dela,
+             // mas a estilização é feita pelo CSS.
+        }
+        
+        /**
+         * Carrega o conteúdo para todas as abas.
+         */
+        async function loadAllContent() {
+            try {
+                const trending = await fetchTMDB('/trending/all/week');
+                renderContent(trending.results, homeGrid, homeLoading);
+                
+                const movies = await fetchTMDB('/movie/popular');
+                renderContent(movies.results, moviesGrid, moviesLoading, 'movie');
+
+                const series = await fetchTMDB('/tv/popular');
+                renderContent(series.results, seriesGrid, seriesLoading, 'tv');
+
+            } catch (error) {
+                console.error('Erro ao carregar conteúdo:', error);
+                homeGrid.innerHTML = '<p class="text-red-400">Não foi possível carregar o conteúdo.</p>';
+                moviesGrid.innerHTML = '<p class="text-red-400">Não foi possível carregar o conteúdo.</p>';
+                seriesGrid.innerHTML = '<p class="text-red-400">Não foi possível carregar o conteúdo.</p>';
+            }
+        }
+
+        /**
+         * Renderiza uma lista de itens (filmes/séries) em um grid.
+         */
+        function renderContent(items, gridElement, loadingElement, forcedType = null) {
+            if (!items || items.length === 0) {
+                loadingElement.textContent = 'Nenhum item encontrado.';
+                return;
+            }
+            
+            loadingElement.style.display = 'none';
+            gridElement.innerHTML = ''; 
+
+            items.forEach(item => {
+                const type = forcedType || item.media_type;
+                if (type !== 'movie' && type !== 'tv') return; 
+
+                const title = item.title || item.name;
+                const posterPath = item.poster_path;
+                const imageUrl = posterPath 
+                    ? `${IMAGE_BASE_URL}${posterPath}`
+                    : `https://placehold.co/500x750/334155/e2e8f0?text=${encodeURIComponent(title)}`;
+
+                const card = document.createElement('div');
+                // [MODIFICADO] Classe CSS simplificada
+                card.className = 'grid-item'; 
+                
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${title}" loading="lazy" onerror="this.src='https://placehold.co/500x750/334155/e2e8f0?text=Erro'">
+                    <div>
+                        <h3 title="${title}">${title}</h3>
+                    </div>
+                `;
+                
+                if (type === 'movie') {
+                    card.addEventListener('click', () => showPlayer(item.id, type, title));
+                } else {
+                    card.addEventListener('click', () => showSeriesDetails(item.id));
+                }
+                
+                gridElement.appendChild(card);
+            });
+        }
+
+        /**
+         * Função helper para fazer requisições à API do TMDB.
+         */
+        async function fetchTMDB(endpoint) {
+            const separator = endpoint.includes('?') ? '&' : '?';
+            const url = `${TMDB_BASE_URL}${endpoint}${separator}api_key=${API_KEY}&language=pt-BR`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Erro na API TMDB: ${response.status} ${response.statusText}`);
+            }
+            return response.json();
+        }
+
+        /**
+         * Configura os listeners do modal (fechar).
+         */
+        function setupModalListeners() {
+            closeModalBtn.addEventListener('click', closePlayer);
+            playerModal.addEventListener('click', (e) => {
+                if (e.target === playerModal) {
+                    closePlayer();
+                }
+            });
+            
+            backToGridBtn.addEventListener('click', hideSeriesDetails);
+        }
+
+        /**
+         * Abre o player modal (Filmes).
+         */
+        function showPlayer(id, type, title) { 
+            playerTitle.textContent = title;
+            playerIframe.src = ''; 
+            
+            if (type === 'movie') {
+                currentTvId = null;
+                playerIframe.src = `${STREAM_BASE_URL_MOVIE}${id}`;
+            } 
+            
+            playerModal.classList.remove('hidden');
+            // [MODIFICADO] O CSS usa 'display: flex' para mostrar
+            playerModal.style.display = 'flex'; 
+        }
+
+        /**
+         * Fecha o player modal.
+         */
+        function closePlayer() {
+            playerModal.classList.add('hidden');
+            playerIframe.src = '';
+            // [MODIFICADO] O CSS usa 'display: none' para esconder
+            playerModal.style.display = 'none';
+        }
+
+        // --- Funções de Pesquisa ---
+
+        function setupSearchListener() {
+            searchForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const query = searchInput.value.trim();
+                if (query) {
+                    await executeSearch(query);
+                }
+            });
+        }
+
+        async function executeSearch(query) {
+            cameFromSearch = true; 
+            
+            mainContent.style.display = 'none';
+            seriesDetailsPage.classList.add('hidden');
+            searchResultsPage.classList.remove('hidden');
+            window.scrollTo(0, 0);
+            
+            searchResultsTitle.textContent = `Resultados para "${query}"`;
+            searchResultsGrid.innerHTML = '';
+            searchLoading.textContent = 'Carregando...';
+            searchLoading.style.display = 'block';
+            
+            try {
+                const data = await fetchTMDB(`/search/multi?query=${encodeURIComponent(query)}`);
+                const results = data.results.filter(item => 
+                    (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path
+                );
+
+                if (results.length === 0) {
+                    searchLoading.textContent = 'Nenhum resultado encontrado.';
+                } else {
+                    renderContent(results, searchResultsGrid, searchLoading); 
+                }
+
+            } catch (error) {
+                console.error('Erro ao pesquisar:', error);
+                searchLoading.textContent = 'Erro ao carregar resultados da pesquisa.';
+            }
+        }
+
+
+        // --- Funções da Página de Detalhes da Série ---
+
+        function showSeriesDetails(tvId) {
+            currentTvId = tvId;
+            mainContent.style.display = 'none';
+            searchResultsPage.classList.add('hidden');
+            seriesDetailsPage.classList.remove('hidden'); 
+            window.scrollTo(0, 0); 
+
+            seriesTitle.textContent = '';
+            seriesOverview.textContent = '';
+            seriesBackdrop.src = '';
+            seriesBackdrop.style.display = 'none';
+            seasonsList.innerHTML = '<li class="text-gray-400">Carregando...</li>';
+            episodesList.innerHTML = '<li class="text-gray-400">Selecione uma temporada...</li>';
+            playerEpisodeTitle.textContent = 'Selecione um episódio';
+            seriesPlayerIframe.src = '';
+
+            loadSeriesDetails(tvId);
+        }
+
+        function hideSeriesDetails() {
+            currentTvId = null;
+            
+            if (cameFromSearch) {
+                searchResultsPage.classList.remove('hidden');
+            } else {
+                mainContent.style.display = 'block';
+            }
+            
+            seriesDetailsPage.classList.add('hidden'); 
+            seriesPlayerIframe.src = '';
+        }
+
+        async function loadSeriesDetails(tvId) {
+            try {
+                const details = await fetchTMDB(`/tv/${tvId}`);
+                
+                seriesTitle.textContent = details.name;
+                seriesOverview.textContent = details.overview;
+                if (details.backdrop_path) {
+                    seriesBackdrop.src = `${IMAGE_BASE_URL.replace('w500', 'w1280')}${details.backdrop_path}`;
+                    seriesBackdrop.style.display = 'block';
+                }
+
+                seasonsList.innerHTML = '';
+                const validSeasons = details.seasons.filter(s => s.season_number > 0);
+                
+                if (validSeasons.length === 0) {
+                     seasonsList.innerHTML = '<li class="text-gray-400">Nenhuma temporada encontrada.</li>';
+                     return;
+                }
+
+                validSeasons.forEach((season, index) => {
+                    const li = document.createElement('li');
+                    // [MODIFICADO] Classe CSS simplificada
+                    li.className = 'season-item'; 
+                    li.textContent = season.name;
+                    li.setAttribute('data-season-number', season.season_number);
+                    
+                    li.addEventListener('click', () => {
+                        // [MODIFICADO] Usa classe 'active'
+                        document.querySelectorAll('.season-item').forEach(item => item.classList.remove('active'));
+                        li.classList.add('active');
+                        
+                        loadEpisodesList(tvId, season.season_number);
+                    });
+                    
+                    seasonsList.appendChild(li);
+
+                    if (index === 0) {
+                        li.click();
+                    }
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar detalhes da série:', error);
+                seasonsList.innerHTML = '<li class="text-red-400">Erro ao carregar temporadas.</li>';
+            }
+        }
+
+        async function loadEpisodesList(tvId, seasonNumber) {
+            try {
+                episodesList.innerHTML = '<li class="text-gray-400">Carregando episódios...</li>';
+                const seasonDetails = await fetchTMDB(`/tv/${tvId}/season/${seasonNumber}`);
+                episodesList.innerHTML = ''; 
+                
+                if (!seasonDetails.episodes || seasonDetails.episodes.length === 0) {
+                    episodesList.innerHTML = '<li class="text-gray-400">Nenhum episódio encontrado.</li>';
+                    return;
+                }
+
+                seasonDetails.episodes.forEach(episode => {
+                    const li = document.createElement('li');
+                    // [MODIFICADO] Classe CSS simplificada
+                    li.className = 'episode-item';
+                    li.textContent = `Ep. ${episode.episode_number}: ${episode.name}`;
+                    li.setAttribute('data-episode-number', episode.episode_number);
+                    
+                    li.addEventListener('click', () => {
+                        // [MODIFICADO] Usa classe 'active'
+                        document.querySelectorAll('.episode-item').forEach(item => item.classList.remove('active'));
+                        li.classList.add('active');
+
+                        const episodeTitle = `T${seasonNumber} E${episode.episode_number}: ${episode.name}`;
+                        playEpisodeOnPage(tvId, seasonNumber, episode.episode_number, episodeTitle);
+                    });
+
+                    episodesList.appendChild(li);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar episódios:', error);
+                episodesList.innerHTML = '<li class="text-red-400">Erro ao carregar episódios.</li>';
+            }
+        }
+        
+        function playEpisodeOnPage(tvId, seasonNumber, episodeNumber, episodeTitle) { 
+            playerEpisodeTitle.textContent = episodeTitle;
+            
+            if (tvId && seasonNumber && episodeNumber) {
+                 seriesPlayerIframe.src = `${STREAM_BASE_URL_TV}${tvId}/${seasonNumber}/${episodeNumber}`;
+            } else {
+                 seriesPlayerIframe.src = '';
+            }
+        }
+
+    </script>
+</body>
+</html>
+
+
+
+

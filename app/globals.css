@@ -1461,3 +1461,50 @@ html[data-theme='light'] .form-input { background-color: #fff; color: #000; }
   line-height: 1.6;
   white-space: pre-wrap; /* Preserva quebras de linha */
 }
+
+/* =============================================== */
+/* --- NOVO: EFEITO BOTÃO CINELEVE --- */
+/* =============================================== */
+
+/* Animação de brilho pulsante */
+@keyframes pulse-glow {
+  0% {
+    text-shadow: 0 0 3px var(--accent-yellow), 0 0 6px var(--accent-yellow);
+  }
+  50% {
+    text-shadow: 0 0 6px #fff, 0 0 15px var(--accent-yellow);
+  }
+  100% {
+    text-shadow: 0 0 3px var(--accent-yellow), 0 0 6px var(--accent-yellow);
+  }
+}
+
+/* Classe para o link "CineLeve" no menu desktop */
+.cineleve-link-desktop {
+  /* Cor base especial */
+  color: var(--accent-yellow) !important; 
+  font-weight: 700 !important;
+  /* Aplica a animação */
+  animation: pulse-glow 2.5s infinite linear;
+  /* Garante que a transição de cor padrão não interfira */
+  transition: transform 0.2s ease, color 0.2s ease;
+  will-change: text-shadow;
+}
+
+/* Classe para o link "CineLeve" no menu mobile */
+.cineleve-link-mobile {
+  /* Cor base especial */
+  color: var(--accent-yellow) !important;
+  font-weight: 700 !important;
+  /* Aplica a animação */
+  animation: pulse-glow 2.5s infinite linear;
+  will-change: text-shadow;
+  /* Remove a borda inferior para não conflitar com o brilho */
+  border-bottom-color: transparent !important;
+}
+
+/* Garante que o brilho permaneça mesmo se o link estiver ativo (mobile) */
+.cineleve-link-mobile.active {
+    color: var(--accent-yellow) !important;
+    border-bottom-color: transparent !important;
+}
