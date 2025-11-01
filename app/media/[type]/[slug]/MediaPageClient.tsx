@@ -1,4 +1,4 @@
-// app/media/[type]/[slug]/MediaPageClient.tsx
+// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect, memo, useRef } from 'react';
@@ -165,6 +165,18 @@ export default function MediaPageClient({
           const firestoreDocRef = doc(db, "media", id);
           const firestoreDocSnap = await getDoc(firestoreDocRef);
           const firestoreData = firestoreDocSnap.exists() ? firestoreDocSnap.data() : {};
+          
+          // ***************************************************************
+          // *** NOVO: VERIFICAÇÃO DE CONTEÚDO OCULTO ***
+          // ***************************************************************
+          if (firestoreData.isHidden === true) {
+              console.warn("Este conteúdo está oculto e não pode ser exibido.");
+              setStatus("Conteúdo não encontrado.");
+              router.push('/'); // Redireciona para a página inicial
+              return; // Interrompe a execução
+          }
+          // ***************************************************************
+          
           setFirestoreMediaData(firestoreData); // Guarda os dados do Firestore
 
           // Usa o título do Firestore se existir, senão usa o do TMDB
@@ -185,7 +197,7 @@ export default function MediaPageClient({
       }
       };
       fetchData();
-  }, [id, type]);
+  }, [id, type, router]); // <-- ADICIONADO 'router' às dependências
 
   // 2. Configuração inicial (Filme ou Série) - Lógica do Firestore para filme adicionada
    useEffect(() => {
