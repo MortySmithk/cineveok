@@ -2145,3 +2145,82 @@ html[data-theme='light'] .form-input { background-color: #fff; color: #000; }
   font-size: 0.8rem;
   color: var(--text-secondary);
 }
+/* ... (todo o seu CSS existente) ... */
+
+/*
+=================================
+Estilos do Botão "Assistir Mais Tarde" (Bookmark)
+=================================
+*/
+
+.bookmark-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(12, 12, 12, 0.7);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-primary); /* Cor do ícone não preenchido */
+  transition: all 0.2s ease;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.bookmark-btn:hover,
+.bookmark-btn:focus-visible {
+  background-color: rgba(20, 20, 20, 0.9);
+  transform: scale(1.1);
+}
+
+.bookmark-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Estado "Salvo" */
+.bookmark-btn.saved {
+  color: var(--primary-color); /* Cor do ícone preenchido (amarelo/azul) */
+}
+
+/* Container para lista vazia (Histórico, Assistir Mais Tarde) */
+.empty-list-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 50vh;
+  color: var(--text-secondary);
+}
+.empty-list-container h2 {
+  color: var(--text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+.empty-list-container p {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  max-width: 400px;
+}
+.empty-list-container svg {
+  color: var(--text-secondary);
+}
+
+/* Ajuste no .thumbnail-wrapper para o botão funcionar */
+.thumbnail-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 150%; /* Proporção 2:3 */
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+}

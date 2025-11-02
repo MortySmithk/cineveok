@@ -1,73 +1,110 @@
 // app/components/AuthProvider.tsx
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-// --- IMPORTAÇÕES ATUALIZADAS ---
-import { onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { auth } from '@/app/components/firebase';
-import Image from 'next/image';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { auth, db } from './firebase'; // db importado
+import { 
+  User, 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut as firebaseSignOut 
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'; // Importações do Firestore
+import { toast } from 'react-hot-toast';
+import { WatchLaterProvider } from '../hooks/useWatchLater'; // <-- 1. IMPORTAR
 
-const AuthContext = createContext<{ user: User | null }>({ user: null });
+// ... (interface AuthContextType permanece a mesma)
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // --- useEffect ATUALIZADO ---
   useEffect(() => {
-    // Define a função de cleanup fora da promise
-    let unsubscribe = () => {};
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
 
-    // Define a persistência UMA VEZ.
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        // AGORA, configura o listener
-        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-          setUser(currentUser);
-          setLoading(false);
-        });
-      })
-      .catch((error) => {
-        // Se a persistência falhar (ex: cookies bloqueados),
-        // ainda tenta configurar o listener, mas a sessão não será "local"
-        console.error("Erro ao definir a persistência, continuando...:", error);
-        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-          setUser(currentUser);
-          setLoading(false);
-        });
-      });
+    return () => unsubscribe();
+  }, []);
 
-    // Retorna a função de cleanup do useEffect
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Salva ou atualiza o usuário no Firestore
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          // Novo usuário
+          await setDoc(userRef, {
+            uid: user.uid,
+            displayName: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp()
+          });
+          toast.success(`Bem-vindo, ${user.displayName}!`);
+        } else {
+          // Usuário existente
+          await setDoc(userRef, {
+            lastLogin: serverTimestamp(),
+            displayName: user.displayName, // Atualiza caso mude no Google
+            photoURL: user.photoURL // Atualiza caso mude no Google
+          }, { merge: true }); // 'merge: true' para não sobrescrever dados existentes
+          toast.success(`Bem-vindo de volta, ${user.displayName}!`);
+        }
       }
-    };
-  }, []); // Array vazio garante que isso rode SÓ UMA VEZ.
-  // --- FIM DA ATUALIZAÇÃO ---
+    } catch (error: any) {
+      console.error("Erro no login com Google:", error);
+      toast.error("Erro ao fazer login. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <Image 
-          src="https://i.ibb.co/5X8G9Kn1/cineveo-logo-r.png" 
-          alt="Carregando..."
-          width={120}
-          height={120}
-          className="loading-logo"
-          style={{ objectFit: 'contain' }}
-          priority
-        />
-      </div>
-    );
-  }
+  const signOut = async () => {
+    setLoading(true);
+    try {
+      await firebaseSignOut(auth);
+      toast.success("Você saiu da sua conta.");
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+      toast.error("Erro ao sair. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
+      {/* 2. ENVOLVER OS FILHOS (CHILDREN) */}
+      <WatchLaterProvider>
+        {children}
+      </WatchLaterProvider>
     </AuthContext.Provider>
   );
-}
+};
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
+  }
+  return context;
+};

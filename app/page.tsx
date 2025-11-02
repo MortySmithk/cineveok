@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
 import PlayIcon from '@/app/components/icons/PlayIcon'; // Ainda é necessário para o botão Assistir
-import BookmarkIcon from '@/app/components/icons/BookmarkIcon';
+import BookmarkButton from '@/app/components/BookmarkButton'; // <-- CORREÇÃO: Importa o componente funcional
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
 
@@ -221,7 +221,8 @@ export default function HomePage() {
               <Link draggable="false" href={getMediaHref(item)} key={item.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                    {/* --- CORREÇÃO AQUI --- */}
+                    <BookmarkButton item={item} />
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{item.title || item.name}</h3>
@@ -246,7 +247,8 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                    {/* --- CORREÇÃO AQUI --- */}
+                    <BookmarkButton item={movie} />
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>
@@ -268,7 +270,8 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                    {/* --- CORREÇÃO AQUI --- */}
+                    <BookmarkButton item={series} />
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{series.name}</h3>
@@ -290,7 +293,8 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    <div className="movie-card-bookmark"><BookmarkIcon /></div>
+                    {/* --- CORREÇÃO AQUI --- */}
+                    <BookmarkButton item={movie} />
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>
