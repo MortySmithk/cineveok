@@ -17,9 +17,10 @@ import {
   remove,
   update,
   runTransaction,
-  increment
+  increment,
+  child // <-- ADICIONADO PARA CORRIGIR O ERRO '.path'
 } from 'firebase/database';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore'; 
 
 import LikeIcon from './icons/LikeIcon';
 import DislikeIcon from './icons/DislikeIcon';
@@ -33,7 +34,7 @@ interface Comment {
   id: string; text: string; mediaId: string; userId: string;
   createdAt: number; replyToId: string | null;
   likeCount?: number; dislikeCount?: number;
-  replyCount?: number; // <-- ADICIONADO CONTADOR DE RESPOSTAS
+  replyCount?: number; // Contador de respostas
 }
 type LikeStatus = 'liked' | 'disliked' | null;
 interface FirebaseCommentsProps {
@@ -106,7 +107,6 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
   const [dislikeCount, setDislikeCount] = useState(comment.dislikeCount || 0);
   const [isLiking, setIsLiking] = useState(false);
 
-  // --- NOVO: Refs para listener de respostas ---
   const repliesQueryRef = useRef<any>(null);
   const unsubscribeRepliesRef = useRef<(() => void) | null>(null);
   
@@ -116,9 +116,11 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     ? ref(rtdb, `comment_replies/${comment.replyToId}/${comment.id}`)
     : ref(rtdb, `comments/${mediaId}/${comment.id}`);
 
-  // --- useEffect de Likes (Sem alteração) ---
+  // --- useEffect de Likes (CORRIGIDO) ---
   useEffect(() => {
-    const countersRef = ref(rtdb, `${commentRef.path}/counters`);
+    // --- CORREÇÃO: Substituído .path por child() ---
+    const countersRef = child(commentRef, 'counters');
+    
     const unsubCounters = onValue(countersRef, (snapshot) => {
       const data = snapshot.val();
       setLikeCount(data?.likes || 0);
@@ -132,11 +134,10 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
       return () => { unsubCounters(); unsubUserLike(); };
     }
     return () => unsubCounters();
-  }, [comment.id, currentUserId, commentRef.path]);
+  }, [comment.id, currentUserId, commentRef]); // <- commentRef adicionado como dependência
 
-  // --- useEffect de Limpeza (ATUALIZADO) ---
+  // --- useEffect de Limpeza (Atualizado) ---
   useEffect(() => {
-    // Limpa o listener de respostas se o componente for desmontado
     return () => {
       if (unsubscribeRepliesRef.current) {
         unsubscribeRepliesRef.current();
@@ -144,12 +145,12 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     };
   }, []);
 
-  // --- Função para carregar respostas (ATUALIZADO) ---
-  // Agora é um listener em tempo real e não 'onlyOnce'
+  // --- Função para carregar respostas (Atualizado para realtime) ---
   const loadReplies = () => {
     setIsLoadingReplies(true);
     repliesQueryRef.current = query(ref(rtdb, `comment_replies/${comment.id}`), orderByChild("createdAt"));
     
+    // Agora ouve em tempo real
     unsubscribeRepliesRef.current = onValue(repliesQueryRef.current, (snapshot) => {
       const repliesData: Comment[] = [];
       snapshot.forEach((child) => {
@@ -160,37 +161,35 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     });
   };
 
-  // --- Função para alternar respostas (ATUALIZADO) ---
+  // --- Função para alternar respostas (Atualizado) ---
   const toggleReplies = () => {
     const newShowState = !showReplies;
     setShowReplies(newShowState);
     if (newShowState) {
       loadReplies(); // Inicia o listener
     } else {
-      // Para o listener se fecharmos as respostas
       if (unsubscribeRepliesRef.current) {
-        unsubscribeRepliesRef.current();
+        unsubscribeRepliesRef.current(); // Para o listener
         unsubscribeRepliesRef.current = null;
       }
     }
   };
 
-  // --- Função de Apagar (ATUALIZADO) ---
+  // --- Função de Apagar (Atualizado) ---
   const handleDelete = async () => {
     if (window.confirm("Tem certeza que deseja apagar este comentário?")) {
       try {
-        // 1. Apaga o comentário atual
         await remove(commentRef);
         
         if (comment.replyToId) {
-          // 2a. Se é uma RESPOSTA, decrementa o contador do PAI
+          // Se é uma RESPOSTA, decrementa o contador do PAI
           const rootCommentRef = ref(rtdb, `comments/${mediaId}/${comment.replyToId}`);
           await runTransaction(rootCommentRef, (c) => {
             if (c) { c.replyCount = (c.replyCount || 1) - 1; }
             return c;
           });
         } else {
-          // 2b. Se é um PAI, apaga todas as suas respostas
+          // Se é um PAI, apaga todas as suas respostas
           await remove(ref(rtdb, `comment_replies/${comment.id}`));
           // TODO: Apagar likes (Cloud Function seria o ideal)
         }
@@ -201,17 +200,21 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     }
   };
 
-  // --- handleEdit e handleLikeDislike (Sem alteração) ---
+  // --- handleEdit (Sem alteração) ---
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!editContent.trim()) return;
     try { await update(commentRef, { text: editContent }); setIsEditing(false); } 
     catch (error) { console.error("Erro ao editar:", error); alert("Não foi possível salvar a edição."); }
   };
+
+  // --- handleLikeDislike (CORRIGIDO) ---
   const handleLikeDislike = async (newStatus: 'liked' | 'disliked') => {
     if (!currentUserId || isLiking) return;
     setIsLiking(true);
     const userLikeRef = ref(rtdb, `comment_likes/${comment.id}/${currentUserId}`);
-    const countersRef = ref(rtdb, `${commentRef.path}/counters`);
+    // --- CORREÇÃO: Substituído .path por child() ---
+    const countersRef = child(commentRef, 'counters');
+    
     const previousStatus = likeStatus;
     let finalNewStatus: LikeStatus = newStatus;
     try {
@@ -235,8 +238,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
   const photoURL = profile ? profile.photoURL : null;
   const placeholder = profile ? (profile.displayName[0] || 'U').toUpperCase() : 'U';
   
-  // --- NOVO: Pega o contador de respostas ---
-  const replyCount = comment.replyCount || 0;
+  const replyCount = comment.replyCount || 0; // Pega o contador de respostas
 
   // --- JSX (Layout Corrigido) ---
   return (
@@ -293,7 +295,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
         </div>
       </div>
 
-      {/* --- ATUALIZADO: Botão de Respostas Movido e Condicional --- */}
+      {/* --- ATUALIZADO: Botão "Ver Respostas" --- */}
       {!comment.replyToId && replyCount > 0 && (
         <button
           className="comment-toggle-replies focusable"
@@ -306,7 +308,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
         </button>
       )}
 
-      {/* --- Respostas Aninhadas --- */}
+      {/* Respostas Aninhadas */}
       {showReplies && (
         <div className="comment-replies">
           {isLoadingReplies && <div className='spinner'></div>}
@@ -314,7 +316,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
             <CommentItem
               key={reply.id}
               comment={reply}
-              mediaId={mediaId} // Passa mediaId para o sub-item
+              mediaId={mediaId} 
               currentUserId={currentUserId}
               onReply={onReply}
             />
@@ -376,22 +378,14 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     try {
       if (replyTo) {
         // --- Lógica de Resposta ATUALIZADA ---
-        // 1. Acha o ID do comentário raiz (pai)
         const rootCommentId = replyTo.replyToId || replyTo.id;
-        
-        // 2. Prepara o dado da resposta
         const commentData = {
-          text: newComment,
-          mediaId: mediaId,
-          userId: user.uid,
-          createdAt: serverTimestamp(),
-          replyToId: rootCommentId, // Salva o ID do PAI (raiz)
+          text: newComment, mediaId: mediaId, userId: user.uid,
+          createdAt: serverTimestamp(), replyToId: rootCommentId,
         };
-
-        // 3. Salva a resposta no nó de respostas do PAI
         await push(ref(rtdb, `comment_replies/${rootCommentId}`), commentData);
         
-        // 4. Incrementa o contador de respostas do PAI
+        // Incrementa o contador de respostas do PAI
         const rootCommentRef = ref(rtdb, `comments/${mediaId}/${rootCommentId}`);
         await runTransaction(rootCommentRef, (c) => {
           if (c) {
@@ -401,27 +395,21 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
         });
 
       } else {
-        // --- Lógica de Comentário PAI (Sem alteração) ---
+        // --- Lógica de Comentário PAI (Atualizado) ---
         const commentData = {
-          text: newComment,
-          mediaId: mediaId,
-          userId: user.uid,
-          createdAt: serverTimestamp(),
-          replyToId: null,
+          text: newComment, mediaId: mediaId, userId: user.uid,
+          createdAt: serverTimestamp(), replyToId: null,
           replyCount: 0 // Inicia o contador de respostas
         };
         await push(commentsMediaRef, commentData);
       }
       
-      setNewComment("");
-      setReplyTo(null);
+      setNewComment(""); setReplyTo(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (error) {
       console.error("Erro ao adicionar comentário no RTDB: ", error);
       alert("Não foi possível postar seu comentário. Tente novamente.");
-    } finally {
-      setIsPosting(false);
-    }
+    } finally { setIsPosting(false); }
   };
 
   const handleCancelReply = () => {

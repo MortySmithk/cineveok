@@ -4,18 +4,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { auth, db } from '@/app/components/firebase'; // <-- db importado
-import { doc, setDoc, getDoc } from 'firebase/firestore'; // <-- doc, setDoc e getDoc importados
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, db } from '@/app/components/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore'; 
 
 // --- NOVO: Helper para gerar username ---
 const generateUsername = (name: string, email: string): string => {
-  const base = name ? name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') : email.split('@')[0];
-  return `@${base.substring(0, 15)}`; // Limita a 15 caracteres
+  // Base é o nome de exibição (sem espaços/caracteres especiais) ou a parte local do email
+  const base = name 
+    ? name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') 
+    : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+  
+  // Garante que não está vazio e limita o tamanho
+  const finalBase = base || 'usuario';
+  return `@${finalBase.substring(0, 15)}`;
 }
 
 export default function RegisterPage() {
-  const [username, setDisplayName] = useState(''); // Renomeado para clareza (Nome de Exibição)
+  const [displayName, setDisplayName] = useState(''); // Nome de Exibição
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,20 +36,21 @@ export default function RegisterPage() {
     }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // 1. Atualiza o perfil do Auth
+      
+      // 1. Atualiza o perfil do Auth (Nome de Exibição)
       await updateProfile(userCredential.user, { 
-        displayName: username, // Salva o "Nome de Exibição"
-        photoURL: null 
+        displayName: displayName,
+        photoURL: null // Começa sem foto
       });
       
       // 2. CRIA O PERFIL PÚBLICO NO FIRESTORE (COM USERNAME)
       const userDocRef = doc(db, 'users', userCredential.user.uid);
-      const newUsername = generateUsername('', email); // Gera username a partir do email
+      const newUsername = generateUsername(displayName, email); // Gera username
 
       await setDoc(userDocRef, {
         uid: userCredential.user.uid,
-        displayName: username, // Nome de Exibição (ex: "Clebinho")
-        username: newUsername, // Nome de Usuário (ex: "@clebinho123")
+        displayName: displayName, 
+        username: newUsername, // Salva o @username
         email: email,
         photoURL: null,
         bannerURL: null
@@ -100,7 +107,7 @@ export default function RegisterPage() {
           <input 
             type="text" 
             placeholder="Nome de Exibição (ex: Marreco TV)" 
-            value={username} 
+            value={displayName} 
             onChange={(e) => setDisplayName(e.target.value)} 
             required 
             className="form-input focusable"
