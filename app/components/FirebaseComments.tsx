@@ -18,12 +18,15 @@ import {
   update,
   runTransaction,
   increment,
-  child // <-- ADICIONADO PARA CORRIGIR O ERRO '.path'
+  child
 } from 'firebase/database';
 import { doc, onSnapshot } from 'firebase/firestore'; 
 
 import LikeIcon from './icons/LikeIcon';
 import DislikeIcon from './icons/DislikeIcon';
+
+// --- (NOVO) UID do Admin que receberá as notificações ---
+const NOTIFICATION_ADMIN_UID = "RDdh6WnG2LZQS8gvZuAEdYnUMDr2";
 
 // --- Interfaces Atualizadas ---
 interface UserProfile {
@@ -94,7 +97,7 @@ function useUserProfile(userId: string) {
 }
 
 // ===================================================================
-// === SUB-COMPONENTE: CommentItem (Atualizado) ===
+// === SUB-COMPONENTE: CommentItem (Sem alteração) ===
 // ===================================================================
 function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -369,21 +372,45 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     }
   };
 
-  // --- Função de Envio (ATUALIZADO) ---
+  // --- (NOVO) Função para enviar notificação ---
+  const sendNotificationToAdmin = (commentText: string) => {
+    // Não envia notificação se o próprio admin estiver comentando
+    if (user?.uid === NOTIFICATION_ADMIN_UID) {
+      return;
+    }
+
+    const notificationData = {
+      type: 'comment',
+      text: commentText.substring(0, 100), // Limita o texto
+      authorName: user?.displayName || 'Usuário',
+      mediaId: mediaId,
+      timestamp: serverTimestamp(),
+      read: false
+    };
+
+    const notificationsRef = ref(rtdb, `notifications/${NOTIFICATION_ADMIN_UID}`);
+    push(notificationsRef, notificationData).catch(error => {
+      console.error("Erro ao enviar notificação:", error);
+    });
+  };
+  
+  // --- Função de Envio (ATUALIZADO para incluir notificação) ---
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !user || isPosting) return;
+    const commentText = newComment.trim();
+    if (!commentText || !user || isPosting) return;
     setIsPosting(true);
 
     try {
+      let newCommentRef; // (NOVO) Referência para pegar o ID
       if (replyTo) {
         // --- Lógica de Resposta ATUALIZADA ---
         const rootCommentId = replyTo.replyToId || replyTo.id;
         const commentData = {
-          text: newComment, mediaId: mediaId, userId: user.uid,
+          text: commentText, mediaId: mediaId, userId: user.uid,
           createdAt: serverTimestamp(), replyToId: rootCommentId,
         };
-        await push(ref(rtdb, `comment_replies/${rootCommentId}`), commentData);
+        newCommentRef = await push(ref(rtdb, `comment_replies/${rootCommentId}`), commentData);
         
         // Incrementa o contador de respostas do PAI
         const rootCommentRef = ref(rtdb, `comments/${mediaId}/${rootCommentId}`);
@@ -397,13 +424,17 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
       } else {
         // --- Lógica de Comentário PAI (Atualizado) ---
         const commentData = {
-          text: newComment, mediaId: mediaId, userId: user.uid,
+          text: commentText, mediaId: mediaId, userId: user.uid,
           createdAt: serverTimestamp(), replyToId: null,
           replyCount: 0 // Inicia o contador de respostas
         };
-        await push(commentsMediaRef, commentData);
+        newCommentRef = await push(commentsMediaRef, commentData);
       }
       
+      // --- (NOVO) Envia notificação ---
+      sendNotificationToAdmin(commentText);
+      // --- Fim da notificação ---
+
       setNewComment(""); setReplyTo(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (error) {

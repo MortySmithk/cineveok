@@ -1,15 +1,16 @@
 // app/register/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react'; // <-- Importa useEffect
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+// --- IMPORTAÇÕES ATUALIZADAS ---
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db } from '@/app/components/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore'; 
-import { useAuth } from '@/app/components/AuthProvider'; // <-- Importa o useAuth
+import { useAuth } from '@/app/components/AuthProvider';
 
-// --- Helper para gerar username (Sem alteração) ---
+// --- Helper (Sem alteração) ---
 const generateUsername = (name: string, email: string): string => {
   const base = name 
     ? name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') 
@@ -24,16 +25,15 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const { user } = useAuth(); // <-- Pega o usuário do contexto
+  const { user } = useAuth();
 
-  // --- NOVO: useEffect para redirecionar se já estiver logado ---
   useEffect(() => {
     if (user) {
-      router.push('/'); // Manda para a Home
+      router.push('/');
     }
   }, [user, router]);
-  // --- FIM DA ATUALIZAÇÃO ---
 
+  // --- handleEmailRegister ATUALIZADO ---
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -42,11 +42,16 @@ export default function RegisterPage() {
       return;
     }
     try {
+      // 1. Define a persistência ANTES de criar o usuário
+      await setPersistence(auth, browserLocalPersistence);
+      // 2. Cria o usuário
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
       await updateProfile(userCredential.user, { 
         displayName: displayName, 
-        photoURL: null 
+        photoURL: null
       });
+      
       const userDocRef = doc(db, 'users', userCredential.user.uid);
       const newUsername = generateUsername(displayName, email); 
 
@@ -58,6 +63,7 @@ export default function RegisterPage() {
         photoURL: null,
         bannerURL: null
       });
+
       router.push('/');
     } catch (err: any) {
       setError('Falha ao criar a conta. O email já pode estar em uso.');
@@ -65,10 +71,15 @@ export default function RegisterPage() {
     }
   };
 
+  // --- handleGoogleLogin ATUALIZADO ---
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      // 1. Define a persistência ANTES de fazer o login
+      await setPersistence(auth, browserLocalPersistence);
+      // 2. Faz o login/registro com Google
       const userCredential = await signInWithPopup(auth, provider);
+      
       const user = userCredential.user;
       const userDocRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(userDocRef);
@@ -95,7 +106,6 @@ export default function RegisterPage() {
     }
   };
   
-  // --- ATUALIZADO: Mostra um loading se o 'user' ainda for incerto ---
   if (user) {
     return (
       <div className="loading-container" style={{ minHeight: '50vh' }}>
@@ -104,6 +114,7 @@ export default function RegisterPage() {
     );
   }
 
+  // --- JSX (Sem alteração) ---
   return (
     <div className="auth-page-container">
       <div className="auth-form-wrapper">

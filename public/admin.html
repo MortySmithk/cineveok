@@ -250,7 +250,8 @@
         const firestore = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
-        const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32'];
+        // --- (NOVO) UID ADICIONADO ---
+        const ADMIN_UIDS = ['7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 'YHBxowyZv0hzld7hypnEWHvx5K82', 'QkqhyXbcURYt2zPhblWQLnJEY023', 'tMdWtke7PYBk4l4UNKnbrLQ4i32', 'RDdh6WnG2LZQS8gvZuAEdYnUMDr2'];
         const TMDB_API_KEY = '678cf2db5c3ab4a315d8ec632c493c7d';
 
         let bulkImportData = {};
@@ -968,7 +969,7 @@
 
             } catch (error) {
                 console.error("Erro ao forçar Firestore em massa:", error);
-                alert("Ocorreu um erro durante a atualização em massa. Verifique o console para mais detalhes.");
+                alert("Ocorreu um erro durante a atualização em massa. Verifique o console.");
             } finally {
                 button.disabled = false;
                 button.textContent = originalText;

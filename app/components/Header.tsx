@@ -17,6 +17,7 @@ import HamburgerIcon from './icons/HamburgerIcon'; // RE-ADICIONADO
 import MicrophoneIcon from './icons/MicrophoneIcon';
 import SideMenu from './SideMenu'; // RE-ADICIONADO
 import VoiceSearchOverlay from './VoiceSearchOverlay';
+import NotificationBell from './NotificationBell'; // <-- (NOVO) IMPORTADO
 
 // Ícones para o SubNav
 import HomeIcon from './icons/FlameIcon';
@@ -31,6 +32,15 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
+
+// (NOVO) LISTA DE ADMINS
+const ADMIN_UIDS = [
+  '7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 
+  'YHBxowyZv0hzld7hypnEWHvx5K82', 
+  'QkqhyXbcURYt2zPhblWQLnJEY023', 
+  'tMdWtke7PYBk4l4UNKnbrLQ4i32',
+  'RDdh6WnG2LZQS8gvZuAEdYnUMDr2'
+];
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -163,6 +173,12 @@ export default function Header() {
 
           {/* COLUNA DIREITA: Ícones */}
           <div className="header-right">
+
+            {/* (NOVO) SINO DE NOTIFICAÇÃO (SÓ APARECE PARA ADMINS) */}
+            {user && ADMIN_UIDS.includes(user.uid) && (
+              <NotificationBell />
+            )}
+
             <ThemeSwitcher />
             
             <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>

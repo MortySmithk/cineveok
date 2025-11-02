@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react'; // <-- Importa useEffect
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+// --- IMPORTAÇÕES ATUALIZADAS ---
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db } from '@/app/components/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; 
-import { useAuth } from '@/app/components/AuthProvider'; // <-- Importa o useAuth
+import { useAuth } from '@/app/components/AuthProvider';
 
-// --- Helper para gerar username (Sem alteração) ---
+// --- Helper (Sem alteração) ---
 const generateUsername = (name: string, email: string): string => {
   const base = name 
     ? name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') 
@@ -22,22 +23,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const { user } = useAuth(); // <-- Pega o usuário do contexto
+  const { user } = useAuth();
 
-  // --- NOVO: useEffect para redirecionar se já estiver logado ---
   useEffect(() => {
-    // Se o AuthProvider já carregou e o 'user' existe,
-    // o usuário não deveria estar nesta página.
     if (user) {
-      router.push('/'); // Manda para a Home
+      router.push('/');
     }
   }, [user, router]);
-  // --- FIM DA ATUALIZAÇÃO ---
 
+  // --- handleEmailLogin ATUALIZADO ---
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
+      // 1. Define a persistência ANTES de fazer o login
+      await setPersistence(auth, browserLocalPersistence);
+      // 2. Faz o login
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (err: any) {
@@ -46,10 +47,15 @@ export default function LoginPage() {
     }
   };
   
+  // --- handleGoogleLogin ATUALIZADO ---
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      // 1. Define a persistência ANTES de fazer o login
+      await setPersistence(auth, browserLocalPersistence);
+      // 2. Faz o login com Google
       const userCredential = await signInWithPopup(auth, provider);
+      
       const user = userCredential.user;
       const userDocRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(userDocRef);
@@ -76,8 +82,6 @@ export default function LoginPage() {
     }
   };
 
-  // --- ATUALIZADO: Mostra um loading se o 'user' ainda for incerto ---
-  // Isso impede que a página de login pisque antes do redirecionamento
   if (user) {
     return (
       <div className="loading-container" style={{ minHeight: '50vh' }}>
@@ -86,7 +90,7 @@ export default function LoginPage() {
     );
   }
 
-  // Se o usuário for 'null' (confirmado pelo AuthProvider), mostra a página
+  // --- JSX (Sem alteração) ---
   return (
     <div className="auth-page-container">
       <div className="auth-form-wrapper">
