@@ -12,7 +12,6 @@ import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import HistoryIcon from '@/app/components/icons/HistoryIcon';
 import XIcon from '@/app/components/icons/XIcon';
-// --- IMPORTAÇÃO REMOVIDA ---
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
@@ -25,7 +24,7 @@ interface MediaItem {
   first_air_date?: string;
   vote_average: number;
   media_type: 'movie' | 'tv';
-  profile_path?: string; // Para pessoas
+  profile_path?: string;
 }
 
 function SearchPageContent() {
@@ -35,10 +34,7 @@ function SearchPageContent() {
   const [results, setResults] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // --- CORREÇÃO AQUI ---
-  // Renomeado para corresponder ao hook useSearchHistory
   const { history: searchHistory, addToHistory: addSearchTerm, removeFromHistory: removeSearchTerm } = useSearchHistory();
-  // --- FIM DA CORREÇÃO ---
 
   useEffect(() => {
     if (query) {
@@ -53,7 +49,7 @@ function SearchPageContent() {
               (item.title || item.name)
             );
           setResults(filteredResults);
-          addSearchTerm(query); // Esta função agora corresponde ao hook
+          addSearchTerm(query);
         } catch (error) {
           console.error("Erro ao buscar:", error);
         }
@@ -61,16 +57,18 @@ function SearchPageContent() {
       };
       fetchSearch();
     } else {
-      setResults([]); // Limpa os resultados se a busca for vazia
+      setResults([]);
     }
-  }, [query, addSearchTerm]); // Esta dependência agora corresponde ao hook
+  }, [query, addSearchTerm]);
 
   const handleHistoryClick = (term: string) => {
     router.push(`/search?q=${encodeURIComponent(term)}`);
   };
 
   const renderSkeletons = () => (
-    <div className="media-grid">
+    // --- CORREÇÃO DE CSS AQUI ---
+    <div className="responsive-grid"> 
+    {/* --- FIM DA CORREÇÃO --- */}
       {Array.from({ length: 12 }).map((_, index) => (
         <div key={index} className="media-card-skeleton">
           <div className="thumbnail-skeleton"></div>
@@ -86,9 +84,9 @@ function SearchPageContent() {
       {!query && (
         <>
           <h1 className="page-title">Buscas Recentes</h1>
-          {searchHistory.length > 0 ? ( // Esta variável agora corresponde ao hook
+          {searchHistory.length > 0 ? (
             <ul className="search-history-list">
-              {searchHistory.map((term, index) => ( // Esta variável agora corresponde ao hook
+              {searchHistory.map((term, index) => (
                 <li key={index}>
                   <button 
                     onClick={() => handleHistoryClick(term)} 
@@ -98,7 +96,7 @@ function SearchPageContent() {
                     <span>{term}</span>
                   </button>
                   <button 
-                    onClick={() => removeSearchTerm(term)} // Esta função agora corresponde ao hook
+                    onClick={() => removeSearchTerm(term)}
                     className="history-remove-btn focusable"
                     aria-label={`Remover "${term}" do histórico`}
                   >
@@ -121,7 +119,9 @@ function SearchPageContent() {
           {loading ? (
             renderSkeletons()
           ) : results.length > 0 ? (
-            <div className="media-grid">
+            // --- CORREÇÃO DE CSS AQUI ---
+            <div className="responsive-grid"> 
+            {/* --- FIM DA CORREÇÃO --- */}
               {results.map((item) => {
                 const itemTitle = item.title || item.name || 'Título';
                 const slug = generateSlug(itemTitle) + '-' + item.id;
@@ -143,7 +143,6 @@ function SearchPageContent() {
                       <div className="play-icon-overlay">
                         <PlayIcon width={32} height={32} />
                       </div>
-                      {/* --- BOTÃO REMOVIDO --- */}
                     </div>
                     <div className="card-info">
                       <h3 className="card-title">{itemTitle}</h3>
@@ -172,7 +171,6 @@ function SearchPageContent() {
   );
 }
 
-// Componente wrapper para Suspense
 export default function SearchPage() {
   return (
     <Suspense fallback={<div className="loading-container"><div className="spinner"></div></div>}>
