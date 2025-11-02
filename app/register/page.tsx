@@ -5,7 +5,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 // --- IMPORTAÇÕES ATUALIZADAS ---
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { 
+  createUserWithEmailAndPassword, 
+  updateProfile, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  setPersistence,           // <-- ADICIONADO
+  browserLocalPersistence   // <-- ADICIONADO
+} from 'firebase/auth'; 
 import { auth, db } from '@/app/components/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore'; 
 import { useAuth } from '@/app/components/AuthProvider';
@@ -42,8 +49,9 @@ export default function RegisterPage() {
       return;
     }
     try {
-      // 1. Define a persistência ANTES de criar o usuário
-      await setPersistence(auth, browserLocalPersistence);
+      // 1. Define a persistência LOCAL antes de criar
+      await setPersistence(auth, browserLocalPersistence); 
+      
       // 2. Cria o usuário
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -75,8 +83,9 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // 1. Define a persistência ANTES de fazer o login
+      // 1. Define a persistência LOCAL antes do login
       await setPersistence(auth, browserLocalPersistence);
+      
       // 2. Faz o login/registro com Google
       const userCredential = await signInWithPopup(auth, provider);
       

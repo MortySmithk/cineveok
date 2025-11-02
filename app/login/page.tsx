@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 // --- IMPORTAÇÕES ATUALIZADAS ---
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  setPersistence,           // <-- ADICIONADO
+  browserLocalPersistence   // <-- ADICIONADO
+} from 'firebase/auth'; 
 import { auth, db } from '@/app/components/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; 
 import { useAuth } from '@/app/components/AuthProvider';
@@ -36,10 +42,30 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      // 1. Define a persistência ANTES de fazer o login
-      await setPersistence(auth, browserLocalPersistence);
+      // 1. Define a persistência LOCAL antes do login
+      await setPersistence(auth, browserLocalPersistence); 
+      
       // 2. Faz o login
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // 3. (NOVO) Sincroniza os dados do Firestore (corrige "Usuário Anônimo")
+      const loggedUser = userCredential.user;
+      const userDocRef = doc(db, 'users', loggedUser.uid);
+      const docSnap = await getDoc(userDocRef);
+
+      if (!docSnap.exists()) {
+        // Se o usuário logou mas não tem doc, cria um básico
+        const newUsername = generateUsername(loggedUser.displayName || '', loggedUser.email || '');
+        await setDoc(userDocRef, {
+          uid: loggedUser.uid,
+          displayName: loggedUser.displayName || 'Usuário',
+          email: loggedUser.email,
+          photoURL: loggedUser.photoURL || null,
+          username: newUsername
+        }, { merge: true });
+      }
+      // Fim da nova lógica
+      
       router.push('/');
     } catch (err: any) {
       setError('Falha ao entrar. Verifique o seu email e senha.');
@@ -51,8 +77,9 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // 1. Define a persistência ANTES de fazer o login
+      // 1. Define a persistência LOCAL antes do login
       await setPersistence(auth, browserLocalPersistence);
+      
       // 2. Faz o login com Google
       const userCredential = await signInWithPopup(auth, provider);
       

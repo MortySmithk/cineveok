@@ -15,25 +15,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // --- useEffect ATUALIZADO ---
   useEffect(() => {
-    // 1. Define a persistência para "local" (salvar no navegador)
+    // Define a função de cleanup fora da promise
+    let unsubscribe = () => {};
+
+    // Define a persistência UMA VEZ.
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
-        // 2. DEPOIS de definir a persistência, começa a ouvir o estado do usuário
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        // AGORA, configura o listener
+        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
           setLoading(false);
         });
-        return unsubscribe;
       })
       .catch((error) => {
-        // Se houver um erro (ex: cookies desativados)
-        console.error("Erro ao definir a persistência da autenticação:", error);
-        setLoading(false);
+        // Se a persistência falhar (ex: cookies bloqueados),
+        // ainda tenta configurar o listener, mas a sessão não será "local"
+        console.error("Erro ao definir a persistência, continuando...:", error);
+        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+          setLoading(false);
+        });
       });
-      
-    // A função de limpeza será o 'unsubscribe' retornado pela promessa
-    // (O onAuthStateChanged já lida com isso)
-  }, []);
+
+    // Retorna a função de cleanup do useEffect
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []); // Array vazio garante que isso rode SÓ UMA VEZ.
   // --- FIM DA ATUALIZAÇÃO ---
 
 

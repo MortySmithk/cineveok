@@ -85,6 +85,7 @@ function useUserProfile(userId: string) {
           photoURL: data.photoURL || null
         });
       } else {
+        // Se não encontrar o doc, define um padrão para evitar erros
         setProfile({ displayName: 'Usuário Anônimo', photoURL: null });
       }
     }, (error) => {
@@ -97,7 +98,7 @@ function useUserProfile(userId: string) {
 }
 
 // ===================================================================
-// === SUB-COMPONENTE: CommentItem (Sem alteração) ===
+// === SUB-COMPONENTE: CommentItem (handleDelete ATUALIZADO) ===
 // ===================================================================
 function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -119,9 +120,8 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     ? ref(rtdb, `comment_replies/${comment.replyToId}/${comment.id}`)
     : ref(rtdb, `comments/${mediaId}/${comment.id}`);
 
-  // --- useEffect de Likes (CORRIGIDO) ---
+  // --- useEffect de Likes (Sem alteração) ---
   useEffect(() => {
-    // --- CORREÇÃO: Substituído .path por child() ---
     const countersRef = child(commentRef, 'counters');
     
     const unsubCounters = onValue(countersRef, (snapshot) => {
@@ -137,9 +137,9 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
       return () => { unsubCounters(); unsubUserLike(); };
     }
     return () => unsubCounters();
-  }, [comment.id, currentUserId, commentRef]); // <- commentRef adicionado como dependência
+  }, [comment.id, currentUserId, commentRef]); 
 
-  // --- useEffect de Limpeza (Atualizado) ---
+  // --- useEffect de Limpeza (Sem alteração) ---
   useEffect(() => {
     return () => {
       if (unsubscribeRepliesRef.current) {
@@ -148,12 +148,11 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     };
   }, []);
 
-  // --- Função para carregar respostas (Atualizado para realtime) ---
+  // --- Função para carregar respostas (Sem alteração) ---
   const loadReplies = () => {
     setIsLoadingReplies(true);
     repliesQueryRef.current = query(ref(rtdb, `comment_replies/${comment.id}`), orderByChild("createdAt"));
     
-    // Agora ouve em tempo real
     unsubscribeRepliesRef.current = onValue(repliesQueryRef.current, (snapshot) => {
       const repliesData: Comment[] = [];
       snapshot.forEach((child) => {
@@ -164,21 +163,21 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     });
   };
 
-  // --- Função para alternar respostas (Atualizado) ---
+  // --- Função para alternar respostas (Sem alteração) ---
   const toggleReplies = () => {
     const newShowState = !showReplies;
     setShowReplies(newShowState);
     if (newShowState) {
-      loadReplies(); // Inicia o listener
+      loadReplies(); 
     } else {
       if (unsubscribeRepliesRef.current) {
-        unsubscribeRepliesRef.current(); // Para o listener
+        unsubscribeRepliesRef.current(); 
         unsubscribeRepliesRef.current = null;
       }
     }
   };
 
-  // --- Função de Apagar (Atualizado) ---
+  // --- Função de Apagar (ATUALIZADO) ---
   const handleDelete = async () => {
     if (window.confirm("Tem certeza que deseja apagar este comentário?")) {
       try {
@@ -194,7 +193,8 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
         } else {
           // Se é um PAI, apaga todas as suas respostas
           await remove(ref(rtdb, `comment_replies/${comment.id}`));
-          // TODO: Apagar likes (Cloud Function seria o ideal)
+          // (NOVO) Apaga os likes/dislikes associados a este comentário PAI
+          await remove(ref(rtdb, `comment_likes/${comment.id}`));
         }
       } catch (error) {
         console.error("Erro ao apagar:", error);
@@ -210,12 +210,11 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
     catch (error) { console.error("Erro ao editar:", error); alert("Não foi possível salvar a edição."); }
   };
 
-  // --- handleLikeDislike (CORRIGIDO) ---
+  // --- handleLikeDislike (Sem alteração) ---
   const handleLikeDislike = async (newStatus: 'liked' | 'disliked') => {
     if (!currentUserId || isLiking) return;
     setIsLiking(true);
     const userLikeRef = ref(rtdb, `comment_likes/${comment.id}/${currentUserId}`);
-    // --- CORREÇÃO: Substituído .path por child() ---
     const countersRef = child(commentRef, 'counters');
     
     const previousStatus = likeStatus;
@@ -241,9 +240,9 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
   const photoURL = profile ? profile.photoURL : null;
   const placeholder = profile ? (profile.displayName[0] || 'U').toUpperCase() : 'U';
   
-  const replyCount = comment.replyCount || 0; // Pega o contador de respostas
+  const replyCount = comment.replyCount || 0; 
 
-  // --- JSX (Layout Corrigido) ---
+  // --- JSX (Sem alteração) ---
   return (
     <div className="comment-item-wrapper">
       <div className="comment-item">
@@ -298,7 +297,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
         </div>
       </div>
 
-      {/* --- ATUALIZADO: Botão "Ver Respostas" --- */}
+      {/* --- Botão "Ver Respostas" (Sem alteração) --- */}
       {!comment.replyToId && replyCount > 0 && (
         <button
           className="comment-toggle-replies focusable"
@@ -311,7 +310,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
         </button>
       )}
 
-      {/* Respostas Aninhadas */}
+      {/* Respostas Aninhadas (Sem alteração) */}
       {showReplies && (
         <div className="comment-replies">
           {isLoadingReplies && <div className='spinner'></div>}
@@ -331,7 +330,7 @@ function CommentItem({ comment, mediaId, currentUserId, onReply }: CommentItemPr
 }
 
 // ===================================================================
-// === COMPONENTE PRINCIPAL: FirebaseComments (Atualizado) ===
+// === COMPONENTE PRINCIPAL: FirebaseComments (Sem alteração) ===
 // ===================================================================
 export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
   const { user } = useAuth();
@@ -341,6 +340,9 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  
+  const currentUserProfile = useUserProfile(user?.uid || '');
+  
   const replyToProfile = useUserProfile(replyTo?.userId || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const commentsMediaRef = ref(rtdb, `comments/${mediaId}`);
@@ -372,17 +374,16 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     }
   };
 
-  // --- (NOVO) Função para enviar notificação ---
+  // --- Função para enviar notificação (Sem alteração) ---
   const sendNotificationToAdmin = (commentText: string) => {
-    // Não envia notificação se o próprio admin estiver comentando
     if (user?.uid === NOTIFICATION_ADMIN_UID) {
       return;
     }
 
     const notificationData = {
       type: 'comment',
-      text: commentText.substring(0, 100), // Limita o texto
-      authorName: user?.displayName || 'Usuário',
+      text: commentText.substring(0, 100), 
+      authorName: currentUserProfile?.displayName || 'Usuário', 
       mediaId: mediaId,
       timestamp: serverTimestamp(),
       read: false
@@ -394,7 +395,7 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     });
   };
   
-  // --- Função de Envio (ATUALIZADO para incluir notificação) ---
+  // --- Função de Envio (Sem alteração) ---
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     const commentText = newComment.trim();
@@ -402,9 +403,8 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
     setIsPosting(true);
 
     try {
-      let newCommentRef; // (NOVO) Referência para pegar o ID
+      let newCommentRef; 
       if (replyTo) {
-        // --- Lógica de Resposta ATUALIZADA ---
         const rootCommentId = replyTo.replyToId || replyTo.id;
         const commentData = {
           text: commentText, mediaId: mediaId, userId: user.uid,
@@ -412,7 +412,6 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
         };
         newCommentRef = await push(ref(rtdb, `comment_replies/${rootCommentId}`), commentData);
         
-        // Incrementa o contador de respostas do PAI
         const rootCommentRef = ref(rtdb, `comments/${mediaId}/${rootCommentId}`);
         await runTransaction(rootCommentRef, (c) => {
           if (c) {
@@ -422,18 +421,15 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
         });
 
       } else {
-        // --- Lógica de Comentário PAI (Atualizado) ---
         const commentData = {
           text: commentText, mediaId: mediaId, userId: user.uid,
           createdAt: serverTimestamp(), replyToId: null,
-          replyCount: 0 // Inicia o contador de respostas
+          replyCount: 0 
         };
         newCommentRef = await push(commentsMediaRef, commentData);
       }
       
-      // --- (NOVO) Envia notificação ---
       sendNotificationToAdmin(commentText);
-      // --- Fim da notificação ---
 
       setNewComment(""); setReplyTo(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -450,6 +446,10 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
   const handleStartReply = (comment: Comment) => {
     setReplyTo(comment); textareaRef.current?.focus();
   }
+  
+  const displayName = currentUserProfile ? currentUserProfile.displayName : 'Usuário';
+  const photoURL = currentUserProfile ? currentUserProfile.photoURL : null;
+  const placeholder = currentUserProfile ? (currentUserProfile.displayName[0] || 'U').toUpperCase() : 'U';
 
   return (
     <div className="comments-container">
@@ -458,10 +458,10 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
       {user ? (
         <form className="add-comment-box" onSubmit={handleSubmitComment}>
           <div className="user-avatar-comment">
-            {user.photoURL ? (
-              <Image src={user.photoURL} alt={user.displayName || 'Avatar'} width={40} height={40} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+            {photoURL ? (
+              <Image src={photoURL} alt={displayName || 'Avatar'} width={40} height={40} style={{ borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
-              <div className="avatar-placeholder">{user.displayName ? user.displayName[0].toUpperCase() : 'U'}</div>
+              <div className="avatar-placeholder">{placeholder}</div>
             )}
           </div>
           <div className="comment-input-wrapper">
@@ -502,7 +502,7 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
         </p>
       )}
 
-      {/* Lista de Comentários */}
+      {/* Lista de Comentários (Sem alteração) */}
       <div className="comment-list">
         {isLoading && <div className='spinner'></div>}
         {!isLoading && comments.length === 0 && (<p>Nenhum comentário ainda. Seja o primeiro!</p>)}
