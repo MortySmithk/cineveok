@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
 import PlayIcon from './icons/PlayIcon';
 import StarIcon from './icons/StarIcon';
-import BookmarkButton from './BookmarkButton'; // <-- 1. IMPORTAR
+// --- IMPORTAÇÃO REMOVIDA ---
 
 interface MediaItem {
   id: number;
@@ -91,8 +91,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ title, endpoint, medi
                 <div className="play-icon-overlay">
                   <PlayIcon width={32} height={32} />
                 </div>
-                {/* 2. ADICIONAR O BOTÃO */}
-                <BookmarkButton item={item} />
+                {/* --- BOTÃO REMOVIDO --- */}
               </div>
               <div className="card-info">
                 <h3 className="card-title">{itemTitle}</h3>

@@ -12,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'; // Importações do Firestore
 import { toast } from 'react-hot-toast';
-import { WatchLaterProvider } from '../hooks/useWatchLater'; // <-- 1. IMPORTAR
+// --- IMPORTAÇÃO REMOVIDA ---
 
 // ... (interface AuthContextType permanece a mesma)
 interface AuthContextType {
@@ -93,10 +93,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
-      {/* 2. ENVOLVER OS FILHOS (CHILDREN) */}
-      <WatchLaterProvider>
-        {children}
-      </WatchLaterProvider>
+      {/* --- WRAPPER REMOVIDO --- */}
+      {children}
     </AuthContext.Provider>
   );
 };

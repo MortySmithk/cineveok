@@ -2,123 +2,95 @@
 "use client";
 
 import Link from 'next/link';
-import { useAuth } from './AuthProvider';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import FlameIcon from './icons/FlameIcon';
-import HistoryIcon from './icons/HistoryIcon';
-import BookmarkIcon from './icons/BookmarkIcon'; // <-- 1. IMPORTAR
+import HamburgerIcon from './icons/HamburgerIcon';
+import HomeIcon from './icons/FlameIcon'; // Usando FlameIcon para "Início/Em Alta"
+import MovieIcon from './icons/PlayIcon'; // Usando PlayIcon para "Filmes"
+import TvIcon from './icons/StarIcon'; // Usando StarIcon para "Séries"
+import HistoryIcon from './icons/HistoryIcon'; // <-- RE-ADICIONADO
 
-interface SideMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
+// Interface para os links
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  isExternal?: boolean;
 }
 
-export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
-  const { user, signOut } = useAuth();
+// Componente de ícone genérico para links
+const LinkIcon = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ width: '24px', height: '24px' }}>{children}</div>
+);
+
+export default function SideMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
-  const handleLinkClick = () => {
-    onClose();
+  // Todos os seus links de navegação
+  const navLinks: NavLink[] = [
+    { href: '/', label: 'Início', icon: <HomeIcon /> },
+    { href: '/historico', label: 'Histórico', icon: <HistoryIcon /> }, // <-- RE-ADICIONADO
+    { href: '/filmes', label: 'Filmes', icon: <MovieIcon /> },
+    { href: '/series', label: 'Séries', icon: <TvIcon /> },
+    { href: '/animes', label: 'Animes', icon: <LinkIcon>🍥</LinkIcon> },
+    { href: '/animacoes', label: 'Animações', icon: <LinkIcon>🧸</LinkIcon> },
+    { href: '/doramas', label: 'Doramas', icon: <LinkIcon>🇰🇷</LinkIcon> },
+    { href: '/novelas', label: 'Novelas', icon: <LinkIcon>💃</LinkIcon> },
+    {
+      href: '/cineleve',
+      label: 'CineLeve',
+      icon: <LinkIcon>⚡</LinkIcon>,
+      isExternal: true
+    },
+  ];
+
+  const getLinkClass = (href: string): string => {
+    const isActive = pathname === href;
+    return `side-menu-link focusable ${isActive ? 'active' : ''}`;
   };
 
-  // ... (função getLinkClass permanece a mesma)
-  const getLinkClass = (path: string) => {
-    return `menu-link ${pathname === path ? 'active' : ''}`;
-  };
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
-      <div 
-        className={`side-menu-overlay ${isOpen ? 'open' : ''}`} 
-        onClick={onClose}
-      />
-      <div className={`side-menu ${isOpen ? 'open' : ''}`}>
-        <div className="menu-header">
-          {user ? (
-            <Link href="/perfil" className="menu-profile-link" onClick={handleLinkClick}>
-              <img
-                src={user.photoURL || 'https://i.ibb.co/XzZ0b1B/placeholder.png'}
-                alt="Perfil"
-                className="menu-profile-img"
-              />
-              <span className="menu-profile-name">{user.displayName || 'Ver Perfil'}</span>
-            </Link>
-          ) : (
-            <Link href="/login" className="menu-profile-link" onClick={handleLinkClick}>
-              <div className="menu-profile-img-placeholder"></div>
-              <span className="menu-profile-name">Fazer Login</span>
-            </Link>
-          )}
+      {/* Overlay para fechar o menu */}
+      <div className="side-menu-overlay" onClick={onClose} />
+      
+      {/* Conteúdo do Menu */}
+      <div className="side-menu-content">
+        <div className="side-menu-header">
+          <button onClick={onClose} className="hamburger-btn focusable" aria-label="Fechar menu">
+            <HamburgerIcon />
+          </button>
+          <Link href="/" className="focusable" onClick={onClose}>
+            <Image
+              src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
+              alt="CineVEO Logo"
+              width={140}
+              height={35}
+              priority
+              style={{ objectFit: 'contain' }}
+            />
+          </Link>
         </div>
-
-        <nav className="menu-nav">
-          <ul>
-            <li>
-              <Link href="/" className={getLinkClass('/')} onClick={handleLinkClick}>
-                <FlameIcon />
-                <span>Início</span>
-              </Link>
-            </li>
-            {/* 2. ADICIONAR O NOVO LINK */}
-            {user && (
-              <li>
-                <Link href="/assistir-mais-tarde" className={getLinkClass('/assistir-mais-tarde')} onClick={handleLinkClick}>
-                  <BookmarkIcon />
-                  <span>Assistir mais tarde</span>
-                </Link>
-              </li>
-            )}
-            <li>
-              <Link href="/historico" className={getLinkClass('/historico')} onClick={handleLinkClick}>
-                <HistoryIcon />
-                <span>Histórico</span>
-              </Link>
-            </li>
-          </ul>
-
-          <div className="menu-divider" />
-
-          <ul>
-            <li>
-              <Link href="/filmes" className={getLinkClass('/filmes')} onClick={handleLinkClick}>
-                <span>Filmes</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/series" className={getLinkClass('/series')} onClick={handleLinkClick}>
-                <span>Séries</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/animes" className={getLinkClass('/animes')} onClick={handleLinkClick}>
-                <span>Animes</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/animacoes" className={getLinkClass('/animacoes')} onClick={handleLinkClick}>
-                <span>Animações</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/novelas" className={getLinkClass('/novelas')} onClick={handleLinkClick}>
-                <span>Novelas</span>
-              </Link>
-            </li>
-            <li>
-              <Link href="/doramas" className={getLinkClass('/doramas')} onClick={handleLinkClick}>
-                <span>Doramas</span>
-              </Link>
-            </li>
-          </ul>
+        
+        <nav className="side-menu-nav">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={getLinkClass(link.href)}
+              onClick={onClose}
+              prefetch={link.isExternal ? false : undefined}
+            >
+              {link.icon}
+              <span>{link.label}</span>
+              {link.href === '/cineleve' && <span className="cineleve-badge">Leve</span>}
+            </Link>
+          ))}
         </nav>
-
-        <div className="menu-footer">
-          {user && (
-            <button onClick={signOut} className="menu-logout-btn focusable">
-              Sair da conta
-            </button>
-          )}
-        </div>
       </div>
     </>
   );

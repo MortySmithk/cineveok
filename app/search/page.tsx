@@ -12,7 +12,7 @@ import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import HistoryIcon from '@/app/components/icons/HistoryIcon';
 import XIcon from '@/app/components/icons/XIcon';
-import BookmarkButton from '@/app/components/BookmarkButton'; // <-- 1. IMPORTAR
+// --- IMPORTAÇÃO REMOVIDA ---
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
@@ -139,8 +139,7 @@ function SearchPageContent() {
                       <div className="play-icon-overlay">
                         <PlayIcon width={32} height={32} />
                       </div>
-                      {/* 2. ADICIONAR O BOTÃO */}
-                      <BookmarkButton item={item} />
+                      {/* --- BOTÃO REMOVIDO --- */}
                     </div>
                     <div className="card-info">
                       <h3 className="card-title">{itemTitle}</h3>
