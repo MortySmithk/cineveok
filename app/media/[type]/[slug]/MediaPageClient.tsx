@@ -1,4 +1,4 @@
-// cineveo-next/app/media/[type]/[slug]/MediaPageClient.tsx
+// app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
 import { useState, useEffect, memo, useRef } from 'react';
@@ -33,7 +33,8 @@ import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import ShareIcon from '@/app/components/icons/ShareIcon';
 import { generateSlug } from '@/app/lib/utils';
-import FirebaseComments from '@/app/components/FirebaseComments';
+// import FirebaseComments from '@/app/components/FirebaseComments'; // <-- REMOVIDO
+import DisqusComments from '@/app/components/DisqusComments'; // <-- ADICIONADO
 
 // --- Interfaces (Sem alteração) ---
 interface Genre { id: number; name: string; }
@@ -140,7 +141,7 @@ export default function MediaPageClient({
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
 
 
-  // --- useEffects ---
+  // --- useEffects (Todos os 7 permanecem iguais, eles cuidam do player e dos likes, não dos comentários) ---
 
   // 1. Buscar detalhes da mídia (TMDB + Firestore) - (Sem alteração)
    useEffect(() => {
@@ -325,7 +326,7 @@ export default function MediaPageClient({
   }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, user, saveHistory, isLoadingDetails, selectedSeason]);
 
 
-  // --- 5. useEffect para Views e Stats (MIGRADO PARA RTDB) ---
+  // 5. useEffect para Views e Stats (RTDB) - (Sem alteração)
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -364,7 +365,7 @@ export default function MediaPageClient({
   }, [currentStatsId]); // Depende apenas do ID da mídia/episódio
 
 
-  // --- 6. useEffect para buscar o estado de Like/Dislike do usuário (MIGRADO PARA RTDB) ---
+  // 6. useEffect para buscar o estado de Like/Dislike do usuário (RTDB) - (Sem alteração)
   useEffect(() => {
     if (!user || !currentStatsId) {
       setLikeStatus(null); // Reseta se não logado ou sem ID
@@ -387,7 +388,7 @@ export default function MediaPageClient({
 
   }, [user, currentStatsId]); // Depende do usuário e do ID da mídia/episódio
 
-  // --- 7. useEffect para buscar filmes relacionados (sem alteração) ---
+  // 7. useEffect para buscar filmes relacionados (sem alteração)
    useEffect(() => {
       if (type !== 'movie' || !id || !details || isLoadingDetails) {
         setRelatedMovies([]);
@@ -424,7 +425,7 @@ export default function MediaPageClient({
     setActiveEpisode(null);
   };
 
-  // --- Função para lidar com Likes/Dislikes (MIGRADA PARA RTDB) ---
+  // --- Função para lidar com Likes/Dislikes (RTDB) - (Sem alteração) ---
   const handleLikeDislike = async (newStatus: 'liked' | 'disliked') => {
       if (!user || !currentStatsId || isUpdatingLike) {
           if (!user) router.push('/login?redirect=' + window.location.pathname + window.location.search);
@@ -543,31 +544,35 @@ export default function MediaPageClient({
         );
   };
 
+  // ### ATUALIZADO ###
+  // O componente InteractionsSection agora renderiza DisqusComments
   const InteractionsSection = () => {
       const currentSynopsis = getSynopsis();
       const releaseYear = (details?.release_date || details?.first_air_date)?.substring(0, 4);
+      const canonicalUrl = `https://www.cineveo.lat/media/${type}/${slug}`;
+      const pageTitle = getEpisodeTitle();
 
       return (
         <div className="details-interactions-section">
-          <h2 className="episode-title">{getEpisodeTitle()}</h2>
+          <h2 className="episode-title">{pageTitle}</h2>
 
-          {/* Barra de Ações (Atualizada para usar handleLikeDislike) */}
+          {/* Barra de Ações (Likes/Dislikes) - (Sem alteração) */}
           <div className="media-actions-bar">
              <div className="like-dislike-group">
                 <button
                   className={`action-btn focusable ${likeStatus === 'liked' ? 'active' : ''}`}
-                  onClick={() => handleLikeDislike('liked')} // ATUALIZADO
+                  onClick={() => handleLikeDislike('liked')} 
                   aria-label="Gostei"
-                  disabled={isUpdatingLike} // Simplificado
+                  disabled={isUpdatingLike} 
                 >
                   <LikeIcon isActive={likeStatus === 'liked'} />
                   <span>{formatNumber(stats.likes)}</span>
                 </button>
                 <button
                   className={`action-btn focusable ${likeStatus === 'disliked' ? 'active' : ''}`}
-                  onClick={() => handleLikeDislike('disliked')} // ATUALIZADO
+                  onClick={() => handleLikeDislike('disliked')} 
                   aria-label="Não gostei"
-                  disabled={isUpdatingLike} // Simplificado
+                  disabled={isUpdatingLike} 
                 >
                   <DislikeIcon isActive={likeStatus === 'disliked'} />
                   <span>{formatNumber(stats.dislikes)}</span>
@@ -584,13 +589,15 @@ export default function MediaPageClient({
              </div>
           </div>
 
-          {/* Caixa de Descrição (Atualizada com stats.views) */}
+          {/* Caixa de Descrição (Sem alteração) */}
           <div className={`description-box ${isDescriptionExpanded ? 'expanded' : ''}`} onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
              <div className="description-header">
                  <strong>{formatNumber(stats.views)} visualizações</strong>
                  {releaseYear && <span>{releaseYear}</span>}
              </div>
+             {/* ### INÍCIO DA CORREÇÃO DO ERRO ### */}
              <div className="description-content">
+             {/* ### FIM DA CORREÇÃO DO ERRO ### */}
                  <p>{currentSynopsis}</p>
              </div>
              {(currentSynopsis || '').length > 150 && !isDescriptionExpanded && (
@@ -611,8 +618,16 @@ export default function MediaPageClient({
              )}
           </div>
 
-          {/* Componente de Comentários (Agora usa RTDB) */}
-          {currentStatsId && <FirebaseComments mediaId={currentStatsId} />}
+          {/* ### SUBSTITUÍDO ###
+              Componente de Comentários do Firebase foi trocado pelo Disqus
+          */}
+          {currentStatsId && (
+            <DisqusComments
+              url={canonicalUrl}
+              identifier={currentStatsId}
+              title={pageTitle}
+            />
+          )}
         </div>
       );
   };
