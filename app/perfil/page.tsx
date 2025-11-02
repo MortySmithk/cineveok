@@ -1,109 +1,298 @@
+// app/perfil/page.tsx
 "use client";
 
-import { useState } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth, db } from '@/app/components/firebase'; // <-- db importado
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // <-- importações do Firestore
+import Image from 'next/image';
+import { useAuth } from '@/app/components/AuthProvider';
+import { auth, db } from '@/app/components/firebase';
+import { updateProfile, User } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-// --- NOVO: Helper para gerar username ---
-const generateUsername = (name: string, email: string): string => {
-  const base = name ? name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') : email.split('@')[0];
-  return `@${base.substring(0, 15)}`; // Limita a 15 caracteres
-}
+// Chave da API do ImgBB fornecida
+const IMG_BB_KEY = "497da48eaf4aaa87f1f0b659ed76a605";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+// --- ÍCONE DE LÁPIS (Sem alteração) ---
+const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    {...props}
+  >
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    <path d="m15 5 4 4" />
+  </svg>
+);
+// --- FIM DO ÍCONE ---
+
+export default function PerfilPage() {
+  const { user } = useAuth();
   const router = useRouter();
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // O loading da PÁGINA
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+
+
+  // --- useEffect (ATUALIZADO) ---
+  useEffect(() => {
+    // O useAuth() já esperou o Firebase carregar (graças ao AuthProvider)
+    // Então, se 'user' existir, nós carregamos os dados.
+    if (user) {
+      setDisplayName(user.displayName || '');
+      setPhotoPreview(user.photoURL || null);
+      const userDocRef = doc(db, 'users', user.uid);
+      getDoc(userDocRef)
+        .then((docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUsername(data.username || '');
+            setBannerPreview(data.bannerURL || null);
+            if (data.displayName) setDisplayName(data.displayName);
+            if (data.photoURL) setPhotoPreview(data.photoURL);
+          }
+        })
+        .catch((err) => {
+          console.error("Erro ao buscar dados do Firestore:", err);
+          setError("Não foi possível carregar seus dados personalizados.");
+        })
+        .finally(() => {
+          setIsLoading(false); // Termina o loading DEPOIS de buscar os dados
+        });
+    } else {
+      // Se 'user' for null DEPOIS do AuthProvider carregar,
+      // significa que o usuário NÃO está logado.
+      setIsLoading(false); // <-- CORREÇÃO: Diz que o loading acabou
+      router.push('/login'); // Redireciona para o login
+    }
+  }, [user, router]);
+  // --- FIM DA ATUALIZAÇÃO ---
+
+
+  // ... (uploadToImgBB e handleFileChange - Sem alteração) ...
+  const uploadToImgBB = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_BB_KEY}`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        return data.data.url;
+      } else {
+        throw new Error(data.error.message || "Falha no upload da imagem.");
+      }
+    } catch (err: any) {
+      console.error("Erro no upload para ImgBB:", err);
+      setError(`Erro no upload: ${err.message}`);
+      return null;
+    }
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, type: 'photo' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'photo') {
+          setPhotoFile(file);
+          setPhotoPreview(reader.result as string);
+        } else {
+          setBannerFile(file);
+          setBannerPreview(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // --- handleSave (Sem alteração) ---
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    setIsSaving(true);
     setError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
-    } catch (err: any) {
-      setError('Falha ao entrar. Verifique o seu email e senha.');
-      console.error(err.message);
-    }
-  };
-  
-  // --- ATUALIZADO: handleGoogleLogin ---
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const user = userCredential.user;
-
-      const userDocRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userDocRef); // Verifica se já existe
-      
-      let finalUsername = '';
-      if (docSnap.exists() && docSnap.data().username) {
-        finalUsername = docSnap.data().username; // Mantém o username existente
+      let newPhotoURL = user.photoURL;
+      if (photoFile) {
+        const uploadedPhotoURL = await uploadToImgBB(photoFile);
+        if (uploadedPhotoURL) newPhotoURL = uploadedPhotoURL;
       } else {
-        finalUsername = generateUsername(user.displayName || '', user.email || ''); // Gera um novo
+        newPhotoURL = photoPreview;
       }
 
-      // CRIA OU ATUALIZA O PERFIL PÚBLICO NO FIRESTORE
+      let newBannerURL = bannerPreview;
+      if (bannerFile) {
+        const uploadedBannerURL = await uploadToImgBB(bannerFile);
+        if (uploadedBannerURL) newBannerURL = uploadedBannerURL;
+      }
+  
+      await updateProfile(user, {
+        displayName: displayName,
+        photoURL: newPhotoURL,
+      });
+  
+      const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
-        uid: user.uid,
-        displayName: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        username: finalUsername // Salva o username
-      }, { merge: true }); // Merge para não apagar dados existentes
-
-      router.push('/');
+        displayName: displayName,
+        photoURL: newPhotoURL,
+        username: username,
+        bannerURL: newBannerURL,
+        email: user.email
+      }, { merge: true });
+  
+      alert("Perfil atualizado com sucesso!");
+  
     } catch (err: any) {
-      setError('Falha ao entrar com o Google.');
-      console.error(err.message);
+      console.error("Erro ao salvar perfil:", err);
+      setError(`Falha ao salvar: ${err.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  return (
-    <div className="auth-page-container">
-      <div className="auth-form-wrapper">
-        <h1>Entrar na sua conta</h1>
-        
-        {error && <p className="error-message">{error}</p>}
-        
-        <form onSubmit={handleEmailLogin} className="auth-form">
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            required 
-            className="form-input focusable"
-          />
-          <input 
-            type="password" 
-            placeholder="Senha" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-            className="form-input focusable" 
-          />
-          <button type="submit" className='btn-primary btn-full focusable'>Entrar</button>
-        </form>
 
-        <p className="separator-text">ou</p>
-
-        <button onClick={handleGoogleLogin} className='btn-secondary btn-full focusable'>
-            Entrar com Google
-        </button>
-
-        <p className="link-text">
-            Não tem uma conta?{' '}
-            <Link href="/register" className="focusable">
-                Crie uma conta
-            </Link>
-        </p>
+  // --- Renderização (ATUALIZADA) ---
+  // Mostra o loading ENQUANTO 'isLoading' for true
+  if (isLoading) {
+    return (
+      <div className="loading-container" style={{ minHeight: '50vh' }}>
+        <div className='spinner'></div>
       </div>
-    </div>
+    );
+  }
+
+  // Se o loading acabou E o usuário não existe, não renderiza nada
+  // (porque o useEffect já o redirecionou)
+  if (!user) {
+    return null;
+  }
+
+  // Se o loading acabou E o usuário existe, renderiza a página
+  return (
+    <main style={{ paddingTop: '100px' }}>
+      <div className="main-container">
+        <h1 className="page-title">Minha Conta</h1>
+        
+        <div className="profile-page-container">
+          <form className="profile-form" onSubmit={handleSave}>
+            
+            {/* ... (Todo o JSX do formulário de perfil - Sem alteração) ... */}
+            <div className="profile-header-container">
+              <label htmlFor="banner-upload" className="profile-banner-uploader focusable">
+                <div className="profile-upload-overlay">
+                  <PencilIcon />
+                  <span>Trocar banner</span>
+                </div>
+                {bannerPreview ? (
+                  <Image src={bannerPreview} alt="Banner" layout="fill" objectFit="cover" />
+                ) : (
+                  <div className="profile-banner-placeholder">
+                    <span>Clique para adicionar um banner (1500x500 recomendado)</span>
+                  </div>
+                )}
+              </label>
+              <input 
+                id="banner-upload" 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => handleFileChange(e, 'banner')} 
+                style={{ display: 'none' }}
+              />
+            </div>
+
+            <div className="profile-content-grid">
+              <div className="profile-picture-column">
+                <label htmlFor="photo-upload" className="profile-picture-uploader focusable">
+                  <div className="profile-upload-overlay">
+                    <PencilIcon />
+                  </div>
+                  {photoPreview ? (
+                    <Image src={photoPreview} alt="Foto de Perfil" layout="fill" objectFit="cover" />
+                  ) : (
+                    <div className="profile-picture-placeholder">
+                      <span>{displayName ? displayName[0].toUpperCase() : 'U'}</span>
+                    </div>
+                  )}
+                </label>
+                <input 
+                  id="photo-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => handleFileChange(e, 'photo')} 
+                  style={{ display: 'none' }}
+                />
+              </div>
+
+              <div className="profile-form-container">
+                <div className="profile-fields">
+                  <div className="form-group">
+                    <label htmlFor="displayName">Nome de Exibição</label>
+                    <input 
+                      id="displayName"
+                      type="text" 
+                      className="form-input focusable"
+                      placeholder="Seu nome visível" 
+                      value={displayName} 
+                      onChange={(e) => setDisplayName(e.target.value)} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="username">Nome de Usuário</label>
+                    <input 
+                      id="username"
+                      type="text" 
+                      className="form-input focusable"
+                      placeholder="@seunome (ex: para futuras interações)" 
+                      value={username} 
+                      onChange={(e) => setUsername(e.target.value)} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input 
+                      id="email"
+                      type="email" 
+                      className="form-input"
+                      value={user.email || ''} 
+                      disabled 
+                      readOnly
+                    />
+                  </div>
+
+                  {error && <p className="error-message">{error}</p>}
+
+                  <button 
+                    type="submit" 
+                    className='btn-primary btn-full focusable' 
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+          </form>
+        </div>
+      </div>
+    </main>
   );
 }
