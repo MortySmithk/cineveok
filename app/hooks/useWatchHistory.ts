@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../components/AuthProvider';
-import { db } from '@/app/components/firebase'; // CORREÇÃO AQUI
+import { db } from '@/app/components/firebase'; // CORRIGIDO: O caminho estava quebrado
 import { doc, setDoc, onSnapshot, query, orderBy, limit, collection } from 'firebase/firestore';
 
 export interface WatchItem {

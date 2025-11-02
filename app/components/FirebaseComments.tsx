@@ -3,18 +3,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { db } from './firebase'; // Importa seu 'db' do firebase
+import { rtdb } from './firebase'; // Importa o rtdb (Realtime Database)
 import { useAuth } from './AuthProvider'; // Importa seu hook de autenticação
 import {
-  collection,
-  addDoc,
+  ref,
+  push,
   query,
-  where,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  Timestamp
-} from 'firebase/firestore';
+  orderByChild,
+  onValue,
+  serverTimestamp, // Importa o serverTimestamp do RTDB
+  off
+} from 'firebase/database'; // Importa funções do RTDB
 
 // Interface para um comentário
 interface Comment {
@@ -24,7 +23,7 @@ interface Comment {
   userId: string;
   userName: string;
   userPhotoURL: string | null;
-  createdAt: Timestamp;
+  createdAt: number; // RTDB armazena timestamps como números
 }
 
 // Props do componente
@@ -33,8 +32,9 @@ interface FirebaseCommentsProps {
 }
 
 // Função para formatar o tempo (ex: "há 5 minutos")
-function formatTimeAgo(date: Date | null): string {
-  if (!date) return '';
+function formatTimeAgo(timestamp: number | null): string {
+  if (!timestamp) return '';
+  const date = new Date(timestamp); // Converte número para Data
 
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
   let interval = seconds / 31536000;
@@ -59,40 +59,42 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
   const [isPosting, setIsPosting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Referência da coleção de comentários
-  const commentsCollectionRef = collection(db, "comments");
+  // Referência do RTDB (Nó de comentários para esta mídia)
+  const commentsMediaRef = ref(rtdb, `comments/${mediaId}`);
 
   // Efeito para buscar comentários
   useEffect(() => {
     if (!mediaId) return;
 
     setIsLoading(true);
-    // Cria a query para buscar comentários do mediaId, ordenados por data
+    // Cria a query para buscar comentários, ordenados por data
+    // (RTDB precisa de regras de índice para orderByChild: ".indexOn": "createdAt")
     const q = query(
-      commentsCollectionRef,
-      where("mediaId", "==", mediaId),
-      orderBy("createdAt", "desc")
+      commentsMediaRef,
+      orderByChild("createdAt")
     );
 
-    // Ouve mudanças em tempo real
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // Ouve mudanças em tempo real com onValue
+    const unsubscribe = onValue(q, (snapshot) => {
       const commentsData: Comment[] = [];
-      querySnapshot.forEach((doc) => {
-        commentsData.push({ id: doc.id, ...doc.data() } as Comment);
+      // Itera sobre o snapshot (que é um objeto)
+      snapshot.forEach((childSnapshot) => {
+        commentsData.push({ id: childSnapshot.key, ...childSnapshot.val() } as Comment);
       });
-      setComments(commentsData);
+      
+      setComments(commentsData.reverse()); // Inverte para mostrar o mais novo primeiro
       setCommentCount(commentsData.length);
       setIsLoading(false);
     }, (error) => {
-      console.error("Erro ao buscar comentários: ", error);
+      console.error("Erro ao buscar comentários do RTDB: ", error);
       setIsLoading(false);
     });
 
     // Limpa o listener ao desmontar o componente
-    return () => unsubscribe();
+    return () => off(q, 'value', unsubscribe);
   }, [mediaId]);
 
-  // Auto-ajuste da altura do textarea
+  // Auto-ajuste da altura do textarea (Sem alteração)
   const handleInput = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -107,20 +109,21 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
 
     setIsPosting(true);
     try {
-      await addDoc(commentsCollectionRef, {
+      // Usa 'push' para criar um ID único no RTDB
+      await push(commentsMediaRef, {
         text: newComment,
-        mediaId: mediaId,
+        mediaId: mediaId, // Salva o mediaId para regras de segurança/queries (embora já esteja no caminho)
         userId: user.uid,
         userName: user.displayName || 'Usuário Anônimo',
         userPhotoURL: user.photoURL,
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp(), // Usa o serverTimestamp do RTDB
       });
       setNewComment(""); // Limpa o textarea
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'; // Reseta altura
       }
     } catch (error) {
-      console.error("Erro ao adicionar comentário: ", error);
+      console.error("Erro ao adicionar comentário no RTDB: ", error);
       alert("Não foi possível postar seu comentário. Tente novamente.");
     } finally {
       setIsPosting(false);
@@ -219,7 +222,7 @@ export default function FirebaseComments({ mediaId }: FirebaseCommentsProps) {
               <div className="comment-author-header">
                 <span className="comment-author-name">{comment.userName}</span>
                 <span className="comment-time">
-                  {formatTimeAgo(comment.createdAt?.toDate())}
+                  {formatTimeAgo(comment.createdAt)}
                 </span>
               </div>
               <p className="comment-text">{comment.text}</p>

@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/app/components/firebase'; // CORREÇÃO AQUI
+import { auth } from '@/app/components/firebase'; // CORRIGIDO
 import Image from 'next/image';
 
 const AuthContext = createContext<{ user: User | null }>({ user: null });
