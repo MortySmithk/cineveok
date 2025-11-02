@@ -111,8 +111,7 @@ export default function RootLayout({
           <FloatingTelegramButton />
         </ThemeProvider>
 
-        {/* --- ATUALIZADO SCRIPT DE CONTAGEM DO DISQUS --- */}
-        <Script id="dsq-count-scr" src="//cineveo-2.disqus.com/count.js" async strategy="lazyOnload"></Script>
+        {/* --- REMOVIDO SCRIPT DE CONTAGEM DO DISQUS --- */}
       </body>
     </html>
   );

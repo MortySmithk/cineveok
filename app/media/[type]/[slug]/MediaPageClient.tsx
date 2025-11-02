@@ -33,8 +33,8 @@ import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import ShareIcon from '@/app/components/icons/ShareIcon';
 import { generateSlug } from '@/app/lib/utils';
-// import FirebaseComments from '@/app/components/FirebaseComments'; // <-- REMOVIDO
-import DisqusComments from '@/app/components/DisqusComments'; // <-- ADICIONADO
+// --- SUBSTITUÍDO FirebaseComments por HyvorTalkComments ---
+import HyvorTalkComments from '@/app/components/HyvorTalkComments'; 
 
 // --- Interfaces (Sem alteração) ---
 interface Genre { id: number; name: string; }
@@ -141,7 +141,8 @@ export default function MediaPageClient({
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
 
 
-  // --- useEffects (Todos os 7 permanecem iguais, eles cuidam do player e dos likes, não dos comentários) ---
+  // --- useEffects (Todos os 7 permanecem iguais) ---
+  // ... (Nenhuma alteração nos 7 useEffects) ...
 
   // 1. Buscar detalhes da mídia (TMDB + Firestore) - (Sem alteração)
    useEffect(() => {
@@ -545,11 +546,10 @@ export default function MediaPageClient({
   };
 
   // ### ATUALIZADO ###
-  // O componente InteractionsSection agora renderiza DisqusComments
+  // O componente InteractionsSection agora renderiza HyvorTalkComments
   const InteractionsSection = () => {
       const currentSynopsis = getSynopsis();
       const releaseYear = (details?.release_date || details?.first_air_date)?.substring(0, 4);
-      const canonicalUrl = `https://www.cineveo.lat/media/${type}/${slug}`;
       const pageTitle = getEpisodeTitle();
 
       return (
@@ -595,9 +595,7 @@ export default function MediaPageClient({
                  <strong>{formatNumber(stats.views)} visualizações</strong>
                  {releaseYear && <span>{releaseYear}</span>}
              </div>
-             {/* ### INÍCIO DA CORREÇÃO DO ERRO ### */}
              <div className="description-content">
-             {/* ### FIM DA CORREÇÃO DO ERRO ### */}
                  <p>{currentSynopsis}</p>
              </div>
              {(currentSynopsis || '').length > 150 && !isDescriptionExpanded && (
@@ -619,15 +617,12 @@ export default function MediaPageClient({
           </div>
 
           {/* ### SUBSTITUÍDO ###
-              Componente de Comentários do Firebase foi trocado pelo Disqus
+            Componente de Comentários do Firebase trocado pelo HyvorTalkComments
+            O 'currentStatsId' é o ID único do filme ou episódio,
+            que será usado como 'page-id' pelo Hyvor Talk.
           */}
-          {currentStatsId && (
-            <DisqusComments
-              url={canonicalUrl}
-              identifier={currentStatsId}
-              title={pageTitle}
-            />
-          )}
+          <HyvorTalkComments pageId={currentStatsId} />
+          
         </div>
       );
   };
