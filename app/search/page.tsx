@@ -34,7 +34,11 @@ function SearchPageContent() {
   const query = searchParams.get('q');
   const [results, setResults] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { searchHistory, addSearchTerm, removeSearchTerm } = useSearchHistory();
+  
+  // --- CORREÇÃO AQUI ---
+  // Renomeado para corresponder ao hook useSearchHistory
+  const { history: searchHistory, addToHistory: addSearchTerm, removeFromHistory: removeSearchTerm } = useSearchHistory();
+  // --- FIM DA CORREÇÃO ---
 
   useEffect(() => {
     if (query) {
@@ -49,7 +53,7 @@ function SearchPageContent() {
               (item.title || item.name)
             );
           setResults(filteredResults);
-          addSearchTerm(query);
+          addSearchTerm(query); // Esta função agora corresponde ao hook
         } catch (error) {
           console.error("Erro ao buscar:", error);
         }
@@ -59,7 +63,7 @@ function SearchPageContent() {
     } else {
       setResults([]); // Limpa os resultados se a busca for vazia
     }
-  }, [query, addSearchTerm]);
+  }, [query, addSearchTerm]); // Esta dependência agora corresponde ao hook
 
   const handleHistoryClick = (term: string) => {
     router.push(`/search?q=${encodeURIComponent(term)}`);
@@ -82,9 +86,9 @@ function SearchPageContent() {
       {!query && (
         <>
           <h1 className="page-title">Buscas Recentes</h1>
-          {searchHistory.length > 0 ? (
+          {searchHistory.length > 0 ? ( // Esta variável agora corresponde ao hook
             <ul className="search-history-list">
-              {searchHistory.map((term, index) => (
+              {searchHistory.map((term, index) => ( // Esta variável agora corresponde ao hook
                 <li key={index}>
                   <button 
                     onClick={() => handleHistoryClick(term)} 
@@ -94,7 +98,7 @@ function SearchPageContent() {
                     <span>{term}</span>
                   </button>
                   <button 
-                    onClick={() => removeSearchTerm(term)} 
+                    onClick={() => removeSearchTerm(term)} // Esta função agora corresponde ao hook
                     className="history-remove-btn focusable"
                     aria-label={`Remover "${term}" do histórico`}
                   >
