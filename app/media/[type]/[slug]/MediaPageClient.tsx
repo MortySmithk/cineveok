@@ -33,8 +33,9 @@ import LikeIcon from '@/app/components/icons/LikeIcon';
 import DislikeIcon from '@/app/components/icons/DislikeIcon';
 import ShareIcon from '@/app/components/icons/ShareIcon';
 import { generateSlug } from '@/app/lib/utils';
-// --- SUBSTITUÍDO FirebaseComments por HyvorTalkComments ---
-import HyvorTalkComments from '@/app/components/HyvorTalkComments'; 
+// --- REMOVIDO HyvorTalkComments ---
+// import HyvorTalkComments from '@/app/components/HyvorTalkComments'; 
+import { useTheme } from '@/app/components/ThemeProvider'; // <-- IMPORTADO O TEMA
 
 // --- Interfaces (Sem alteração) ---
 interface Genre { id: number; name: string; }
@@ -119,6 +120,7 @@ export default function MediaPageClient({
   const router = useRouter();
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
+  const { theme } = useTheme(); // <-- BUSCA O TEMA ATUAL
 
   // --- Estados (Sem alteração) ---
   const [details, setDetails] = useState<MediaDetails | null>(null);
@@ -546,7 +548,7 @@ export default function MediaPageClient({
   };
 
   // ### ATUALIZADO ###
-  // O componente InteractionsSection agora renderiza HyvorTalkComments
+  // O componente InteractionsSection agora renderiza o IFRAME
   const InteractionsSection = () => {
       const currentSynopsis = getSynopsis();
       const releaseYear = (details?.release_date || details?.first_air_date)?.substring(0, 4);
@@ -617,11 +619,32 @@ export default function MediaPageClient({
           </div>
 
           {/* ### SUBSTITUÍDO ###
-            Componente de Comentários do Firebase trocado pelo HyvorTalkComments
-            O 'currentStatsId' é o ID único do filme ou episódio,
-            que será usado como 'page-id' pelo Hyvor Talk.
+            O 'currentStatsId' (ID do filme/episódio) é usado como 'pageId'
+            para o nosso sistema de comentários no iframe.
+            Também passamos o 'theme' atual para o iframe.
           */}
-          <HyvorTalkComments pageId={currentStatsId} />
+          {currentStatsId ? (
+            <iframe
+              key={currentStatsId + theme} // Recarrega o iframe se o ID ou o TEMA mudarem
+              src={`/comments.html?pageId=${currentStatsId}&theme=${theme}`}
+              width="100%"
+              height="800" // Altura padrão
+              frameBorder="0"
+              style={{ 
+                border: 'none', 
+                minHeight: '800px', 
+                borderRadius: '8px', 
+                marginTop: '1.5rem',
+                overflow: 'hidden' 
+              }}
+              title="Seção de Comentários"
+              loading="lazy"
+            ></iframe>
+          ) : (
+            <div className="comments-container" style={{ padding: '1rem', textAlign: 'center' }}>
+              Carregando comentários...
+            </div>
+          )}
           
         </div>
       );
@@ -815,3 +838,4 @@ export default function MediaPageClient({
     </>
   );
 }
+
