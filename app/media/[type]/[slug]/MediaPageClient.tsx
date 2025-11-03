@@ -196,7 +196,10 @@ export default function MediaPageClient({
       }
       };
       fetchData();
-  }, [id, type, router]);
+  // *** CORREÇÃO AQUI ***
+  // Removido 'router' da lista de dependências para evitar o loop infinito
+  }, [id, type]);
+  // *** FIM DA CORREÇÃO ***
 
   // 2. Configuração inicial (Filme ou Série) - (Sem alteração)
    useEffect(() => {
