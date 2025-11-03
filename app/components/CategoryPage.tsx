@@ -6,7 +6,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
-import PlayIcon from './icons/PlayIcon';
+// --- ÍCONE REMOVIDO ---
 import StarIcon from './icons/StarIcon';
 // --- IMPORTAÇÃO REMOVIDA ---
 
@@ -103,9 +103,8 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ title, fetchUrl, mediaType 
                   draggable="false"
                   loading="lazy"
                 />
-                <div className="play-icon-overlay">
-                  <PlayIcon width={32} height={32} />
-                </div>
+                {/* --- ATUALIZAÇÃO: Sobreposição de play agora está vazia para o CSS controlar --- */}
+                <div className="play-icon-overlay"></div>
                 {/* --- BOTÃO REMOVIDO --- */}
               </div>
               <div className="card-info">

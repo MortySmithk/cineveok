@@ -3,8 +3,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // Adicione esta linha para desativar a otimização de imagens da Vercel
-    unoptimized: true,
+    // ATUALIZADO: 'false' REATIVA a otimização de imagens.
+    // Isso otimiza as "capas" e corrige o "peso" do site.
+    unoptimized: false, 
 
     remotePatterns: [
       {
@@ -16,6 +17,13 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'image.tmdb.org',
+        port: '',
+        pathname: '/**',
+      },
+      // ADICIONADO: Corrige o erro da imagem do Telegram
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
         port: '',
         pathname: '/**',
       },

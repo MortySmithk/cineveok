@@ -419,7 +419,8 @@
                 if (type === 'movie') {
                     ui.movieSection.classList.remove('hidden');
                     if (firestoreData.urls && firestoreData.urls.length > 0) {
-                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url, urlData.quality, urlData.thumbnailUrl));
+                        // REMOÇÃO: thumbnailUrl removida da chamada de addMovieResolutionUI
+                        firestoreData.urls.forEach(urlData => addMovieResolutionUI(urlData.url, urlData.quality));
                     } else {
                         addMovieResolutionUI();
                     }
@@ -451,7 +452,7 @@
                     const existingEpisode = firestoreData.seasons?.[seasonNumber]?.episodes?.find(e => e.episode_number == ep.episode_number);
                     const existingUrl = existingEpisode?.urls?.[0]?.url || '';
                     const existingQuality = existingEpisode?.urls?.[0]?.quality || 'HD';
-                    const existingThumbnailUrl = existingEpisode?.urls?.[0]?.thumbnailUrl || '';
+                    // REMOÇÃO: existingThumbnailUrl
                     // *** ALTERAÇÃO AQUI: Buscar nome personalizado ***
                     const existingName = existingEpisode?.name || ep.name;
 
@@ -468,7 +469,6 @@
                                 <input type="text" value="${existingQuality}" class="episode-quality bg-gray-700 border border-gray-600 p-1 rounded text-xs w-20" placeholder="HD">
                                 <input type="text" data-episode-number="${ep.episode_number}" value="${existingUrl}" class="episode-url flex-grow bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL do Embed">
                             </div>
-                             <input type="text" value="${existingThumbnailUrl}" class="episode-thumbnail-url w-full bg-gray-700 border border-gray-600 p-1 rounded text-xs" placeholder="URL Miniaturas (.mp4)">
                         </div>
                     `;
                     ui.episodesList.appendChild(div);
@@ -501,7 +501,8 @@
             bulkImportData = {};
         };
         
-        const addMovieResolutionUI = (url = '', quality = 'HD', thumbnailUrl = '') => {
+        // REMOÇÃO: thumbnailUrl removida dos parâmetros
+        const addMovieResolutionUI = (url = '', quality = 'HD') => {
             const div = document.createElement('div');
             div.className = 'p-3 bg-gray-700/50 rounded-md space-y-2 relative';
             div.innerHTML = `
@@ -510,7 +511,6 @@
                     <input type="text" value="${quality}" class="movie-quality bg-gray-700 border border-gray-600 p-2 rounded w-24" placeholder="Qualidade">
                     <input type="text" value="${url}" class="movie-url flex-grow bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL do Embed">
                 </div>
-                <input type="text" value="${thumbnailUrl}" class="movie-thumbnail-url w-full bg-gray-700 border border-gray-600 p-2 rounded" placeholder="URL Miniaturas (.mp4)">
             `;
             ui.movieUrlsList.appendChild(div);
         };
@@ -546,8 +546,8 @@
                     document.querySelectorAll('#movie-urls-list > div').forEach(div => {
                         const url = div.querySelector('.movie-url').value.trim();
                         const quality = div.querySelector('.movie-quality').value.trim() || 'HD';
-                        const thumbnailUrl = div.querySelector('.movie-thumbnail-url').value.trim();
-                        if (url) urls.push({ quality, url, thumbnailUrl });
+                        // REMOÇÃO: Nenhuma leitura de thumbnailUrl
+                        if (url) urls.push({ quality, url, thumbnailUrl: '' }); // thumbnailUrl é salva como string vazia
                     });
                     mediaData.urls = urls;
                 } else if (type === 'tv') {
@@ -558,7 +558,7 @@
                     document.querySelectorAll('#episodes-list > div').forEach(row => {
                         const urlInput = row.querySelector('.episode-url');
                         const qualityInput = row.querySelector('.episode-quality');
-                        const thumbnailInput = row.querySelector('.episode-thumbnail-url');
+                        // REMOÇÃO: Nenhuma leitura de episode-thumbnail-url
                         // *** ALTERAÇÃO AQUI: Ler o input do nome ***
                         const nameInput = row.querySelector('.episode-name');
                         
@@ -573,7 +573,7 @@
                                 urls: url ? [{ // <-- Salva URL se existir
                                     quality: qualityInput.value.trim() || 'HD', 
                                     url: url,
-                                    thumbnailUrl: thumbnailInput.value.trim()
+                                    thumbnailUrl: '' // <-- Salva string vazia para thumbnailUrl
                                 }] : [] // <-- Salva array vazio se não houver URL
                             });
                         }
@@ -592,6 +592,7 @@
                             const existingEpIndex = seasonsToSave[seasonNumber].episodes.findIndex(e => e.episode_number == epNumber);
                             if (existingEpIndex !== -1) {
                                 seasonsToSave[seasonNumber].episodes[existingEpIndex].urls[0].url = url;
+                                // REMOÇÃO: Nenhum update de thumbnailUrl
                             } else if (url) {
                                 // Se for importação em massa, não temos nome personalizado, então buscamos o nome do input (que será o do TMDB)
                                 const nameInput = document.querySelector(`.episode-name[data-episode-number="${epNumber}"]`);
@@ -1361,7 +1362,8 @@
 
             ui.mediaForm.addEventListener('submit', handleMediaFormSubmit);
             ui.cancelEditBtn.addEventListener('click', resetForm);
-            ui.addMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI());
+            // REMOÇÃO: thumbnailUrl removida da chamada
+            ui.addMovieUrlBtn.addEventListener('click', () => addMovieResolutionUI()); 
             
             ui.movieUrlsList.addEventListener('click', (e) => {
                 if (e.target.closest('.remove-btn')) {
@@ -1394,9 +1396,8 @@
                 if (removeBtn) {
                     const episodeRow = removeBtn.closest('.p-3');
                     const urlInput = episodeRow.querySelector('.episode-url');
-                    const thumbInput = episodeRow.querySelector('.episode-thumbnail-url');
+                    // REMOÇÃO: Não precisa limpar o campo de thumbnail
                     if (urlInput) urlInput.value = '';
-                    if (thumbInput) thumbInput.value = '';
                 }
             });
 

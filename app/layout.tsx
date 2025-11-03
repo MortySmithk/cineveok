@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from 'next/script';
+// import Script from 'next/script'; // REMOVIDO PELA OTIMIZAÇÃO
 import Link from 'next/link';
 import "./globals.css";
 import Header from "./components/Header";
@@ -33,28 +33,9 @@ export default function RootLayout({
       <head>
         {/* ... (tags <head> existentes permanecem as mesmas) ... */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, orientation=portrait" />
-        <Script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest" strategy="beforeInteractive" />
-        <Script id="disable-devtool-init" strategy="beforeInteractive">
-          {`
-            try {
-              DisableDevtool({
-                disableMenu: true,
-                disableSelect: false,
-                disableCopy: false,
-                disableCut: true,
-                disablePaste: false,
-                clearLog: true,
-                interval: 500,
-                detectors: [0, 1, 3, 4, 5, 6, 7],
-                ondevtoolopen: function(type, next) {
-                  window.location.href = 'https://i.ibb.co/5hH6bbp2/tentando-inspecionar-o-site.png';
-                }
-              });
-            } catch (e) {
-              // Devtool não conseguiu inicializar, ignora o erro
-            }
-          `}
-        </Script>
+        
+        {/* --- SCRIPTS 'disable-devtool' REMOVIDOS PARA CORRIGIR PERFORMANCE --- */}
+        
       </head>
       <body className={inter.className}>
         <ThemeProvider>

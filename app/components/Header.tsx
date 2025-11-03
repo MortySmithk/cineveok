@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic'; // <-- OTIMIZAÇÃO: Importado o 'dynamic'
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/app/components/firebase';
@@ -17,13 +18,21 @@ import HamburgerIcon from './icons/HamburgerIcon'; // RE-ADICIONADO
 import MicrophoneIcon from './icons/MicrophoneIcon';
 import SideMenu from './SideMenu'; // RE-ADICIONADO
 import VoiceSearchOverlay from './VoiceSearchOverlay';
-import NotificationBell from './NotificationBell'; // <-- (NOVO) IMPORTADO
+// import NotificationBell from './NotificationBell'; // <-- OTIMIZAÇÃO: Importação removida
 
 // Ícones para o SubNav
 import HomeIcon from './icons/FlameIcon';
 import MovieIcon from './icons/PlayIcon';
 import TvIcon from './icons/StarIcon';
 import HistoryIcon from './icons/HistoryIcon';
+
+// OTIMIZAÇÃO: Carrega o sino de notificação dinamicamente (só para admins)
+// Isso impede que usuários normais baixem o código ou abram conexões RTDB.
+const DynamicNotificationBell = dynamic(() => import('./NotificationBell'), {
+  ssr: false, // Não renderiza no servidor
+  loading: () => <div style={{ width: '36px', height: '36px' }} /> // Placeholder
+});
+
 
 // Declaração global para a SpeechRecognition API
 declare global {
@@ -175,8 +184,9 @@ export default function Header() {
           <div className="header-right">
 
             {/* (NOVO) SINO DE NOTIFICAÇÃO (SÓ APARECE PARA ADMINS) */}
+            {/* OTIMIZAÇÃO: Renderiza o componente dinâmico */}
             {user && ADMIN_UIDS.includes(user.uid) && (
-              <NotificationBell />
+              <DynamicNotificationBell />
             )}
 
             <ThemeSwitcher />

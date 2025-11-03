@@ -650,7 +650,7 @@ export default function MediaPageClient({
       );
   };
 
-  // --- EpisodeSelector (Sem alteração) ---
+  // --- EpisodeSelector (ATUALIZADO com loading="lazy") ---
   const EpisodeSelector = () => {
      return (
           <div className="episodes-list-wrapper">
@@ -678,7 +678,7 @@ export default function MediaPageClient({
                           <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
                           <div className="episode-item-thumbnail">
                               {ep.still_path ? (
-                                  <Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} />
+                                  <Image draggable="false" src={`https://image.tmdb.org/t/p/w300${ep.still_path}`} alt={`Cena de ${ep.name}`} width={160} height={90} loading="lazy" />
                               ) : (
                                   <div className='thumbnail-placeholder-small'></div> 
                               )}
@@ -709,7 +709,7 @@ export default function MediaPageClient({
         );
   };
 
-  // --- MovieSelector (Sem alteração) ---
+  // --- MovieSelector (ATUALIZADO com loading="lazy") ---
   const MovieSelector = () => {
      return (
         <div className="episodes-list-wrapper desktop-only-layout">
@@ -721,6 +721,7 @@ export default function MediaPageClient({
                       alt={`Poster de ${details.title}`}
                       width={120} height={180}
                       style={{ objectFit: 'cover', width: '100%', height: 'auto', aspectRatio: '2/3' }}
+                      loading="lazy"
                     />
                 </div>
                 <div className="episode-item-info">
@@ -735,7 +736,7 @@ export default function MediaPageClient({
       );
   };
 
-  // --- RelatedMoviesSection (Sem alteração) ---
+  // --- RelatedMoviesSection (ATUALIZADO com loading="lazy") ---
   const RelatedMoviesSection = () => {
       if (type !== 'movie' || relatedMovies.length === 0) return null;
 
@@ -763,6 +764,7 @@ export default function MediaPageClient({
                       fill
                       className="related-thumbnail-image"
                       sizes="160px"
+                      loading="lazy"
                     />
                     <div className="related-play-overlay"><PlayIcon width={24} height={24}/></div>
                   </div>
@@ -822,7 +824,7 @@ export default function MediaPageClient({
                         <div key={member.id} className='cast-member'>
                             <div className='cast-member-img'>
                                 {member.profile_path ? (
-                                    <Image draggable="false" src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                    <Image draggable="false" src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} alt={member.name} width={150} height={225} style={{width: '100%', height: '100%', objectFit: 'cover'}} loading="lazy" />
                                 ) : <div className='thumbnail-placeholder person'></div>}
                             </div>
                             <strong>{member.name}</strong>
@@ -838,4 +840,3 @@ export default function MediaPageClient({
     </>
   );
 }
-

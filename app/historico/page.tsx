@@ -1,13 +1,13 @@
 // app/historico/page.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // <-- OTIMIZAÇÃO: importado 'useEffect' e 'useMemo'
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { useAuth } from '@/app/components/AuthProvider';
 import Link from 'next/link';
 import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
-import PlayIcon from '@/app/components/icons/PlayIcon'; // Importado
+// --- ÍCONE REMOVIDO ---
 
 // FUNÇÃO ADICIONADA: Gera o Href correto para continuar assistindo
 const getContinueWatchingHref = (item: WatchItem) => {
@@ -22,6 +22,21 @@ export default function HistoricoPage() {
   const { user } = useAuth();
   const { fullHistory, isLoading, movieCount, episodeCount } = useWatchHistory();
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // OTIMIZAÇÃO: Estado para o termo de busca com atraso (debounce)
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // OTIMIZAÇÃO: Atualiza o termo com atraso (300ms)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
 
   if (isLoading) {
     return (
@@ -52,9 +67,14 @@ export default function HistoricoPage() {
       return item.title;
   }
 
-  const filteredHistory = fullHistory.filter(item =>
-    getWatchItemTitle(item).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // OTIMIZAÇÃO: 'useMemo' recalcula a lista filtrada apenas quando
+  // o histórico completo muda ou quando o 'debouncedSearchTerm' muda.
+  const filteredHistory = useMemo(() => {
+    if (!debouncedSearchTerm) return fullHistory;
+    return fullHistory.filter(item =>
+      getWatchItemTitle(item).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [fullHistory, debouncedSearchTerm]);
 
   return (
     <main style={{ paddingTop: '100px' }}>
@@ -77,6 +97,7 @@ export default function HistoricoPage() {
             <input
               type="text"
               value={searchTerm}
+              // OTIMIZAÇÃO: O 'onChange' agora só atualiza o 'searchTerm'
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Pesquisar no seu histórico..."
               className="search-input"
@@ -87,7 +108,8 @@ export default function HistoricoPage() {
         {fullHistory.length === 0 ? (
           <p>Seu histórico está vazio. Comece a assistir algo!</p>
         ) : filteredHistory.length === 0 ? (
-          <p>Nenhum item encontrado para "{searchTerm}".</p>
+          // OTIMIZAÇÃO: Mostra o termo de busca que não teve resultados
+          <p>Nenhum item encontrado para "{debouncedSearchTerm}".</p>
         ) : (
           <div className="responsive-grid">
             {filteredHistory.map((item) => (
@@ -105,8 +127,10 @@ export default function HistoricoPage() {
                     fill
                     className="movie-card-poster"
                     sizes="(max-width: 768px) 30vw, (max-width: 1200px) 20vw, 15vw"
+                    loading="lazy" // <-- OTIMIZAÇÃO: Adicionado lazy loading
                   />
-                  {/* REMOVIDO: <div className="movie-card-play-icon-overlay">...</div> */}
+                  {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
+                  <div className="play-icon-overlay"></div>
                 </div>
                 <div className="movie-card-info">
                   <h3 className="movie-card-title">{getWatchItemTitle(item)}</h3>
