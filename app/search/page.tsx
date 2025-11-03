@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { generateSlug } from '@/app/lib/utils';
 import { useSearchHistory } from '@/app/hooks/useSearchHistory';
-// --- ÍCONE REMOVIDO ---
+import PlayIcon from '@/app/components/icons/PlayIcon';
 import StarIcon from '@/app/components/icons/StarIcon';
 import HistoryIcon from '@/app/components/icons/HistoryIcon';
 import XIcon from '@/app/components/icons/XIcon';
@@ -140,8 +140,9 @@ function SearchPageContent() {
                         draggable="false"
                         loading="lazy"
                       />
-                      {/* --- ATUALIZAÇÃO: Sobreposição de play agora está vazia para o CSS controlar --- */}
-                      <div className="play-icon-overlay"></div>
+                      <div className="play-icon-overlay">
+                        <PlayIcon width={32} height={32} />
+                      </div>
                     </div>
                     <div className="card-info">
                       <h3 className="card-title">{itemTitle}</h3>

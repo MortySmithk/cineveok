@@ -6,7 +6,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
-// --- ÍCONE REMOVIDO ---
+import PlayIcon from '@/app/components/icons/PlayIcon'; // Ainda é necessário para o botão Assistir
 // --- IMPORTAÇÃO REMOVIDA ---
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
@@ -104,12 +104,7 @@ export default function HomePage() {
   }, []);
 
   // Efeito para adicionar a funcionalidade de arrastar para rolar
-  // OTIMIZAÇÃO: Este useEffect agora depende apenas de `isLoading`.
-  // Ele rodará apenas UMA VEZ quando o loading terminar,
-  // em vez de rodar toda vez que os dados de filmes mudarem.
   useEffect(() => {
-    if (isLoading) return; // Só executa quando o loading terminar
-
     const addDragScroll = (element: HTMLElement | null) => {
       if (!element) return;
       let isDown = false;
@@ -167,8 +162,7 @@ export default function HomePage() {
     return () => {
         cleanupFunctions.forEach(cleanup => cleanup && cleanup());
     };
-    
-  }, [isLoading]); // <-- OTIMIZAÇÃO AQUI
+  }, [isLoading, continueWatching, trendingToday, popularMovies, popularSeries, popularAnimations]); // Adiciona novas dependências
 
   const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (hasDragged.current) {
@@ -205,8 +199,6 @@ export default function HomePage() {
                 >
                   <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
-                    <div className="play-icon-overlay"></div>
                   </div>
                   <div className="movie-card-info">
                     <h3 className="movie-card-title">{item.title}</h3>
@@ -229,8 +221,7 @@ export default function HomePage() {
               <Link draggable="false" href={getMediaHref(item)} key={item.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
-                    <div className="play-icon-overlay"></div>
+                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{item.title || item.name}</h3>
@@ -255,8 +246,7 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
-                    <div className="play-icon-overlay"></div>
+                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>
@@ -278,8 +268,7 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
-                    <div className="play-icon-overlay"></div>
+                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{series.name}</h3>
@@ -301,8 +290,7 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
-                    <div className="play-icon-overlay"></div>
+                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>

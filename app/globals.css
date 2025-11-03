@@ -4,11 +4,9 @@
 
 :root {
   /* ... (variáveis de cor inalteradas) ... */
-  /* --- ATUALIZADO PARA TEMA CINZA --- */
-  --background-color: #1f1f22;
-  --card-color: #2e2e32;
-  --border-color: #444449;
-  /* --- FIM DA ATUALIZAÇÃO --- */
+  --background-color: #0d0d0d;
+  --card-color: #1a1a1a;
+  --border-color: #2a2a2a;
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
   --accent-red: #e50914;
@@ -55,10 +53,8 @@ main { padding-top: 68px; }
 /* ================================================= */
 .site-header-main {
   position: fixed; top: 0; left: 0; width: 100%;
-  /* --- ATUALIZADO PARA TEMA CINZA E BLUR REDUZIDO --- */
-  background-color: rgba(31, 31, 34, 0.85); /* Derivado de #1f1f22 */
-  backdrop-filter: blur(5px); /* Reduzido de 10px para melhor performance */
-  /* --- FIM DA ATUALIZAÇÃO --- */
+  background-color: rgba(13, 13, 13, 0.85);
+  backdrop-filter: blur(10px);
   z-index: 1000;
   height: 68px; /* Altura fixa para o header */
 }
@@ -344,9 +340,7 @@ html[data-theme='light'] .site-header-main {
 }
 .search-input:focus { 
   border-color: var(--accent-yellow); 
-  /* --- ATUALIZADO PARA TEMA CINZA --- */
-  background-color: #111; 
-  /* --- FIM DA ATUALIZAÇÃO --- */
+  background-color: #000; 
   z-index: 5;
 }
 html[data-theme='light'] .search-input:focus { background-color: #fff; }
@@ -491,31 +485,28 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 2.5rem 1rem;
 }
-.movie-card, .media-card { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card {
   display: flex;
   flex-direction: column;
   border-radius: 8px;
   overflow: hidden;
   background-color: var(--card-color);
   border: 1px solid var(--border-color);
-  /* --- ATUALIZAÇÃO: Removido 'transform' da transição --- */
-  transition: box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
 }
-.movie-card:hover, .media-card:hover { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
-  /* --- ATUALIZAÇÃO: Removido 'transform: translateY(-5px)' --- */
+.movie-card:hover {
+  transform: translateY(-5px);
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  /* --- CORREÇÃO: Adicionado z-index para o card "subir" --- */
-  z-index: 10;
 }
-.movie-card-poster-wrapper, .thumbnail-wrapper { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card-poster-wrapper {
   position: relative;
   width: 100%;
   padding-top: 150%; /* Proporção 2:3 */
   overflow: hidden;
   background-color: var(--card-color);
 }
-.movie-card-poster, .thumbnail-image { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card-poster {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -523,13 +514,9 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
   object-fit: cover;
   transition: transform 0.4s ease;
 }
-/* --- REMOVIDO: Efeito de zoom no hover da imagem --- */
-/*
 .movie-card:hover .movie-card-poster {
   transform: scale(1.1);
 }
-*/
-
 .movie-card-bookmark {
     position: absolute; top: 10px; right: 10px;
     background-color: rgba(12, 12, 12, 0.7); backdrop-filter: blur(5px);
@@ -539,11 +526,10 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 }
 .movie-card-bookmark:hover { background-color: var(--accent-red); }
 .movie-card-bookmark svg { width: 16px; height: 16px; }
-
-.card-info, .movie-card-info { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card-info {
     padding: 0.75rem;
 }
-.card-title, .movie-card-title { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card-title {
   font-size: 1rem;
   font-weight: 500;
   white-space: nowrap;
@@ -552,7 +538,7 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
   color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
-.card-meta, .movie-card-meta { /* --- ATUALIZAÇÃO: Aplicando a ambos --- */
+.movie-card-meta {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -560,9 +546,8 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
   color: var(--text-secondary);
   font-weight: 500;
 }
-.card-meta span, .movie-card-meta span { display: flex; align-items: center; gap: 0.25rem; }
-.card-meta svg, .movie-card-meta svg { width: 12px; height: 12px; color: var(--accent-yellow); }
-
+.movie-card-meta span { display: flex; align-items: center; gap: 0.25rem; }
+.movie-card-meta svg { width: 12px; height: 12px; color: var(--accent-yellow); }
 .continue-watching-progress {
   font-size: 0.8rem;
   font-weight: bold;
@@ -837,10 +822,7 @@ html[data-theme='light'] .search-input:focus { background-color: #fff; }
 
 /* --- RODAPÉ --- */
 .site-footer {
-  /* --- ATUALIZADO PARA TEMA CINZA --- */
-  background-color: #18181b; 
-  /* --- FIM DA ATUALIZAÇÃO --- */
-  color: var(--text-secondary);
+  background-color: #111111; color: var(--text-secondary);
   padding: 3rem 0; margin-top: 4rem;
   border-top: 1px solid var(--border-color);
 }
@@ -1299,8 +1281,8 @@ html[data-theme='light'] .site-footer {
 .focusable:focus-visible {
   outline: 4px solid #f5c518 !important;
   outline-offset: 3px !important;
-  /* --- ATUALIZAÇÃO: Removido 'transform' do foco --- */
-  transition: outline 0.2s ease-in-out;
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out, outline 0.2s ease-in-out;
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
   z-index: 10;
 }
@@ -1381,10 +1363,7 @@ html[data-theme='light'] .site-footer {
 .auth-form { display: flex; flex-direction: column; gap: 1rem; }
 .form-input {
   padding: 0.9rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
-  /* --- ATUALIZADO PARA TEMA CINZA --- */
-  background-color: var(--background-color); 
-  /* --- FIM DA ATUALIZAÇÃO --- */
-  color: white; font-size: 1rem; width: 100%; transition: border-color 0.2s;
+  background-color: #0d0d0d; color: white; font-size: 1rem; width: 100%; transition: border-color 0.2s;
 }
 html[data-theme='light'] .form-input { background-color: #fff; color: #000; }
 .form-input:focus { outline: none; border-color: var(--accent-yellow); }
@@ -2244,37 +2223,4 @@ Estilos do Botão "Assistir Mais Tarde" (Bookmark)
   background-color: var(--bg-secondary);
   border-radius: 8px;
   overflow: hidden;
-}
-
-/*
-=================================
---- ATUALIZAÇÃO: NOVOS ESTILOS DE OVERLAY DE PLAY ---
-=================================
-*/
-.play-icon-overlay {
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0); /* Começa transparente */
-  background-image: url('https://i.ibb.co/BVR11vG1/play-bot-o.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  /* --- ATUALIZAÇÃO: Botão de play menor --- */
-  background-size: 48px 48px; /* Tamanho do seu botão de play */
-  opacity: 0;
-  transition: background-color 0.3s ease, opacity 0.3s ease;
-  pointer-events: none; /* Para o clique atravessar */
-  z-index: 2; /* Fica em cima da imagem */
-}
-
-/* Efeito ao passar o mouse */
-.media-card:hover .play-icon-overlay,
-.movie-card:hover .play-icon-overlay {
-  background-color: rgba(0, 0, 0, 0.5); /* Fundo escuro */
-  opacity: 1; /* Mostra o overlay e o botão */
-}
-
-/* Remove o zoom da imagem que o usuário não queria */
-.media-card:hover .thumbnail-image,
-.movie-card:hover .movie-card-poster {
-   transform: none;
 }
