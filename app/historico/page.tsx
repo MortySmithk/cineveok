@@ -1,7 +1,7 @@
 // app/historico/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from 'react'; // <-- OTIMIZAÇÃO: importado 'useEffect' e 'useMemo'
+import { useState, useEffect, useMemo } from 'react';
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { useAuth } from '@/app/components/AuthProvider';
 import Link from 'next/link';
@@ -132,11 +132,17 @@ export default function HistoricoPage() {
                   {/* --- ATUALIZAÇÃO: Adicionada a div de overlay --- */}
                   <div className="play-icon-overlay"></div>
                 </div>
-                <div className="movie-card-info">
-                  <h3 className="movie-card-title">{getWatchItemTitle(item)}</h3>
+                <div className="card-info">
+                  <h3 className="card-title">{getWatchItemTitle(item)}</h3>
+                   
+                   {/* --- CORREÇÃO AQUI --- */}
                    <div className="movie-card-meta">
-                     <span>{new Date(item.lastWatched).toLocaleDateString('pt-BR')}</span>
+                     {item.lastWatched ? ( // Verifica se lastWatched existe e é um valor válido
+                       <span>{new Date(item.lastWatched).toLocaleDateString('pt-BR')}</span>
+                     ) : null}
                    </div>
+                   {/* --- FIM DA CORREÇÃO --- */}
+                   
                 </div>
               </Link>
             ))}
