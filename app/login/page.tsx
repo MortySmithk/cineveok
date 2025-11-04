@@ -1,3 +1,4 @@
+// app/login/page.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,6 +15,9 @@ import {
 import { auth, db } from '@/app/components/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore'; 
 import { useAuth } from '@/app/components/AuthProvider';
+
+// Importação do CSS específico de Autenticação
+import "./AuthPage.css";
 
 // --- Helper (Sem alteração) ---
 const generateUsername = (name: string, email: string): string => {

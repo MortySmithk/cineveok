@@ -1,19 +1,30 @@
 // app/layout.tsx
 import type { Metadata } from "next";
+// 1. Importar a fonte 'Inter' do next/font
 import { Inter } from "next/font/google";
 import Script from 'next/script';
 import Link from 'next/link';
 import "./globals.css";
 import Header from "./components/Header";
 import { AuthProvider } from "./components/AuthProvider";
-import AppInitializer from "./components/AppInitializer";
 import { ThemeProvider } from "./components/ThemeProvider";
 import FloatingTelegramButton from "./components/FloatingTelegramButton";
-import ChatangoEmbed from "./components/ChatangoEmbed";
+// 2. Importar 'dynamic' para carregamento dinâmico
+import dynamic from "next/dynamic";
 
-const inter = Inter({ subsets: ["latin"] });
+// 3. Configurar a fonte 'Inter'
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap', // Garante que o texto apareça rápido
+  variable: '--font-inter' // Cria uma variável CSS
+});
 
-// ... (metadata permanece o mesmo)
+// 4. Carregar o Chatango dinamicamente (só no cliente)
+const DynamicChatango = dynamic(
+  () => import('./components/ChatangoEmbed'),
+  { ssr: false } 
+);
+
 export const metadata: Metadata = {
   title: "Assistir Filmes e Séries Online HD, Filmes Online, Séries Online.",
   description: "Se o site não abrir instale uma VPN Gratis e Confiavel, Baixe Acessando: https://1.1.1.1/ - Assista Filmes, Séries, Animes, Novelas, Doramas, Documentários e Muito Mais Somente no CineVEO!",
@@ -29,37 +40,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR">
+    // 5. Aplicar a variável da fonte ao <html>
+    <html lang="pt-BR" className={inter.variable}>
       <head>
-        {/* ... (tags <head> existentes permanecem as mesmas) ... */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, orientation=portrait" />
-        <Script src="https://cdn.jsdelivr.net/npm/disable-devtool@latest" strategy="beforeInteractive" />
-        <Script id="disable-devtool-init" strategy="beforeInteractive">
-          {`
-            try {
-              DisableDevtool({
-                disableMenu: true,
-                disableSelect: false,
-                disableCopy: false,
-                disableCut: true,
-                disablePaste: false,
-                clearLog: true,
-                interval: 500,
-                detectors: [0, 1, 3, 4, 5, 6, 7],
-                ondevtoolopen: function(type, next) {
-                  window.location.href = 'https://i.ibb.co/5hH6bbp2/tentando-inspecionar-o-site.png';
-                }
-              });
-            } catch (e) {
-              // Devtool não conseguiu inicializar, ignora o erro
-            }
-          `}
-        </Script>
       </head>
-      <body className={inter.className}>
+      {/* 6. Remover 'inter.className' do body (já está no html) */}
+      <body className="">
         <ThemeProvider>
           <AuthProvider>
-            <AppInitializer>
               <Header />
               <div style={{ minHeight: 'calc(100vh - 280px)' }}>
                 {children}
@@ -67,15 +56,14 @@ export default function RootLayout({
 
               <footer className="site-footer">
                 <div className="main-container">
-                  <ChatangoEmbed />
+                  {/* 7. Renderizar o chat dinâmico */}
+                  <DynamicChatango />
 
                   <div className="aviso-legal">
-                    {/* ... (conteúdo do aviso legal) ... */}
                     <h3>Aviso Legal</h3>
                     <p>O Site CineVEO é apenas Um AGREGADOR de Links assim como o Google. Apenas Agrega e Organiza Os Links Externos MP4. Não Somos Responsáveis Pelos Arquivos Aqui Encontrados.</p>
                   </div>
                   <div className="footer-grid">
-                    {/* ... (conteúdo do grid do rodapé) ... */}
                     <div className="footer-section">
                       <h4>Também Criados Pelo CineVEO:</h4>
                       <ul>
@@ -100,18 +88,14 @@ export default function RootLayout({
                     </div>
                   </div>
                   <div className="footer-bottom">
-                    {/* ... (conteúdo do rodapé inferior) ... */}
                     <p>© 2025 CineVEO. Todos os Direitos Reservados.</p>
                     <p>Email para contato: cineveok@gmail.com</p>
                   </div>
                 </div>
               </footer>
-            </AppInitializer>
           </AuthProvider>
           <FloatingTelegramButton />
         </ThemeProvider>
-
-        {/* --- REMOVIDO SCRIPT DE CONTAGEM DO DISQUS --- */}
       </body>
     </html>
   );

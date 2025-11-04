@@ -18,7 +18,16 @@ const getContinueWatchingHref = (item: WatchItem) => {
   return base;
 };
 
+// --- Helper (MOV getKeyframes-movido para cima) ---
+const getWatchItemTitle = (item: WatchItem) => {
+  if (item.mediaType === 'tv' && item.progress) {
+    return `${item.title} - T${item.progress.season} E${item.progress.episode}`;
+  }
+  return item.title;
+}
+
 export default function HistoricoPage() {
+  // --- TODOS OS HOOKS AGORA ESTÃO NO TOPO ---
   const { user } = useAuth();
   const { fullHistory, isLoading, movieCount, episodeCount } = useWatchHistory();
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +46,17 @@ export default function HistoricoPage() {
     };
   }, [searchTerm]);
 
+  // OTIMIZAÇÃO: 'useMemo' agora está no topo, antes dos returns
+  const filteredHistory = useMemo(() => {
+    if (!debouncedSearchTerm) return fullHistory;
+    return fullHistory.filter(item =>
+      getWatchItemTitle(item).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [fullHistory, debouncedSearchTerm]);
+  // --- FIM DOS HOOKS ---
 
+
+  // --- Returns condicionais (agora estão DEPOIS dos hooks) ---
   if (isLoading) {
     return (
       <div className="loading-container" style={{ minHeight: '50vh' }}>
@@ -60,22 +79,7 @@ export default function HistoricoPage() {
     );
   }
   
-  const getWatchItemTitle = (item: WatchItem) => {
-      if (item.mediaType === 'tv' && item.progress) {
-          return `${item.title} - T${item.progress.season} E${item.progress.episode}`;
-      }
-      return item.title;
-  }
-
-  // OTIMIZAÇÃO: 'useMemo' recalcula a lista filtrada apenas quando
-  // o histórico completo muda ou quando o 'debouncedSearchTerm' muda.
-  const filteredHistory = useMemo(() => {
-    if (!debouncedSearchTerm) return fullHistory;
-    return fullHistory.filter(item =>
-      getWatchItemTitle(item).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
-  }, [fullHistory, debouncedSearchTerm]);
-
+  // --- O restante da renderização ---
   return (
     <main style={{ paddingTop: '100px' }}>
       <div className="main-container">
@@ -117,7 +121,7 @@ export default function HistoricoPage() {
                 draggable="false"
                 href={getContinueWatchingHref(item)} // <-- MODIFICAÇÃO AQUI
                 key={item.id}
-                className="movie-card focusable"
+                className="movie-card" // <-- CLASSE 'focusable' REMOVIDA
               >
                 <div className="movie-card-poster-wrapper">
                   <Image
@@ -135,7 +139,7 @@ export default function HistoricoPage() {
                 <div className="card-info">
                   <h3 className="card-title">{getWatchItemTitle(item)}</h3>
                    
-                   {/* --- CORREÇÃO AQUI --- */}
+                   {/* --- CORREÇÃO APLICADA --- */}
                    <div className="movie-card-meta">
                      {item.lastWatched ? ( // Verifica se lastWatched existe e é um valor válido
                        <span>{new Date(item.lastWatched).toLocaleDateString('pt-BR')}</span>

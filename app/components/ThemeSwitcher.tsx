@@ -8,7 +8,7 @@ export default function ThemeSwitcher() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <button onClick={toggleTheme} className="theme-switcher focusable" aria-label="Mudar tema">
+    <button onClick={toggleTheme} className="theme-switcher" aria-label="Mudar tema"> {/* 'focusable' REMOVIDO */}
       {theme === 'light' ? <MoonIcon /> : <SunIcon />}
     </button>
   );

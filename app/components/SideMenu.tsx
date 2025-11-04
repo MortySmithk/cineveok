@@ -10,6 +10,9 @@ import MovieIcon from './icons/PlayIcon'; // Usando PlayIcon para "Filmes"
 import TvIcon from './icons/StarIcon'; // Usando StarIcon para "Séries"
 import HistoryIcon from './icons/HistoryIcon'; // <-- RE-ADICIONADO
 
+// Importação do CSS específico do SideMenu
+import "./SideMenu.css";
+
 // Interface para os links
 interface NavLink {
   href: string;
@@ -46,7 +49,7 @@ export default function SideMenu({ isOpen, onClose }: { isOpen: boolean; onClose
 
   const getLinkClass = (href: string): string => {
     const isActive = pathname === href;
-    return `side-menu-link focusable ${isActive ? 'active' : ''}`;
+    return `side-menu-link ${isActive ? 'active' : ''}`; // 'focusable' REMOVIDO
   };
 
   if (!isOpen) {
@@ -61,10 +64,10 @@ export default function SideMenu({ isOpen, onClose }: { isOpen: boolean; onClose
       {/* Conteúdo do Menu */}
       <div className="side-menu-content">
         <div className="side-menu-header">
-          <button onClick={onClose} className="hamburger-btn focusable" aria-label="Fechar menu">
+          <button onClick={onClose} className="hamburger-btn" aria-label="Fechar menu"> {/* 'focusable' REMOVIDO */}
             <HamburgerIcon />
           </button>
-          <Link href="/" className="focusable" onClick={onClose}>
+          <Link href="/" className="" onClick={onClose}> {/* 'focusable' REMOVIDO */}
             <Image
               src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
               alt="CineVEO Logo"

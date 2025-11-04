@@ -1,0 +1,221 @@
+/* app/perfil/ProfilePage.css */
+
+/* ================================================= */
+/* === PÁGINA DE PERFIL (NOVOS ESTILOS) === */
+/* ================================================= */
+.profile-page-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- CABEÇALHO (Banner) --- */
+.profile-header-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 0; 
+}
+
+/* --- ESTILO DO BANNER (Sem alteração) --- */
+.profile-banner-uploader {
+  width: 100%;
+  height: 250px;
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  display: block; /* Para a label preencher */
+}
+.profile-banner-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-secondary);
+}
+.profile-banner-uploader img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- NOVO: GRID PARA FOTO + CAMPOS --- */
+.profile-content-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr; /* Coluna da foto (150px + padding) | Coluna dos campos */
+  gap: 2.5rem; /* Espaçamento entre foto e campos */
+  max-width: 900px; /* Mantém o max-width do container original */
+  margin: 2rem auto 0 auto; /* Margem superior para separar do banner */
+  align-items: start;
+}
+
+/* --- NOVO: COLUNA DA FOTO --- */
+.profile-picture-column {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem; /* Alinha um pouco melhor com os campos */
+}
+
+/* --- ESTILO DA FOTO DE PERFIL (MODIFICADO) --- */
+.profile-picture-uploader {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background-color: var(--card-color);
+  border: 4px solid var(--background-color);
+  
+  position: relative; /* Para o overlay funcionar */
+  margin: 0; /* Posição controlada pelo grid pai */
+
+  overflow: hidden;
+  cursor: pointer;
+  display: block; /* Para a label preencher */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  
+  transition: box-shadow 0.3s ease;
+}
+
+.profile-picture-uploader:hover,
+.profile-picture-uploader:focus-within {
+   box-shadow: 0 0 15px 5px var(--accent-yellow), 0 4px 10px rgba(0,0,0,0.3); /* Efeito "glow" amarelo + sombra */
+}
+
+
+.profile-picture-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background-color: var(--border-color);
+}
+.profile-picture-uploader img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- EFEITO DE HOVER (Sem alteração) --- */
+.profile-upload-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+  pointer-events: none; /* Para o clique atravessar para a label */
+}
+.profile-upload-overlay svg {
+  width: 28px;
+  height: 28px;
+}
+.profile-banner-uploader:hover .profile-upload-overlay,
+.profile-picture-uploader:hover .profile-upload-overlay {
+  opacity: 1;
+}
+.profile-picture-uploader .profile-upload-overlay {
+  border-radius: 50%;
+}
+.profile-banner-uploader .profile-upload-overlay span {
+  margin-top: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+
+/* --- CAMPOS DO FORMULÁRIO (MODIFICADO) --- */
+.profile-form-container {
+  width: 100%;
+}
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2.5rem;
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.form-group label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.form-group input[disabled],
+.form-group p.form-input {
+  background-color: var(--border-color);
+  opacity: 0.7;
+  cursor: not-allowed;
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 1rem;
+  width: 100%;
+}
+.form-group p.form-input {
+  opacity: 0.9;
+  color: var(--text-secondary);
+}
+
+
+/* --- AJUSTES MOBILE (MODIFICADO) --- */
+@media (max-width: 768px) {
+  .profile-banner-uploader {
+    height: 180px;
+    border-radius: 0;
+    margin: 0 -1rem; /* Faz o banner ocupar a largura total no mobile */
+    width: calc(100% + 2rem);
+    border-left: none;
+    border-right: none;
+  }
+  
+  .profile-header-container {
+     margin-bottom: 1.5rem; /* Adiciona espaçamento simples */
+  }
+  
+  .profile-content-grid {
+    grid-template-columns: 1fr; /* Coluna única */
+    gap: 1.5rem;
+    margin-top: 0;
+  }
+  
+  .profile-picture-column {
+    padding-top: 0;
+  }
+  .profile-picture-uploader {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto; /* Centraliza a foto */
+  }
+  .profile-picture-placeholder {
+     font-size: 3rem;
+  }
+  
+  .profile-fields {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+}

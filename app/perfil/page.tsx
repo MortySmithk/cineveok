@@ -9,6 +9,9 @@ import { auth, db } from '@/app/components/firebase';
 import { updateProfile, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+// Importação do CSS específico da Página de Perfil
+import "./ProfilePage.css";
+
 // Chave da API do ImgBB fornecida
 const IMG_BB_KEY = "497da48eaf4aaa87f1f0b659ed76a605";
 

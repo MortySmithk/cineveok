@@ -5,20 +5,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic'; // <-- OTIMIZAÇÃO: Importado o 'dynamic'
 import { useAuth } from './AuthProvider';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/app/components/firebase';
+import dynamic from 'next/dynamic';
 
 import SearchComponent from './SearchComponent';
 import SearchOverlay from './SearchOverlay';
 import SearchIcon from './icons/SearchIcon';
 import ThemeSwitcher from './ThemeSwitcher';
-import HamburgerIcon from './icons/HamburgerIcon'; // RE-ADICIONADO
+import HamburgerIcon from './icons/HamburgerIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
-import SideMenu from './SideMenu'; // RE-ADICIONADO
+import SideMenu from './SideMenu';
 import VoiceSearchOverlay from './VoiceSearchOverlay';
-// import NotificationBell from './NotificationBell'; // <-- OTIMIZAÇÃO: Importação removida
 
 // Ícones para o SubNav
 import HomeIcon from './icons/FlameIcon';
@@ -26,13 +25,8 @@ import MovieIcon from './icons/PlayIcon';
 import TvIcon from './icons/StarIcon';
 import HistoryIcon from './icons/HistoryIcon';
 
-// OTIMIZAÇÃO: Carrega o sino de notificação dinamicamente (só para admins)
-// Isso impede que usuários normais baixem o código ou abram conexões RTDB.
-const DynamicNotificationBell = dynamic(() => import('./NotificationBell'), {
-  ssr: false, // Não renderiza no servidor
-  loading: () => <div style={{ width: '36px', height: '36px' }} /> // Placeholder
-});
-
+// Importação do CSS específico do Header
+import "./Header.css";
 
 // Declaração global para a SpeechRecognition API
 declare global {
@@ -41,15 +35,6 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
-
-// (NOVO) LISTA DE ADMINS
-const ADMIN_UIDS = [
-  '7ZNDEaW95BMCm4zk1GIP9t6WwHn2', 
-  'YHBxowyZv0hzld7hypnEWHvx5K82', 
-  'QkqhyXbcURYt2zPhblWQLnJEY023', 
-  'tMdWtke7PYBk4l4UNKnbrLQ4i32',
-  'RDdh6WnG2LZQS8gvZuAEdYnUMDr2'
-];
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -93,7 +78,7 @@ export default function Header() {
   const { user } = useAuth();
   
   // Estados
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // RE-ADICIONADO
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false);
@@ -101,7 +86,7 @@ export default function Header() {
 
   useEffect(() => {
     // Fecha menus ao navegar
-    setIsMenuOpen(false); // RE-ADICIONADO
+    setIsMenuOpen(false);
     setIsProfileOpen(false);
     setIsSearchOpen(false);
   }, [pathname]);
@@ -145,7 +130,7 @@ export default function Header() {
   return (
     <>
       {/* Overlays */}
-      <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} /> {/* RE-ADICIONADO */}
+      <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <VoiceSearchOverlay isOpen={isVoiceOverlayOpen} onClose={() => setIsVoiceOverlayOpen(false)} />
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
@@ -155,10 +140,10 @@ export default function Header() {
           {/* COLUNA ESQUERDA: Menu (Desktop) e Logo */}
           <div className="header-left">
             {/* Botão Hambúrguer RE-ADICIONADO (só desktop) */}
-            <button onClick={() => setIsMenuOpen(true)} className="hamburger-btn-desktop focusable" aria-label="Abrir menu">
+            <button onClick={() => setIsMenuOpen(true)} className="hamburger-btn-desktop" aria-label="Abrir menu">
               <HamburgerIcon />
             </button>
-            <Link href="/" className="focusable logo-link">
+            <Link href="/" className="logo-link">
               <Image
                 src="https://i.ibb.co/s91tyczd/Gemini-Generated-Image-ejjiocejjiocejji-1.png"
                 alt="CineVEO Logo"
@@ -175,7 +160,7 @@ export default function Header() {
             <div className="header-search-desktop">
               <SearchComponent />
             </div>
-            <button className="voice-search-btn-global focusable" onClick={handleVoiceSearch} aria-label="Pesquisa por voz">
+            <button className="voice-search-btn-global" onClick={handleVoiceSearch} aria-label="Pesquisa por voz">
               <MicrophoneIcon width={20} height={20} />
             </button>
           </div>
@@ -183,15 +168,11 @@ export default function Header() {
           {/* COLUNA DIREITA: Ícones */}
           <div className="header-right">
 
-            {/* (NOVO) SINO DE NOTIFICAÇÃO (SÓ APARECE PARA ADMINS) */}
-            {/* OTIMIZAÇÃO: Renderiza o componente dinâmico */}
-            {user && ADMIN_UIDS.includes(user.uid) && (
-              <DynamicNotificationBell />
-            )}
+            {/* SINO DE NOTIFICAÇÃO REMOVIDO */}
 
             <ThemeSwitcher />
             
-            <button className="header-search-mobile-btn focusable" onClick={() => setIsSearchOpen(true)}>
+            <button className="header-search-mobile-btn" onClick={() => setIsSearchOpen(true)}>
               <SearchIcon width={24} height={24} />
             </button>
 
@@ -200,7 +181,7 @@ export default function Header() {
               {user ? (
                   <>
                     <button 
-                      className="header-profile-desktop-btn focusable" 
+                      className="header-profile-desktop-btn"
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
                     >
                       {user.photoURL ? (
@@ -216,21 +197,21 @@ export default function Header() {
                           <strong>{user.displayName || 'Utilizador'}</strong>
                           <span>{user.email}</span>
                         </div>
-                        <Link href="/perfil" className="dropdown-link-item focusable">Minha Conta</Link>
-                        <Link href="/historico" className="dropdown-link-item focusable">Meu Histórico</Link>
-                        <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
+                        <Link href="/perfil" className="dropdown-link-item">Minha Conta</Link>
+                        <Link href="/historico" className="dropdown-link-item">Meu Histórico</Link>
+                        <button onClick={handleSignOut} className="dropdown-signout-btn">Sair da conta</button>
                       </div>
                     )}
                   </>
               ) : (
-                  <Link href="/login" className="btn-primary-small focusable">Entrar</Link>
+                  <Link href="/login" className="btn-primary-small">Entrar</Link>
               )}
             </div>
             
             {/* Perfil (Mobile) */}
             <div className="header-profile-mobile">
               <button 
-                className="header-profile-mobile-btn focusable" 
+                className="header-profile-mobile-btn"
                 onClick={() => user ? setIsProfileOpen(!isProfileOpen) : router.push('/login')}
               >
                 {user && user.photoURL ? (
@@ -246,9 +227,9 @@ export default function Header() {
                     <strong>{user.displayName || 'Utilizador'}</strong>
                     <span>{user.email}</span>
                   </div>
-                  <Link href="/perfil" className="dropdown-link-item focusable">Minha Conta</Link>
-                  <Link href="/historico" className="dropdown-link-item focusable">Meu Histórico</Link>
-                  <button onClick={handleSignOut} className="dropdown-signout-btn focusable">Sair da conta</button>
+                  <Link href="/perfil" className="dropdown-link-item">Minha Conta</Link>
+                  <Link href="/historico" className="dropdown-link-item">Meu Histórico</Link>
+                  <button onClick={handleSignOut} className="dropdown-signout-btn">Sair da conta</button>
                 </div>
               )}
             </div>

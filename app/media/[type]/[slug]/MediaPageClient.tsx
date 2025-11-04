@@ -562,7 +562,7 @@ export default function MediaPageClient({
           <div className="media-actions-bar">
              <div className="like-dislike-group">
                 <button
-                  className={`action-btn focusable ${likeStatus === 'liked' ? 'active' : ''}`}
+                  className={`action-btn ${likeStatus === 'liked' ? 'active' : ''}`}
                   onClick={() => handleLikeDislike('liked')} 
                   aria-label="Gostei"
                   disabled={isUpdatingLike} 
@@ -571,7 +571,7 @@ export default function MediaPageClient({
                   <span>{formatNumber(stats.likes)}</span>
                 </button>
                 <button
-                  className={`action-btn focusable ${likeStatus === 'disliked' ? 'active' : ''}`}
+                  className={`action-btn ${likeStatus === 'disliked' ? 'active' : ''}`}
                   onClick={() => handleLikeDislike('disliked')} 
                   aria-label="Não gostei"
                   disabled={isUpdatingLike} 
@@ -580,7 +580,7 @@ export default function MediaPageClient({
                   <span>{formatNumber(stats.dislikes)}</span>
                 </button>
              </div>
-             <button className="action-btn focusable" onClick={handleShare} aria-label="Compartilhar">
+             <button className="action-btn" onClick={handleShare} aria-label="Compartilhar">
                <ShareIcon />
                <span>Compartilhar</span>
              </button>
@@ -603,7 +603,7 @@ export default function MediaPageClient({
              {(currentSynopsis || '').length > 150 && !isDescriptionExpanded && (
                  <button
                      onClick={(e) => { e.stopPropagation(); setIsDescriptionExpanded(true); }}
-                     className="description-toggle-btn focusable"
+                     className="description-toggle-btn"
                  >
                      ...mais
                  </button>
@@ -611,7 +611,7 @@ export default function MediaPageClient({
              {isDescriptionExpanded && (
                   <button
                      onClick={(e) => { e.stopPropagation(); setIsDescriptionExpanded(false); }}
-                     className="description-toggle-btn focusable"
+                     className="description-toggle-btn"
                   >
                      Mostrar menos
                   </button>
@@ -656,7 +656,7 @@ export default function MediaPageClient({
           <div className="episodes-list-wrapper">
               <div className="episodes-header">
                   <select
-                      className="season-selector focusable"
+                      className="season-selector"
                       value={selectedSeason ?? ''}
                       onChange={(e) => handleSeasonChange(Number(e.target.value))}
                       disabled={isLoadingEpisodes} 
@@ -672,7 +672,7 @@ export default function MediaPageClient({
                   {!isLoadingEpisodes && seasonEpisodes.map(ep => (
                       <button
                           key={ep.id}
-                          className={`episode-item-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
+                          className={`episode-item-button ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
                           onClick={() => handleEpisodeClick(selectedSeason!, ep.episode_number)}
                       >
                           <div className="episode-item-number">{String(ep.episode_number).padStart(2, '0')}</div>
@@ -697,7 +697,7 @@ export default function MediaPageClient({
                     {!isLoadingEpisodes && seasonEpisodes.map(ep => (
                       <button
                         key={ep.id}
-                        className={`episode-grid-button focusable ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
+                        className={`episode-grid-button ${activeEpisode?.season === selectedSeason && activeEpisode?.episode === ep.episode_number ? 'active' : ''}`}
                         onClick={() => handleEpisodeClick(selectedSeason!, ep.episode_number)}>
                         {ep.episode_number}
                       </button>
@@ -713,7 +713,7 @@ export default function MediaPageClient({
   const MovieSelector = () => {
      return (
         <div className="episodes-list-wrapper desktop-only-layout">
-            <div className="episode-item-button active focusable movie-info-card" style={{ cursor: 'default' }}>
+            <div className="episode-item-button active movie-info-card" style={{ cursor: 'default' }}>
                 <div className="episode-item-thumbnail">
                     <Image
                       draggable="false"
@@ -753,7 +753,7 @@ export default function MediaPageClient({
                   draggable="false"
                   href={`/media/movie/${generateSlug(item.title || item.name || '')}-${item.id}`}
                   key={item.id}
-                  className="related-movie-item focusable"
+                  className="related-movie-item"
                 >
                   <div className="related-thumbnail-wrapper">
                     <Image
@@ -781,23 +781,32 @@ export default function MediaPageClient({
       );
   };
 
-  // --- Renderização Principal (Sem alteração) ---
+  // --- Renderização Principal (REVERTIDA PARA A ESTRUTURA ORIGINAL) ---
   return (
     <>
       <div className="media-page-layout">
         <section className="series-watch-section">
+          
+          {/* === ÁREA DESKTOP (Layout Original Lado-a-Lado) === */}
           <div className="main-container desktop-only-layout">
             <div className="series-watch-grid">
+              
+              {/* Coluna 1: Player e Interações */}
               <div className="series-player-wrapper">
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
                 <InteractionsSection />
               </div>
+
+              {/* Coluna 2: Sidebar (Episódios/Filme/Relacionados) */}
               <div>
                 {type === 'tv' ? <EpisodeSelector /> : <MovieSelector />}
                 {type === 'movie' && <RelatedMoviesSection />}
               </div>
+
             </div>
           </div>
+          
+          {/* === ÁREA MOBILE (Inalterada) === */}
           <div className="mobile-only-layout">
             <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
           </div>
@@ -838,4 +847,3 @@ export default function MediaPageClient({
     </>
   );
 }
-

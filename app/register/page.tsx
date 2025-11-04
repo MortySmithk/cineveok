@@ -17,6 +17,9 @@ import { auth, db } from '@/app/components/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore'; 
 import { useAuth } from '@/app/components/AuthProvider';
 
+// Importação do CSS compartilhado da página de Login
+import "../login/AuthPage.css";
+
 // --- Helper (Sem alteração) ---
 const generateUsername = (name: string, email: string): string => {
   const base = name 
