@@ -1,15 +1,17 @@
 // app/page.tsx
 "use client";
 
+// ATUALIZADO: Adicionado useState e useEffect
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import Image from 'next/image';
 import StarIcon from '@/app/components/icons/StarIcon';
-import PlayIcon from '@/app/components/icons/PlayIcon'; // Ainda é necessário para o botão Assistir
-// --- IMPORTAÇÃO REMOVIDA ---
+import PlayIcon from '@/app/components/icons/PlayIcon'; 
 import { useWatchHistory, WatchItem } from '@/app/hooks/useWatchHistory';
 import { generateSlug } from '@/app/lib/utils';
+// NOVO: Importa o modal
+import WelcomeModal from '@/app/components/WelcomeModal'; 
 
 interface Media {
   id: number;
@@ -26,7 +28,7 @@ interface Media {
 
 const API_KEY = "860b66ade580bacae581f4228fad49fc";
 
-// Função para gerar o Href correto
+// ... (Função getContinueWatchingHref - sem alteração) ...
 const getContinueWatchingHref = (item: WatchItem) => {
   const base = `/media/${item.mediaType}/${generateSlug(item.title || '')}-${item.tmdbId}`;
   if (item.mediaType === 'tv' && item.progress) {
@@ -34,8 +36,7 @@ const getContinueWatchingHref = (item: WatchItem) => {
   }
   return base;
 };
-
-// Função para gerar o Href dinâmico (para "Em Alta")
+// ... (Função getMediaHref - sem alteração) ...
 const getMediaHref = (item: Media) => {
   const type = item.media_type || (item.title ? 'movie' : 'tv');
   const title = item.title || item.name || '';
@@ -52,6 +53,9 @@ export default function HomePage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const { continueWatching } = useWatchHistory();
+  
+  // NOVO: Estado para o modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Refs para os carrosséis
   const continueWatchingRef = useRef<HTMLDivElement>(null);
@@ -62,11 +66,27 @@ export default function HomePage() {
   
   const hasDragged = useRef(false);
 
+  // NOVO: useEffect para verificar se o modal já foi visto
+  useEffect(() => {
+    // Verifica no localStorage se o usuário já viu o modal
+    const hasSeenModal = localStorage.getItem('seenTelegramModal');
+    if (!hasSeenModal) {
+      // Se não viu, mostra o modal
+      setIsModalOpen(true);
+    }
+  }, []); // Executa apenas uma vez quando a página carrega
+
+  // NOVO: Função para fechar o modal e salvar no localStorage
+  const handleCloseModal = () => {
+    localStorage.setItem('seenTelegramModal', 'true');
+    setIsModalOpen(false);
+  };
+
   useEffect(() => {
     const fetchMedia = async () => {
       setIsLoading(true);
       try {
-        // Novas requisições
+        // ... (restante da sua lógica de fetch - sem alteração) ...
         const trendingTodayPromise = axios.get(`https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}&language=pt-BR`);
         const popularMoviesPromise = axios.get(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pt-BR`);
         const popularSeriesPromise = axios.get(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR`);
@@ -84,11 +104,9 @@ export default function HomePage() {
           popularAnimationsPromise
         ]);
 
-        // Função de filtro
         const filterValidMedia = (results: Media[]) => 
           results.filter((item: Media) => (item.title || item.name) && item.poster_path);
 
-        // Definindo os estados
         setTrendingToday(filterValidMedia(trendingTodayResponse.data.results));
         setPopularMovies(filterValidMedia(popularMoviesResponse.data.results));
         setPopularSeries(filterValidMedia(popularSeriesResponse.data.results));
@@ -103,7 +121,7 @@ export default function HomePage() {
     fetchMedia();
   }, []);
 
-  // Efeito para adicionar a funcionalidade de arrastar para rolar
+  // ... (Efeito de addDragScroll - sem alteração) ...
   useEffect(() => {
     const addDragScroll = (element: HTMLElement | null) => {
       if (!element) return;
@@ -150,7 +168,6 @@ export default function HomePage() {
       };
     };
 
-    // Adiciona o drag scroll a todos os carrosséis
     const cleanupFunctions = [
         addDragScroll(continueWatchingRef.current),
         addDragScroll(trendingTodayRef.current),
@@ -162,8 +179,9 @@ export default function HomePage() {
     return () => {
         cleanupFunctions.forEach(cleanup => cleanup && cleanup());
     };
-  }, [isLoading, continueWatching, trendingToday, popularMovies, popularSeries, popularAnimations]); // Adiciona novas dependências
-
+  }, [isLoading, continueWatching, trendingToday, popularMovies, popularSeries, popularAnimations]);
+  
+  // ... (Função handleCardClick - sem alteração) ...
   const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
       if (hasDragged.current) {
           e.preventDefault();
@@ -180,11 +198,12 @@ export default function HomePage() {
 
   return (
     <main>
-      {/* HERO SLIDER REMOVIDO */}
+      {/* NOVO: Renderiza o modal */}
+      <WelcomeModal isOpen={isModalOpen} onClose={handleCloseModal} />
 
       <div className="main-container" style={{ position: 'relative', zIndex: 10, paddingTop: '2rem' }}>
         
-        {/* CONTINUAR ASSISTINDO */}
+        {/* ... (Resto do seu JSX da HomePage - sem alteração) ... */}
         {continueWatching.length > 0 && (
           <section className="movie-section">
             <div className="section-header"><h2 className="section-title">Continuar Assistindo</h2></div>
@@ -210,18 +229,15 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* EM ALTA HOJE (NOVA SEÇÃO) */}
         <section className="movie-section">
           <div className="section-header">
             <h2 className="section-title">Em Alta Hoje</h2>
-            {/* <Link draggable="false" href="/trending" className="section-view-all-link focusable" >&gt;</Link> */}
           </div>
           <div className="movie-carousel" ref={trendingTodayRef}>
             {trendingToday.map((item) => (
               <Link draggable="false" href={getMediaHref(item)} key={item.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} alt={item.title || item.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{item.title || item.name}</h3>
@@ -235,7 +251,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* FILMES POPULARES (READICIONADO) */}
         <section className="movie-section">
           <div className="section-header">
             <h2 className="section-title">Filmes Populares</h2>
@@ -246,7 +261,6 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>
@@ -257,7 +271,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* SÉRIES POPULARES (EXISTENTE) */}
          <section className="movie-section">
           <div className="section-header">
              <h2 className="section-title">Séries Populares</h2>
@@ -268,7 +281,6 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/tv/${generateSlug(series.name || '')}-${series.id}`} key={series.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${series.poster_path}`} alt={series.name || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{series.name}</h3>
@@ -279,7 +291,6 @@ export default function HomePage() {
           </div>
         </section>
         
-        {/* ANIMAÇÕES POPULARES (NOVA SEÇÃO) */}
         <section className="movie-section">
           <div className="section-header">
             <h2 className="section-title">Animações Populares</h2>
@@ -290,7 +301,6 @@ export default function HomePage() {
               <Link draggable="false" href={`/media/movie/${generateSlug(movie.title || '')}-${movie.id}`} key={movie.id} className="movie-card focusable" onClick={handleCardClick}>
                  <div className="movie-card-poster-wrapper">
                     <Image draggable="false" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title || ''} fill className="movie-card-poster" sizes="220px"/>
-                    {/* --- BOTÃO REMOVIDO --- */}
                  </div>
                  <div className="movie-card-info">
                    <h3 className="movie-card-title">{movie.title}</h3>

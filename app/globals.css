@@ -335,7 +335,14 @@ main { padding-top: 68px; }
 .cast-section h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
 .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem; }
 .cast-member { text-align: center; }
-.cast-member-img { width: 100%; aspect-ratio: 2 / 3; background-color: var(--card-color); border-radius: 8px; overflow: hidden; margin-bottom: 0.75rem; }
+.cast-member-img {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* <-- MUDANÇA (era 2 / 3) */
+  background-color: var(--card-color);
+  border-radius: 50%; /* <-- MUDANÇA (era 8px) */
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
 .cast-member-img img { width: 100%; height: 100%; object-fit: cover; }
 .cast-member strong { display: block; font-size: 1rem; }
 .cast-member span { font-size: 0.8rem; color: var(--text-secondary); }
@@ -1225,4 +1232,118 @@ html[data-theme='light'] .site-footer {
 }
 .history-term-btn svg {
   color: var(--text-secondary);
+}
+/* app/globals.css */
+
+/* ... (Todo o seu CSS existente) ... */
+
+/* --- HISTÓRICO DE PESQUISA (Search Page) --- */
+.search-history-list {
+  list-style: none;
+  margin: 0 auto;
+  max-width: 600px;
+}
+.search-history-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.history-term-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  flex-grow: 1;
+  text-align: left;
+}
+.history-term-btn:hover {
+  color: var(--accent-yellow);
+}
+.history-term-btn svg {
+  color: var(--text-secondary);
+}
+
+
+/* ================================================= */
+/* === Modal de Boas-Vindas (Telegram) === */
+/* ================================================= */
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.welcome-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  
+  /* --- MUDANÇAS DE POSIÇÃO AQUI --- */
+  align-items: flex-start; /* Alinha ao topo */
+  justify-content: center; /* Mantém centralizado horizontalmente */
+  padding-top: 100px; /* Distância do topo */
+  /* --- FIM DAS MUDANÇAS --- */
+
+  z-index: 2000;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.welcome-modal-content {
+  background-color: #1f2937; /* Estilo do Pobreflix (gray-800) */
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px; /* Largura do modal */
+  text-align: center;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  
+  /* Animação */
+  animation: modal-pop-in 0.2s ease-out;
+}
+
+.welcome-modal-content h2 {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.welcome-modal-content p {
+  font-size: 0.9rem; /* 14px */
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.welcome-modal-btn {
+  background-color: #3b82f6; /* Estilo do botão OK (blue-600) */
+  color: white;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.welcome-modal-btn:hover {
+  background-color: #2563eb; /* blue-700 */
 }
