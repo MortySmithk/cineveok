@@ -1347,3 +1347,96 @@ html[data-theme='light'] .site-footer {
 .welcome-modal-btn:hover {
   background-color: #2563eb; /* blue-700 */
 }
+/* app/globals.css */
+
+/* ... (Todo o seu CSS existente) ... */
+
+/* ================================================= */
+/* === Modal de Boas-Vindas (Telegram) === */
+/* ... (Seus estilos do modal) ... */
+
+.welcome-modal-btn:hover {
+  background-color: #2563eb; /* blue-700 */
+}
+
+
+/* ================================================= */
+/* === SKELETON LOADER (PARA SUSPENSE) === */
+/* ================================================= */
+@keyframes pulse-bg {
+  0%, 100% { background-color: var(--card-color); }
+  50% { background-color: var(--border-color); }
+}
+
+.loading-skeleton-component {
+  /* Layout principal (desktop) */
+  max-width: 1600px;
+  margin: 0 auto;
+  /* Corresponde ao padding-top de main (68px) + padding-top do main-container (2rem/32px) + padding lateral */
+  padding: calc(68px + 2rem) 3rem 2rem 3rem;
+}
+
+.skeleton-grid {
+  display: grid;
+  /* Corresponde ao .series-watch-grid (desktop) */
+  grid-template-columns: minmax(0, 3fr) minmax(400px, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.skeleton-player-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-player {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  border-radius: 8px;
+  animation: pulse-bg 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 80vh;
+}
+
+.skeleton-box {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  animation: pulse-bg 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-box.line {
+  height: 40px;
+}
+
+.skeleton-box.line-small {
+  height: 20px;
+  width: 60%;
+}
+
+/* Skeleton Mobile */
+@media (max-width: 768px) {
+  .loading-skeleton-component {
+     padding: 0;
+     margin-top: 113px; /* Altura do header+nav */
+  }
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+  .skeleton-sidebar {
+    display: none; /* Em mobile, o sidebar não é visível de cara */
+  }
+  .skeleton-player {
+    border-radius: 0;
+  }
+   .skeleton-player-col {
+     padding: 1.5rem 1rem;
+   }
+}
