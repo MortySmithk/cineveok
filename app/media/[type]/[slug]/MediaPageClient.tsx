@@ -1,6 +1,7 @@
 // app/media/[type]/[slug]/MediaPageClient.tsx
 "use client";
 
+// ATUALIZADO: Adicionado 'useRef'
 import { useState, useEffect, memo, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
@@ -107,14 +108,74 @@ const PlayerContent = memo(function PlayerContent({ activeStreamUrl, title }: { 
   );
 });
 
+// ==========================================================
+// === COMPONENTE DE BANNER DE ANÚNCIO (ATUALIZADO) ===
+// ==========================================================
+const AdBanner = ({ adKey }: { adKey: string | null }) => {
+  const adContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const adContainer = adContainerRef.current;
+    if (!adContainer) return;
+
+    // 1. Limpa o container de anúncios anterior para evitar duplicatas
+    while (adContainer.firstChild) {
+      adContainer.removeChild(adContainer.firstChild);
+    }
+
+    // 2. Se não houver chave (ex: ainda carregando), não faz nada
+    if (!adKey) return;
+
+    // 3. Adiciona os novos scripts
+    const configScript = document.createElement('script');
+    configScript.type = 'text/javascript';
+    configScript.innerHTML = `
+      atOptions = {
+        'key' : 'd0c66a91198b2afae49a5bc5b4f85f07',
+        'format' : 'iframe',
+        'height' : 50,
+        'width' : 320,
+        'params' : {}
+      };
+    `;
+
+    const adScript = document.createElement('script');
+    adScript.type = 'text/javascript';
+    adScript.src = '//www.highperformanceformat.com/d0c66a91198b2afae49a5bc5b4f85f07/invoke.js';
+    adScript.async = true;
+    
+    // 4. Anexa os scripts ao container
+    adContainer.appendChild(configScript);
+    adContainer.appendChild(adScript);
+
+  }, [adKey]); // Re-executa quando a chave (ID do episódio/filme) mudar
+
+  return (
+    <div 
+      style={{ 
+        display: 'flex', 
+        alignItems: 'center', // Alinha verticalmente
+        minHeight: '50px',
+        minWidth: '320px'   // Garante espaço para o banner
+      }} 
+      ref={adContainerRef}
+      className="media-ad-banner" // Classe para possível estilização futura
+    />
+  );
+};
+// ==========================================================
+// === FIM DO COMPONENTE DE ANÚNCIO ===
+// ==========================================================
+
+
 export default function MediaPageClient({
   params,
   searchParams,
-  initialData // <-- 1. RECEBE OS DADOS
+  initialData 
 }: {
   params: { type: string; slug: string };
   searchParams?: { [key: string]: string | string[] | undefined };
-  initialData: MediaDetails | null; // <-- 2. TIPA OS DADOS
+  initialData: MediaDetails | null; 
 }) {
   const type = params.type as 'movie' | 'tv';
   const slug = params.slug as string;
@@ -123,17 +184,14 @@ export default function MediaPageClient({
   const router = useRouter();
   const { user } = useAuth();
   const { saveHistory, getContinueWatchingItem } = useWatchHistory();
-  const { theme } = useTheme(); // <-- BUSCA O TEMA ATUAL
+  const { theme } = useTheme(); 
 
-  // --- 3. Inicia o estado com os dados recebidos do servidor ---
   const [details, setDetails] = useState<MediaDetails | null>(initialData);
   const [firestoreMediaData, setFirestoreMediaData] = useState<any>(null);
   
-  // --- 4. Remove isLoadingDetails e ajusta o status inicial ---
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
   const [status, setStatus] = useState(initialData ? '' : 'Conteúdo não encontrado.');
   
-  // --- Outros estados (Sem alteração) ---
   const [seasonEpisodes, setSeasonEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<{ season: number, episode: number } | null>(null);
@@ -149,11 +207,10 @@ export default function MediaPageClient({
   const [isLoadingRelated, setIsLoadingRelated] = useState(false);
 
 
-  // --- 5. useEffect 1 (REMOVIDA a busca principal, MANTIDA a busca do Firestore) ---
+  // --- useEffect 1 (Busca Firestore) - (Sem alteração) ---
    useEffect(() => {
       if (!id || !type) return;
 
-      // Se os dados não vieram do servidor, define o erro
       if (!initialData) {
           setStatus("Conteúdo não encontrado.");
           return;
@@ -161,7 +218,6 @@ export default function MediaPageClient({
       
       initialSetupDoneRef.current = false; 
 
-      // Mantém a busca do Firestore para dados customizados (título, isHidden)
       const fetchFirestoreData = async () => {
         try {
           const firestoreDocRef = doc(db, "media", id);
@@ -177,7 +233,6 @@ export default function MediaPageClient({
           
           setFirestoreMediaData(firestoreData);
 
-          // Atualiza o título se o Firestore tiver um customizado
           if (firestoreData.title && initialData.title !== firestoreData.title) {
             setDetails(prevDetails => prevDetails ? ({
                 ...prevDetails,
@@ -191,11 +246,10 @@ export default function MediaPageClient({
       
       fetchFirestoreData();
 
-  }, [id, type, initialData, router]); // <-- 6. Depende de initialData
+  }, [id, type, initialData, router]); 
 
-  // 7. useEffect 2 (Configuração inicial - REMOVIDO isLoadingDetails)
+  // --- useEffect 2 (Configuração inicial) - (Sem alteração) ---
    useEffect(() => {
-      // Remove 'isLoadingDetails' da condição
       if (!details || initialSetupDoneRef.current || !id) return;
 
       if (type === 'movie') {
@@ -236,16 +290,15 @@ export default function MediaPageClient({
           initialSetupDoneRef.current = true; 
       }
   }, [
-      details, // <-- 'isLoadingDetails' removido daqui
+      details, 
       id, type, user, saveHistory,
       getContinueWatchingItem,
       searchParams, firestoreMediaData
   ]);
 
 
-  // 3. useEffect para Buscar episódios da temporada (Séries) - (Sem alteração)
+  // --- useEffect 3 (Buscar episódios) - (Sem alteração) ---
     useEffect(() => {
-      // 'isLoadingDetails' removido da condição
       if (type !== 'tv' || !id || !details?.seasons || selectedSeason === null) {
           return;
       }
@@ -254,7 +307,6 @@ export default function MediaPageClient({
       setIsLoadingEpisodes(true);
       setStatus(`Carregando temporada ${selectedSeason}...`);
       try {
-          // A busca de episódios continua usando axios
           const seasonResponse = await axios.get(`https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?api_key=${API_KEY}&language=pt-BR`);
           const tmdbEpisodesData: Episode[] = seasonResponse.data.episodes;
 
@@ -290,12 +342,11 @@ export default function MediaPageClient({
 
       fetchSeasonData();
 
-  }, [selectedSeason, id, type, details, firestoreMediaData, activeEpisode]); // 'isLoadingDetails' removido
+  }, [selectedSeason, id, type, details, firestoreMediaData, activeEpisode]); 
 
 
-  // 4. useEffect para Atualizar Player URL, Stats ID e Histórico (Séries) - (Sem alteração)
+  // --- useEffect 4 (Atualizar Player/Histórico) - (Sem alteração) ---
   useEffect(() => {
-      // 'isLoadingDetails' removido da condição
       if (type !== 'tv' || !activeEpisode || !id || !details) return;
 
       const { season, episode } = activeEpisode;
@@ -326,10 +377,10 @@ export default function MediaPageClient({
           setCurrentStatsId(null);
       }
 
-  }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, user, saveHistory, selectedSeason]); // 'isLoadingDetails' removido
+  }, [activeEpisode, seasonEpisodes, isLoadingEpisodes, id, type, details, user, saveHistory, selectedSeason]);
 
 
-  // 5. useEffect para Views e Stats (RTDB) - (Sem alteração)
+  // --- useEffect 5 (Views e Stats RTDB) - (Sem alteração) ---
   useEffect(() => {
     if (!currentStatsId) {
       setStats({ views: 0, likes: 0, dislikes: 0 });
@@ -364,7 +415,7 @@ export default function MediaPageClient({
   }, [currentStatsId]); 
 
 
-  // 6. useEffect para buscar o estado de Like/Dislike do usuário (RTDB) - (Sem alteração)
+  // --- useEffect 6 (Like/Dislike Status RTDB) - (Sem alteração) ---
   useEffect(() => {
     if (!user || !currentStatsId) {
       setLikeStatus(null); 
@@ -385,9 +436,8 @@ export default function MediaPageClient({
 
   }, [user, currentStatsId]); 
 
-  // 7. useEffect para buscar filmes relacionados (sem alteração)
+  // --- useEffect 7 (Filmes Relacionados) - (Sem alteração) ---
    useEffect(() => {
-      // 'isLoadingDetails' removido da condição
       if (type !== 'movie' || !id || !details) {
         setRelatedMovies([]);
         return;
@@ -408,10 +458,10 @@ export default function MediaPageClient({
         }
       };
       fetchRelated();
-    }, [id, type, details]); // 'isLoadingDetails' removido
+    }, [id, type, details]);
 
 
-  // --- Funções de manipulação (handleEpisodeClick, handleSeasonChange - Sem alteração) ---
+  // --- Funções de manipulação (handleEpisodeClick, handleSeasonChange) - (Sem alteração) ---
   const handleEpisodeClick = (season: number, episodeNumber: number) => {
     if (isLoadingEpisodes) return;
     setActiveEpisode({ season, episode: episodeNumber });
@@ -423,7 +473,7 @@ export default function MediaPageClient({
     setActiveEpisode(null);
   };
 
-  // --- Função para lidar com Likes/Dislikes (RTDB) - (Sem alteração) ---
+  // --- Função handleLikeDislike (RTDB) - (Sem alteração) ---
   const handleLikeDislike = async (newStatus: 'liked' | 'disliked') => {
       if (!user || !currentStatsId || isUpdatingLike) {
           if (!user) router.push('/login?redirect=' + window.location.pathname + window.location.search);
@@ -476,7 +526,7 @@ export default function MediaPageClient({
   };
   // --- Fim da função handleLikeDislike ---
 
-  // --- getSynopsis, getEpisodeTitle, handleShare (Sem alteração) ---
+  // --- Funções getSynopsis, getEpisodeTitle, handleShare (Sem alteração) ---
   const getSynopsis = (): string => {
      if (!details) return 'Carregando sinopse...';
       if (type === 'movie') return details.overview || 'Sinopse não disponível.';
@@ -507,14 +557,12 @@ export default function MediaPageClient({
     }
   };
 
-  // --- Renderização condicional de loading (MODIFICADA) ---
-  // 8. MODIFICA a renderização de loading
+  // --- Renderização condicional de loading (Sem alteração) ---
   if (!details) {
-    // Não há mais 'isLoadingDetails', apenas checa se 'details' é nulo
     return (<div className="loading-container"><p>{status}</p></div>);
   }
 
-  // --- Componentes Internos (InfoBoxMobile, InteractionsSection, etc. - Sem alteração) ---
+  // --- Componentes Internos (InfoBoxMobile) - (Sem alteração) ---
   const InfoBoxMobile = () => {
        return (
           <div className="synopsis-box-mobile mobile-only-layout">
@@ -532,6 +580,9 @@ export default function MediaPageClient({
         );
   };
 
+  // ==========================================================
+  // === InteractionsSection ATUALIZADA ===
+  // ==========================================================
   const InteractionsSection = () => {
       const currentSynopsis = getSynopsis();
       const releaseYear = (details?.release_date || details?.first_air_date)?.substring(0, 4);
@@ -566,12 +617,33 @@ export default function MediaPageClient({
                <ShareIcon />
                <span>Compartilhar</span>
              </button>
+
+             {/* ======================================= */}
+             {/* === BANNER (DESKTOP) - POSIÇÃO CORRETA === */}
+             {/* ======================================= */}
+             <div 
+                className="desktop-only-layout" 
+                style={{ marginLeft: 'auto', paddingLeft: '1rem' }} // Empurra para a direita
+             >
+               <AdBanner adKey={currentStatsId} />
+             </div>
+
+             {/* Stats (Mobile) */}
              <div className="mobile-only-layout" style={{ backgroundColor: 'transparent', paddingLeft: 0, marginLeft: 'auto' }}>
                  <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: '500' }}>
                    {formatNumber(stats.views)} Views
                  </span>
              </div>
           </div>
+
+          {/* ======================================= */}
+          {/* === BANNER (MOBILE) - POSIÇÃO CORRETA === */}
+          {/* ======================================= */}
+          <div className="mobile-only-layout" style={{ marginTop: '0.5rem' }}>
+            <AdBanner adKey={currentStatsId} />
+          </div>
+
+          {/* BANNER REMOVIDO DESTA POSIÇÃO ANTIGA */}
 
           <div className={`description-box ${isDescriptionExpanded ? 'expanded' : ''}`} onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
              <div className="description-header">
@@ -626,7 +698,12 @@ export default function MediaPageClient({
         </div>
       );
   };
+  // ==========================================================
+  // === FIM DA InteractionsSection ATUALIZADA ===
+  // ==========================================================
 
+
+  // --- Componentes Internos (EpisodeSelector, MovieSelector, RelatedMoviesSection) - (Sem alteração) ---
   const EpisodeSelector = () => {
      return (
           <div className="episodes-list-wrapper">
@@ -768,6 +845,9 @@ export default function MediaPageClient({
               {/* Coluna 1: Player e Interações */}
               <div className="series-player-wrapper">
                 <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
+                
+                {/* --- BANNER REMOVIDO DAQUI --- */}
+
                 <InteractionsSection />
               </div>
 
@@ -783,6 +863,9 @@ export default function MediaPageClient({
           {/* === ÁREA MOBILE (Inalterada) === */}
           <div className="mobile-only-layout">
             <PlayerContent activeStreamUrl={activeStreamUrl} title={details.title} />
+            
+            {/* --- BANNER REMOVIDO DAQUI --- */}
+            
           </div>
         </section>
 
@@ -809,10 +892,9 @@ export default function MediaPageClient({
                                       draggable="false" 
                                       src={`https://image.tmdb.org/t/p/w185${member.profile_path}`} 
                                       alt={member.name} 
-                                      width={185}  /* <-- MUDANÇA (era 150) */
-                                      height={185} /* <-- MUDANÇA (era 225) */
-                                      sizes="(max-width: 600px) 25vw, 150px" /* <-- OTIMIZAÇÃO (adicionado) */
-                                      /* A prop 'style' foi removida */
+                                      width={185}  
+                                      height={185} 
+                                      sizes="(max-width: 600px) 25vw, 150px" 
                                     />
                                 ) : <div className='thumbnail-placeholder person'></div>}
                             </div>
